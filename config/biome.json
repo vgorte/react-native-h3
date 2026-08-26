@@ -5,6 +5,13 @@
   "javascript": { "formatter": { "quoteStyle": "single", "semicolons": "asNeeded" } },
   "linter": { "enabled": true, "rules": { "recommended": true } },
   "files": {
-    "includes": ["**", "!**/nitrogen/generated", "!**/third_party", "!**/lib", "!**/node_modules"]
+    "includes": [
+      "**",
+      "!**/nitrogen/generated",
+      "!**/third_party",
+      "!**/lib",
+      "!**/node_modules",
+      "!**/build"
+    ]
   }
 }
