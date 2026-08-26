@@ -99,13 +99,21 @@ react-native-h3/
     nitrogen/generated/     committed, shipped in the tarball
     ios/ + NitroH3.podspec
     android/CMakeLists.txt
-  apps/example/             RN CLI app, includes a benchmark screen
+  apps/example/             bare RN CLI app, includes a benchmark screen
   config/  scripts/  docs/
   .github/workflows/
 ```
 
 Root stays a thin workspace. Shared config (`tsconfig`, Biome, `.clang-format`, `.editorconfig`)
 lives in `config/` with minimal root files delegating to it.
+
+The example app is **bare React Native**, not Expo, matching `nitro/example` and what
+`create-nitro-module` generates. Every Margelo workflow and the Harness config keys
+(`entryPoint`, `appRegistryComponentName`, `bundleId`) then transfer directly, and the
+`repo-structure-and-workflow` skill asks for example apps to stay close to the official RN template.
+
+Package manager is **bun** throughout, matching the reference implementations and the maintainer's
+local toolchain.
 
 ### Vendoring: in-tree copy, not a submodule
 
@@ -478,17 +486,40 @@ build-android.yml   matrix min-sdk 24/26
 `nitrogen-drift.yml` is five lines and catches an entire class of bug: committed generated files that
 no longer match the spec.
 
+**The two harness workflows are path-filtered**, following Margelo's pattern: they trigger only on
+changes under `cpp/**`, `nitrogen/generated/**`, `ios/**`, `android/**`, the lockfiles, the podspecs
+and the test files. A documentation or pure-JS change starts none of the five device jobs. The device
+matrix is free on a public repository but not fast; the Harness documentation budgets up to 20
+minutes per run including builds, and three of the five jobs are macOS.
+
 **No binary size gate.** There is no established practice to copy: Emerge Tools' action is officially
 deprecated, `diffuse` ships no action, `bloaty`'s last tag is from 2020, and a search across
 `mrousavy/*` and `software-mansion/*` workflows returned zero size steps. The 51 KB from the
 measurement stays a README figure.
 
-### Xcode floor
+### Declared floors
 
-Stated as **Xcode 26+, tested in CI**, rather than Nitro's 16.4. `macos-26` carries no Xcode 16.x at
-all; only `macos-15` does, and that image is the next deprecation candidate after `macos-14`. Pinning
-a `macos-15` job would verify a floor that cannot be reproduced on the maintainer's machine, which
-carries only Xcode 26.6. The stated requirement therefore describes exactly what CI proves.
+Two decisions that are easy to conflate but are independent: which runner CI uses is internal and
+affects nobody outside the repo; which floor the package declares is a compatibility promise to
+users.
+
+**Xcode: declare 16.4, build on `macos-26`.** This is exactly what Margelo does. They build on
+`macOS-26` with Xcode 26.x and still declare Nitro's 16.4; they do not raise the floor, they simply
+do not verify it. Raising ours to 26 would make `react-native-h3` stricter than Nitro *and* stricter
+than React Native, whose `min_xcode_version_supported` is `'16.1'`, for a codebase that is pure C++20
+plus vendored C. Apple clang in Xcode 16.4 supports C++20 fully, so there is no technical basis for a
+higher floor. Building on `macos-26` keeps CI aligned with the maintainer's local Xcode 26.6 and
+avoids `macos-15`, the next deprecation candidate after `macos-14`.
+
+Recorded honestly: **16.4 is therefore declared but not verified.** That is a deliberate blind spot,
+and it is the same one Nitro has. Nothing anywhere is machine-readable here; Nitro's `package.json`
+has `engines: null` and the podspec only inherits `min_ios_version_supported` and sets `c++20`.
+
+**iOS deployment target: inherit `min_ios_version_supported` from React Native** (currently 15.1)
+rather than pinning our own number that would silently go stale across RN upgrades.
+
+**Android `minSdk`: 24**, with the build matrix covering 24 and 26. This is the floor that actually
+affects users, more than the Xcode version does, and pure C++20 gives no reason to go higher.
 
 Note for local development: Margelo pins Java 17 in all workflows. The maintainer's machine has
 Java 21. If Gradle misbehaves, that is the first suspect.
