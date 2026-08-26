@@ -27,6 +27,7 @@ add_library(
   ${PACKAGE_ROOT}/cpp/core/CellBuffer.cpp
   ${PACKAGE_ROOT}/cpp/core/H3ErrorMapping.cpp
   ${PACKAGE_ROOT}/cpp/HybridH3.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/main/cpp/cpp-adapter.cpp  # <-- JNI_OnLoad, Android only
 )
 
 target_include_directories(NitroH3 PUBLIC ${PACKAGE_ROOT}/cpp ${H3_ROOT}/include)

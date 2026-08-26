@@ -9,10 +9,14 @@ buildscript {
 }
 
 apply plugin: 'com.android.library'
+apply plugin: 'org.jetbrains.kotlin.android'  // <-- compiles nitrogen's `NitroH3OnLoad.kt`
 
 android {
   namespace "com.margelo.nitro.h3"
-  compileSdk 35
+  compileSdk 36
+
+  // Follow the app's NDK, so a library build never downloads a second toolchain
+  ndkVersion rootProject.ext.has("ndkVersion") ? rootProject.ext.ndkVersion : "27.1.12297006"
 
   defaultConfig {
     minSdk 24
@@ -42,6 +46,7 @@ repositories {
 
 dependencies {
   implementation 'com.facebook.react:react-android'
+  implementation project(':react-native-nitro-modules')  // <-- the prefab CMake links against
 }
 
 // Nitrogen autolinking

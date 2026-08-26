@@ -11,7 +11,11 @@
       "!**/third_party",
       "!**/lib",
       "!**/node_modules",
-      "!**/build"
+      "!**/build",
+      "!**/.cxx",
+      "!**/.gradle",
+      "!**/Pods",
+      "!**/*.xcassets"
     ]
   }
 }
