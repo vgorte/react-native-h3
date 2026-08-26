@@ -8,6 +8,15 @@
   "react-native": "src/index",
   "source": "src/index",
   "license": "Apache-2.0",
+  "author": "Viktor Gorte",
+  "homepage": "https://github.com/vgorte/react-native-h3#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vgorte/react-native-h3.git"
+  },
+  "bugs": {
+    "url": "https://github.com/vgorte/react-native-h3/issues"
+  },
   "keywords": [
     "react-native",
     "nitro-modules",
@@ -32,6 +41,7 @@
     "cpp/**/*.h",
     "cpp/**/*.hpp",
     "cpp/**/*.cpp",
+    "!cpp/test",
     "third_party/h3/include/**/*.h",
     "third_party/h3/lib/**/*.c",
     "third_party/h3/LICENSE",
@@ -48,7 +58,7 @@
   "peerDependencies": {
     "react": "*",
     "react-native": "*",
-    "react-native-nitro-modules": "*"
+    "react-native-nitro-modules": "^0.37.0"
   },
   "dependencies": {
     "@babel/runtime": "^7.25.0"

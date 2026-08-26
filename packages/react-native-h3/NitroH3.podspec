@@ -8,7 +8,7 @@ Pod::Spec.new do |s|
   s.version      = package["version"]
   s.summary      = package["description"]
   s.homepage     = "https://github.com/vgorte/react-native-h3"
-  s.license      = package["license"]
+  s.license      = { :type => package["license"], :file => "LICENSE" }
   s.authors      = package["author"] || "react-native-h3 contributors"
   s.platforms    = { :ios => min_ios_version_supported }  # <-- inherited, never pinned
   s.source       = { :git => "https://github.com/vgorte/react-native-h3.git", :tag => "#{s.version}" }
