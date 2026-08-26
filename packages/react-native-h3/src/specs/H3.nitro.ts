@@ -35,6 +35,23 @@ export interface H3 extends HybridObject<{ ios: 'c++'; android: 'c++' }> {
   cellToLocalIj(origin: UInt64, cell: UInt64): CoordIJ
   localIjToCell(origin: UInt64, i: number, j: number): UInt64
 
+  areNeighborCells(origin: UInt64, destination: UInt64): boolean
+  cellsToDirectedEdge(origin: UInt64, destination: UInt64): UInt64
+  getDirectedEdgeOrigin(edge: UInt64): UInt64
+  getDirectedEdgeDestination(edge: UInt64): UInt64
+  reverseDirectedEdge(edge: UInt64): UInt64
+  // both of these have a fixed length, so the `ArrayBuffer` is two or six cells rather than a query.
+  directedEdgeToCells(edge: UInt64): ArrayBuffer
+  originToDirectedEdges(origin: UInt64): ArrayBuffer
+  directedEdgeToBoundary(edge: UInt64): LatLng[]
+  edgeLengthKm(edge: UInt64): number
+  edgeLengthM(edge: UInt64): number
+  edgeLengthRads(edge: UInt64): number
+
+  cellToVertex(cell: UInt64, vertexNum: number): UInt64
+  cellToVertexes(cell: UInt64): ArrayBuffer
+  vertexToLatLng(vertex: UInt64): LatLng
+
   degsToRads(degrees: number): number
   radsToDegs(radians: number): number
 

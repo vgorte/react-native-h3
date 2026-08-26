@@ -35,6 +35,24 @@ public:
   CoordIJ cellToLocalIj(uint64_t origin, uint64_t cell) override;
   uint64_t localIjToCell(uint64_t origin, double i, double j) override;
 
+  // Edges
+  bool areNeighborCells(uint64_t origin, uint64_t destination) override;
+  uint64_t cellsToDirectedEdge(uint64_t origin, uint64_t destination) override;
+  uint64_t getDirectedEdgeOrigin(uint64_t edge) override;
+  uint64_t getDirectedEdgeDestination(uint64_t edge) override;
+  uint64_t reverseDirectedEdge(uint64_t edge) override;
+  std::shared_ptr<ArrayBuffer> directedEdgeToCells(uint64_t edge) override;
+  std::shared_ptr<ArrayBuffer> originToDirectedEdges(uint64_t origin) override;
+  std::vector<LatLng> directedEdgeToBoundary(uint64_t edge) override;
+  double edgeLengthKm(uint64_t edge) override;
+  double edgeLengthM(uint64_t edge) override;
+  double edgeLengthRads(uint64_t edge) override;
+
+  // Vertexes
+  uint64_t cellToVertex(uint64_t cell, double vertexNum) override;
+  std::shared_ptr<ArrayBuffer> cellToVertexes(uint64_t cell) override;
+  LatLng vertexToLatLng(uint64_t vertex) override;
+
   // Regions
   std::vector<std::vector<std::vector<LatLng>>> cellsToMultiPolygon(const std::shared_ptr<ArrayBuffer>& cells) override;
 

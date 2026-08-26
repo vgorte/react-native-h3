@@ -7,8 +7,6 @@
 
 #include "ops/Indexing.hpp"
 
-#include <cstddef>
-
 #include "core/Validation.hpp"
 #include "ops/Internal.hpp"
 #include "shapes/OutParamCall.hpp"
@@ -18,20 +16,6 @@ extern "C" {
 }
 
 namespace h3ops {
-
-namespace {
-
-/** Reads a `::CellBoundary` out as degrees, honouring `numVerts` rather than the array capacity. */
-h3core::Ring toRing(const ::CellBoundary& boundary) {
-  h3core::Ring ring;
-  ring.reserve(static_cast<size_t>(boundary.numVerts));
-  for (int i = 0; i < boundary.numVerts; i++) {
-    ring.push_back(h3core::Point{::radsToDegs(boundary.verts[i].lat), ::radsToDegs(boundary.verts[i].lng)});
-  }
-  return ring;
-}
-
-} // namespace
 
 uint64_t latLngToCell(double lat, double lng, double res) {
   // `::LatLng` is H3's radians struct, never the generated Nitro struct of the same name
@@ -50,7 +34,7 @@ h3core::Point cellToLatLng(uint64_t cell) {
 
 h3core::Ring cellToBoundary(uint64_t cell) {
   internal::requireValidCell(cell);
-  return toRing(h3shapes::callWithOutParam<::CellBoundary>(::cellToBoundary, cell));
+  return internal::toRing(h3shapes::callWithOutParam<::CellBoundary>(::cellToBoundary, cell));
 }
 
 } // namespace h3ops

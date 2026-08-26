@@ -15,6 +15,7 @@
 
 #include "HybridH3Conversions.hpp"
 #include "core/CellBuffer.hpp"
+#include "ops/Edges.hpp"
 #include "ops/Hierarchy.hpp"
 #include "ops/Indexing.hpp"
 #include "ops/Inspection.hpp"
@@ -23,6 +24,7 @@
 #include "ops/Regions.hpp"
 #include "ops/Traversal.hpp"
 #include "ops/Units.hpp"
+#include "ops/Vertexes.hpp"
 
 using namespace margelo::nitro::h3::detail;
 
@@ -79,6 +81,63 @@ CoordIJ HybridH3::cellToLocalIj(uint64_t origin, uint64_t cell) {
 
 uint64_t HybridH3::localIjToCell(uint64_t origin, double i, double j) {
   return h3ops::localIjToCell(origin, i, j);
+}
+
+bool HybridH3::areNeighborCells(uint64_t origin, uint64_t destination) {
+  return h3ops::areNeighborCells(origin, destination);
+}
+
+uint64_t HybridH3::cellsToDirectedEdge(uint64_t origin, uint64_t destination) {
+  return h3ops::cellsToDirectedEdge(origin, destination);
+}
+
+uint64_t HybridH3::getDirectedEdgeOrigin(uint64_t edge) {
+  return h3ops::getDirectedEdgeOrigin(edge);
+}
+
+uint64_t HybridH3::getDirectedEdgeDestination(uint64_t edge) {
+  return h3ops::getDirectedEdgeDestination(edge);
+}
+
+uint64_t HybridH3::reverseDirectedEdge(uint64_t edge) {
+  return h3ops::reverseDirectedEdge(edge);
+}
+
+std::shared_ptr<ArrayBuffer> HybridH3::directedEdgeToCells(uint64_t edge) {
+  return toArrayBuffer(h3ops::directedEdgeToCells(edge));
+}
+
+std::shared_ptr<ArrayBuffer> HybridH3::originToDirectedEdges(uint64_t origin) {
+  return toArrayBuffer(h3ops::originToDirectedEdges(origin));
+}
+
+std::vector<LatLng> HybridH3::directedEdgeToBoundary(uint64_t edge) {
+  return toLatLngs(h3ops::directedEdgeToBoundary(edge));
+}
+
+double HybridH3::edgeLengthKm(uint64_t edge) {
+  return h3ops::edgeLengthKm(edge);
+}
+
+double HybridH3::edgeLengthM(uint64_t edge) {
+  return h3ops::edgeLengthM(edge);
+}
+
+double HybridH3::edgeLengthRads(uint64_t edge) {
+  return h3ops::edgeLengthRads(edge);
+}
+
+uint64_t HybridH3::cellToVertex(uint64_t cell, double vertexNum) {
+  return h3ops::cellToVertex(cell, vertexNum);
+}
+
+std::shared_ptr<ArrayBuffer> HybridH3::cellToVertexes(uint64_t cell) {
+  return toArrayBuffer(h3ops::cellToVertexes(cell));
+}
+
+LatLng HybridH3::vertexToLatLng(uint64_t vertex) {
+  const h3core::Point point = h3ops::vertexToLatLng(vertex);
+  return LatLng(point.lat, point.lng);
 }
 
 std::vector<std::vector<std::vector<LatLng>>> HybridH3::cellsToMultiPolygon(const std::shared_ptr<ArrayBuffer>& cells) {

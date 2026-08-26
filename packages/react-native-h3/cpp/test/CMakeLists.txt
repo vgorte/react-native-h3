@@ -34,6 +34,7 @@ add_library(nitro_free_core STATIC
   ${PACKAGE_ROOT}/cpp/core/H3ErrorMapping.cpp
   ${PACKAGE_ROOT}/cpp/core/Validation.cpp
   ${PACKAGE_ROOT}/cpp/core/LinkedGeoPolygonReader.cpp
+  ${PACKAGE_ROOT}/cpp/ops/Edges.cpp
   ${PACKAGE_ROOT}/cpp/ops/Hierarchy.cpp
   ${PACKAGE_ROOT}/cpp/ops/Indexing.cpp
   ${PACKAGE_ROOT}/cpp/ops/Inspection.cpp
@@ -42,6 +43,7 @@ add_library(nitro_free_core STATIC
   ${PACKAGE_ROOT}/cpp/ops/Regions.cpp
   ${PACKAGE_ROOT}/cpp/ops/Traversal.cpp
   ${PACKAGE_ROOT}/cpp/ops/Units.cpp
+  ${PACKAGE_ROOT}/cpp/ops/Vertexes.cpp
 )
 target_include_directories(nitro_free_core PUBLIC ${PACKAGE_ROOT}/cpp)
 target_link_libraries(nitro_free_core PUBLIC h3_vendored)
@@ -80,6 +82,7 @@ set(TEST_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/MeasurementOpsTest.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/HierarchyOpsTest.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/TraversalOpsTest.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/EdgesOpsTest.cpp
 )
 
 add_executable(tests ${TEST_SOURCES})

@@ -1,3 +1,16 @@
+export {
+  areNeighborCells,
+  cellsToDirectedEdge,
+  directedEdgeToBoundary,
+  directedEdgeToCells,
+  edgeLengthKm,
+  edgeLengthM,
+  edgeLengthRads,
+  getDirectedEdgeDestination,
+  getDirectedEdgeOrigin,
+  originToDirectedEdges,
+  reverseDirectedEdge,
+} from './edges'
 export { H3Error } from './H3Error'
 export {
   cellToCenterChild,
@@ -53,3 +66,4 @@ export {
 export type { ContainmentModeValue, CoordIJ, LatLng, Ring } from './types'
 export { ContainmentMode } from './types'
 export { degsToRads, radsToDegs } from './units'
+export { cellToVertex, cellToVertexes, vertexToLatLng } from './vertexes'

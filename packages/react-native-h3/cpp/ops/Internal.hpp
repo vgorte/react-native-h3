@@ -7,8 +7,10 @@
 
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 
+#include "core/Geometry.hpp"
 #include "core/H3ErrorMapping.hpp"
 
 extern "C" {
@@ -16,8 +18,8 @@ extern "C" {
 }
 
 /**
- * Holds the guards the operations share. Header-only, and like the rest of `cpp/ops` free of Nitro,
- * so the host tests keep reaching the production code path.
+ * Holds the guards and conversions the operations share. Header-only, and like the rest of
+ * `cpp/ops` free of Nitro, so the host tests keep reaching the production code path.
  */
 namespace h3ops::internal {
 
@@ -48,6 +50,41 @@ inline void requireResolution(int res) {
   if (res < 0 || res > kMaxResolution) {
     h3core::throwOnError(E_RES_DOMAIN);
   }
+}
+
+/**
+ * Rejects a directed edge H3 would read anyway, with `E_DIR_EDGE_INVALID`.
+ *
+ * Every reader in `directedEdge.c` goes through `getDirectedEdgeOrigin`, which checks the mode bits
+ * and nothing else (`directedEdge.c:157`), so an edge over a malformed cell or with a `0` direction
+ * otherwise yields an origin, a boundary and a length.
+ */
+inline void requireValidDirectedEdge(uint64_t edge) {
+  if (!::isValidDirectedEdge(edge)) {
+    h3core::throwOnError(E_DIR_EDGE_INVALID);
+  }
+}
+
+/**
+ * Rejects a vertex H3 would read anyway, with `E_VERTEX_INVALID`.
+ *
+ * `vertexToLatLng` clears the mode bits of whatever it is handed and measures the result
+ * (`vertex.c:326`), so even a cell index answers with a coordinate.
+ */
+inline void requireValidVertex(uint64_t vertex) {
+  if (!::isValidVertex(vertex)) {
+    h3core::throwOnError(E_VERTEX_INVALID);
+  }
+}
+
+/** Reads a `::CellBoundary` out as degrees, honouring `numVerts` rather than the array capacity. */
+inline h3core::Ring toRing(const ::CellBoundary& boundary) {
+  h3core::Ring ring;
+  ring.reserve(static_cast<size_t>(boundary.numVerts));
+  for (int i = 0; i < boundary.numVerts; i++) {
+    ring.push_back(h3core::Point{::radsToDegs(boundary.verts[i].lat), ::radsToDegs(boundary.verts[i].lng)});
+  }
+  return ring;
 }
 
 } // namespace h3ops::internal
