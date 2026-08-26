@@ -12,6 +12,7 @@
     "lint": "biome check .",
     "format": "biome check --write .",
     "vendor:h3": "bun run scripts/vendor-h3.ts",
+    "icons": "bun run scripts/generate-app-icons.ts",
     "example": "bun run --cwd apps/example",
     "example:ios": "bun run --cwd apps/example ios",
     "example:android": "bun run --cwd apps/example android"
