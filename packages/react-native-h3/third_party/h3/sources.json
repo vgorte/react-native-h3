@@ -1,0 +1,24 @@
+{
+  "tag": "v4.5.0",
+  "version": "4.5.0",
+  "sources": [
+    "lib/algos.c",
+    "lib/area.c",
+    "lib/baseCells.c",
+    "lib/bbox.c",
+    "lib/cellsToMultiPoly.c",
+    "lib/directedEdge.c",
+    "lib/faceijk.c",
+    "lib/h3Assert.c",
+    "lib/h3Index.c",
+    "lib/iterators.c",
+    "lib/latLng.c",
+    "lib/linkedGeo.c",
+    "lib/localij.c",
+    "lib/mathExtensions.c",
+    "lib/polyfill.c",
+    "lib/polygon.c",
+    "lib/vec2d.c",
+    "lib/vertex.c"
+  ]
+}
