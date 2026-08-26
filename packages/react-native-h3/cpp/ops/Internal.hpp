@@ -21,15 +21,32 @@ extern "C" {
  */
 namespace h3ops::internal {
 
+// `MAX_H3_RES` is private to the C library (`h3Index.c:137` reads it), so the ceiling is restated
+// here rather than reached for through a private header.
+inline constexpr int kMaxResolution = 15;
+
 /**
  * Rejects a cell H3 would read anyway, with `E_CELL_INVALID`.
  *
- * Most H3 functions check only the base cell range (`h3Index.c:1120`), so a malformed index such as
- * `1` otherwise yields an answer rather than an error.
+ * Many H3 entry points reach `_h3ToFaceIjk`, which checks only the base cell range
+ * (`h3Index.c:1120`), so a malformed index such as `1` otherwise yields an answer rather than an
+ * error.
  */
 inline void requireValidCell(uint64_t cell) {
   if (!::isValidCell(cell)) {
     h3core::throwOnError(E_CELL_INVALID);
+  }
+}
+
+/**
+ * Rejects a resolution outside `0` to `15`, with `E_RES_DOMAIN`.
+ *
+ * For operations whose own checks would otherwise run before H3 sees the resolution, so that a
+ * nonsense resolution still reaches the caller in H3's wording.
+ */
+inline void requireResolution(int res) {
+  if (res < 0 || res > kMaxResolution) {
+    h3core::throwOnError(E_RES_DOMAIN);
   }
 }
 

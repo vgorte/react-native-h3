@@ -63,7 +63,7 @@ and `getHexagonEdgeLengthAvg`. h3-js's `E_UNKNOWN_UNIT` therefore has no counter
    (`E_CELL_INVALID`, `E_DIR_EDGE_INVALID`, `E_VERTEX_INVALID`) where h3-js returns an undefined
    value. Validation happens once, at the boundary, in C++.
    `getResolution`, `getBaseCellNumber` and the `is*` predicates are the exception: they have no
-   error channel and answer for any input.
+   error channel and answer for any input. So is `cellToString`, which formats any index.
 
 **`h3IndexToSplitLong` and `splitLongToH3Index` do not exist.** They work around JavaScript's lack
 of 64-bit integers in an emscripten build and have no counterpart in the C library.

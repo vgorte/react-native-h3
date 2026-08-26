@@ -13,6 +13,7 @@
 #include "core/BufferSizes.hpp"
 #include "core/H3ErrorMapping.hpp"
 #include "core/Validation.hpp"
+#include "ops/Internal.hpp"
 #include "shapes/OutParamCall.hpp"
 
 extern "C" {
@@ -20,14 +21,6 @@ extern "C" {
 }
 
 namespace h3ops {
-
-namespace {
-
-// `MAX_H3_RES` is private to the C library (`h3Index.c:137` reads it), so the ceiling is restated
-// here rather than reached for through a private header.
-constexpr int kMaxResolution = 15;
-
-} // namespace
 
 bool isValidCell(uint64_t cell) {
   return ::isValidCell(cell) != 0;
@@ -62,8 +55,11 @@ int getBaseCellNumber(uint64_t cell) {
 }
 
 int getIndexDigit(uint64_t cell, double digit) {
-  // H3 names this parameter `res` and rejects anything outside `1` to `15` with `E_RES_DOMAIN`
-  // (`h3Index.c:117`), so the range check is left to it; only the narrowing happens here.
+  // `getIndexDigit` validates only its `res` (`h3Index.c:116-122`), so a malformed index otherwise
+  // yields a digit rather than an error.
+  internal::requireValidCell(cell);
+  // H3 rejects a `res` outside `1` to `15` with `E_RES_DOMAIN` (`h3Index.c:117`), so that range
+  // check is left to it; only the narrowing happens here.
   return h3shapes::callWithOutParam<int>(::getIndexDigit, cell, h3core::toInteger(digit, "Digit must be an integer"));
 }
 
@@ -72,9 +68,7 @@ uint64_t constructCell(double baseCellNumber, const std::vector<double>& digits,
   const int baseCell = h3core::toInteger(baseCellNumber, "Base cell number must be an integer");
   // H3 range-checks the resolution itself (`h3Index.c:137`) but never sees the digit count, so its
   // verdict has to come first; otherwise a nonsense resolution reads as a digit-count mismatch.
-  if (resolution < 0 || resolution > kMaxResolution) {
-    h3core::throwOnError(E_RES_DOMAIN);
-  }
+  internal::requireResolution(resolution);
   if (digits.size() != static_cast<size_t>(resolution)) {
     h3core::throwInvalidArgument("constructCell needs exactly res digits");
   }

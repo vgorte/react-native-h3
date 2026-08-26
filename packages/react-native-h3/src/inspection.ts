@@ -132,7 +132,7 @@ export function getBaseCellNumber(cell: bigint): number {
  * @param cell The cell.
  * @param digit Which digit to read, `1` to `15`.
  * @returns The digit, `0` to `6`, or `7` for a position beyond the cell's resolution.
- * @throws {@linkcode H3Error} if `digit` is outside `1` to `15`.
+ * @throws {@linkcode H3Error} if the cell is not valid, or `digit` is outside `1` to `15`.
  */
 export function getIndexDigit(cell: bigint, digit: number): number {
   try {

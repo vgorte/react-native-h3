@@ -70,6 +70,15 @@ TEST(InspectionOps, RejectsDigitZeroAndDigitSixteen) {
   EXPECT_THROW(h3ops::getIndexDigit(kSanFrancisco, 16), std::runtime_error);
 }
 
+TEST(InspectionOps, GetIndexDigitRejectsAnInvalidCell) {
+  try {
+    h3ops::getIndexDigit(1, 1);
+    FAIL() << "expected an exception";
+  } catch (const std::runtime_error& error) {
+    EXPECT_EQ(std::string(error.what()), "Cell argument was not valid");
+  }
+}
+
 TEST(InspectionOps, RejectsAFractionalDigit) {
   EXPECT_THROW(h3ops::getIndexDigit(kSanFrancisco, 1.5), std::runtime_error);
 }
