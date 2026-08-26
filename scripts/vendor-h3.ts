@@ -45,14 +45,14 @@ async function download(into: string): Promise<string> {
 /** Substitutes `h3api.h.in`'s three version macros; CMake is not needed to resolve them. */
 function substituteVersion(template: string, version: string): string {
   const parts = version.trim().split('.')
-  if (parts.length !== 3) {
+  const [major, minor, patch] = parts
+  if (parts.length !== 3 || major == null || minor == null || patch == null) {
     throw new Error(`Unexpected VERSION contents: ${version}`)
   }
-  const [major, minor, patch] = parts
   const header = template
-    .replaceAll('@H3_VERSION_MAJOR@', major as string)
-    .replaceAll('@H3_VERSION_MINOR@', minor as string)
-    .replaceAll('@H3_VERSION_PATCH@', patch as string)
+    .replaceAll('@H3_VERSION_MAJOR@', major)
+    .replaceAll('@H3_VERSION_MINOR@', minor)
+    .replaceAll('@H3_VERSION_PATCH@', patch)
   if (/@H3_[A-Z_]+@/.test(header)) {
     throw new Error('h3api.h.in contains substitutions this script does not know about')
   }
