@@ -1,0 +1,61 @@
+cmake_minimum_required(VERSION 3.20)
+project(react_native_h3_tests CXX C)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+set(PACKAGE_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../..)
+set(H3_ROOT ${PACKAGE_ROOT}/third_party/h3)
+
+# Vendored H3 source list
+# Read the list instead of globbing, so a missing file fails loudly.
+file(READ ${H3_ROOT}/sources.json H3_SOURCES_JSON)
+string(JSON H3_SOURCE_COUNT LENGTH ${H3_SOURCES_JSON} sources)
+set(H3_SOURCES "")
+math(EXPR H3_LAST_INDEX "${H3_SOURCE_COUNT} - 1")
+foreach(i RANGE ${H3_LAST_INDEX})
+  string(JSON H3_SOURCE GET ${H3_SOURCES_JSON} sources ${i})
+  list(APPEND H3_SOURCES ${H3_ROOT}/${H3_SOURCE})
+endforeach()
+
+add_library(h3_vendored STATIC ${H3_SOURCES})
+target_include_directories(h3_vendored PUBLIC ${H3_ROOT}/include)
+# upstream builds with these warnings off; we do not own this code.
+target_compile_options(h3_vendored PRIVATE -w)
+
+# GoogleTest
+# Use an installed copy of 1.18.0 when there is one, fetch otherwise.
+find_package(GTest 1.18.0 QUIET)
+if(NOT GTest_FOUND)
+  include(FetchContent)
+  FetchContent_Declare(
+    googletest
+    GIT_REPOSITORY https://github.com/google/googletest.git
+    GIT_TAG v1.18.0
+  )
+  set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+  FetchContent_MakeAvailable(googletest)
+endif()
+
+enable_testing()
+include(GoogleTest)
+
+# Test targets
+# Tasks 4 and 5 append their sources to both lists below.
+set(TEST_SOURCES
+  ${CMAKE_CURRENT_SOURCE_DIR}/VendoredH3Test.cpp
+)
+
+add_executable(tests ${TEST_SOURCES})
+target_link_libraries(tests PRIVATE h3_vendored GTest::gtest_main)
+gtest_discover_tests(tests)
+
+# Sanitised twin
+# LeakSanitizer needs Linux (CI or Docker); it does not exist on macOS/arm64.
+add_executable(tests_asan ${TEST_SOURCES})
+target_link_libraries(tests_asan PRIVATE h3_vendored GTest::gtest_main)
+target_compile_options(tests_asan PRIVATE -fsanitize=address,undefined -fno-omit-frame-pointer -g -O1)
+target_link_options(tests_asan PRIVATE -fsanitize=address,undefined)
