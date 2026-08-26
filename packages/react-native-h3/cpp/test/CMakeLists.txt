@@ -60,6 +60,7 @@ set(TEST_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/VendoredH3Test.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/CellBufferTest.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/H3ErrorMappingTest.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/BufferSizesTest.cpp
 )
 
 add_executable(tests ${TEST_SOURCES})
