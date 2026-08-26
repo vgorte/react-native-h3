@@ -9,8 +9,8 @@
 
 #include <cstddef>
 
-#include "core/H3ErrorMapping.hpp"
 #include "core/Validation.hpp"
+#include "ops/Internal.hpp"
 #include "shapes/OutParamCall.hpp"
 
 extern "C" {
@@ -31,18 +31,6 @@ h3core::Ring toRing(const ::CellBoundary& boundary) {
   return ring;
 }
 
-/**
- * Rejects a cell H3 would read anyway, with `E_CELL_INVALID`.
- *
- * `cellToLatLng` and `cellToBoundary` check only the base cell range (`h3Index.c:1120`), so a
- * malformed index such as `1` otherwise yields a coordinate rather than an error.
- */
-void requireValidCell(uint64_t cell) {
-  if (!::isValidCell(cell)) {
-    h3core::throwOnError(E_CELL_INVALID);
-  }
-}
-
 } // namespace
 
 uint64_t latLngToCell(double lat, double lng, double res) {
@@ -55,13 +43,13 @@ uint64_t latLngToCell(double lat, double lng, double res) {
 }
 
 h3core::Point cellToLatLng(uint64_t cell) {
-  requireValidCell(cell);
+  internal::requireValidCell(cell);
   const ::LatLng centre = h3shapes::callWithOutParam<::LatLng>(::cellToLatLng, cell);
   return h3core::Point{::radsToDegs(centre.lat), ::radsToDegs(centre.lng)};
 }
 
 h3core::Ring cellToBoundary(uint64_t cell) {
-  requireValidCell(cell);
+  internal::requireValidCell(cell);
   return toRing(h3shapes::callWithOutParam<::CellBoundary>(::cellToBoundary, cell));
 }
 
