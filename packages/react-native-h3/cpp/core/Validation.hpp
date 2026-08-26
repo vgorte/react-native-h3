@@ -32,6 +32,12 @@ int toInteger(double value, const char* message);
 int64_t toCount(double value, const char* message);
 
 /**
+ * Converts an integral double to `int64_t`, rejecting anything a JavaScript number cannot represent
+ * exactly. Imposes no domain of its own, so a negative value passes for H3 to judge.
+ */
+int64_t toInt64(double value, const char* message);
+
+/**
  * Narrows a double to an H3 resolution without checking its range. H3 range-checks resolutions
  * itself and answers `E_RES_DOMAIN`.
  */

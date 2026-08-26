@@ -39,6 +39,14 @@ namespace margelo::nitro::h3 {
       prototype.registerHybridMethod("greatCircleDistanceKm", &HybridH3Spec::greatCircleDistanceKm);
       prototype.registerHybridMethod("greatCircleDistanceM", &HybridH3Spec::greatCircleDistanceM);
       prototype.registerHybridMethod("greatCircleDistanceRads", &HybridH3Spec::greatCircleDistanceRads);
+      prototype.registerHybridMethod("cellToParent", &HybridH3Spec::cellToParent);
+      prototype.registerHybridMethod("cellToCenterChild", &HybridH3Spec::cellToCenterChild);
+      prototype.registerHybridMethod("cellToChildrenSize", &HybridH3Spec::cellToChildrenSize);
+      prototype.registerHybridMethod("cellToChildPos", &HybridH3Spec::cellToChildPos);
+      prototype.registerHybridMethod("childPosToCell", &HybridH3Spec::childPosToCell);
+      prototype.registerHybridMethod("cellToChildren", &HybridH3Spec::cellToChildren);
+      prototype.registerHybridMethod("compactCells", &HybridH3Spec::compactCells);
+      prototype.registerHybridMethod("uncompactCells", &HybridH3Spec::uncompactCells);
       prototype.registerHybridMethod("getHexagonAreaAvgKm2", &HybridH3Spec::getHexagonAreaAvgKm2);
       prototype.registerHybridMethod("getHexagonAreaAvgM2", &HybridH3Spec::getHexagonAreaAvgM2);
       prototype.registerHybridMethod("getHexagonEdgeLengthAvgKm", &HybridH3Spec::getHexagonEdgeLengthAvgKm);

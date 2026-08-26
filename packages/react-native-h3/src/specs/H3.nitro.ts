@@ -45,6 +45,17 @@ export interface H3 extends HybridObject<{ ios: 'c++'; android: 'c++' }> {
   greatCircleDistanceM(lat1: number, lng1: number, lat2: number, lng2: number): number
   greatCircleDistanceRads(lat1: number, lng1: number, lat2: number, lng2: number): number
 
+  cellToParent(cell: UInt64, res: number): UInt64
+  cellToCenterChild(cell: UInt64, res: number): UInt64
+  cellToChildrenSize(cell: UInt64, res: number): number
+  cellToChildPos(cell: UInt64, parentRes: number): number
+  // the one H3 argument that is a plain `int64_t` rather than an index, so it crosses as a `number`.
+  childPosToCell(childPos: number, parent: UInt64, childRes: number): UInt64
+  cellToChildren(cell: UInt64, res: number): ArrayBuffer
+  // a cell set in and a cell set out; both cross as `ArrayBuffer` and neither is copied.
+  compactCells(cells: ArrayBuffer): ArrayBuffer
+  uncompactCells(cells: ArrayBuffer, res: number): ArrayBuffer
+
   getHexagonAreaAvgKm2(res: number): number
   getHexagonAreaAvgM2(res: number): number
   getHexagonEdgeLengthAvgKm(res: number): number

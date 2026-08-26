@@ -34,6 +34,7 @@ add_library(nitro_free_core STATIC
   ${PACKAGE_ROOT}/cpp/core/H3ErrorMapping.cpp
   ${PACKAGE_ROOT}/cpp/core/Validation.cpp
   ${PACKAGE_ROOT}/cpp/core/LinkedGeoPolygonReader.cpp
+  ${PACKAGE_ROOT}/cpp/ops/Hierarchy.cpp
   ${PACKAGE_ROOT}/cpp/ops/Indexing.cpp
   ${PACKAGE_ROOT}/cpp/ops/Inspection.cpp
   ${PACKAGE_ROOT}/cpp/ops/Measurement.cpp
@@ -76,6 +77,7 @@ set(TEST_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/IndexingOpsTest.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/InspectionOpsTest.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/MeasurementOpsTest.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/HierarchyOpsTest.cpp
 )
 
 add_executable(tests ${TEST_SOURCES})

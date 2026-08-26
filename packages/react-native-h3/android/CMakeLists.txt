@@ -28,6 +28,7 @@ add_library(
   ${PACKAGE_ROOT}/cpp/core/H3ErrorMapping.cpp
   ${PACKAGE_ROOT}/cpp/core/Validation.cpp
   ${PACKAGE_ROOT}/cpp/core/LinkedGeoPolygonReader.cpp
+  ${PACKAGE_ROOT}/cpp/ops/Hierarchy.cpp
   ${PACKAGE_ROOT}/cpp/ops/Indexing.cpp
   ${PACKAGE_ROOT}/cpp/ops/Inspection.cpp
   ${PACKAGE_ROOT}/cpp/ops/Measurement.cpp

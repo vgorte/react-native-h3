@@ -17,6 +17,7 @@
 #include "core/CellBuffer.hpp"
 #include "core/H3ErrorMapping.hpp"
 #include "core/Validation.hpp"
+#include "ops/Hierarchy.hpp"
 #include "ops/Indexing.hpp"
 #include "ops/Inspection.hpp"
 #include "ops/Measurement.hpp"
@@ -159,6 +160,41 @@ double HybridH3::greatCircleDistanceM(double lat1, double lng1, double lat2, dou
 
 double HybridH3::greatCircleDistanceRads(double lat1, double lng1, double lat2, double lng2) {
   return h3ops::greatCircleDistanceRads(lat1, lng1, lat2, lng2);
+}
+
+uint64_t HybridH3::cellToParent(uint64_t cell, double res) {
+  return h3ops::cellToParent(cell, res);
+}
+
+uint64_t HybridH3::cellToCenterChild(uint64_t cell, double res) {
+  return h3ops::cellToCenterChild(cell, res);
+}
+
+double HybridH3::cellToChildrenSize(uint64_t cell, double res) {
+  // at most `getNumCells(15)`, well inside `2^53 - 1`, so the widening is exact
+  return static_cast<double>(h3ops::cellToChildrenSize(cell, res));
+}
+
+double HybridH3::cellToChildPos(uint64_t cell, double parentRes) {
+  return static_cast<double>(h3ops::cellToChildPos(cell, parentRes));
+}
+
+uint64_t HybridH3::childPosToCell(double childPos, uint64_t parent, double childRes) {
+  return h3ops::childPosToCell(childPos, parent, childRes);
+}
+
+std::shared_ptr<ArrayBuffer> HybridH3::cellToChildren(uint64_t cell, double res) {
+  return toArrayBuffer(h3ops::cellToChildren(cell, res));
+}
+
+std::shared_ptr<ArrayBuffer> HybridH3::compactCells(const std::shared_ptr<ArrayBuffer>& cells) {
+  const CellSpan span = toCellSpan(cells);
+  return toArrayBuffer(h3ops::compactCells(span.data, span.count));
+}
+
+std::shared_ptr<ArrayBuffer> HybridH3::uncompactCells(const std::shared_ptr<ArrayBuffer>& cells, double res) {
+  const CellSpan span = toCellSpan(cells);
+  return toArrayBuffer(h3ops::uncompactCells(span.data, span.count, res));
 }
 
 double HybridH3::getHexagonAreaAvgKm2(double res) {

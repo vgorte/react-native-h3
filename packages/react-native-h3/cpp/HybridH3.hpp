@@ -57,6 +57,16 @@ public:
   double greatCircleDistanceM(double lat1, double lng1, double lat2, double lng2) override;
   double greatCircleDistanceRads(double lat1, double lng1, double lat2, double lng2) override;
 
+  // Hierarchy
+  uint64_t cellToParent(uint64_t cell, double res) override;
+  uint64_t cellToCenterChild(uint64_t cell, double res) override;
+  double cellToChildrenSize(uint64_t cell, double res) override;
+  double cellToChildPos(uint64_t cell, double parentRes) override;
+  uint64_t childPosToCell(double childPos, uint64_t parent, double childRes) override;
+  std::shared_ptr<ArrayBuffer> cellToChildren(uint64_t cell, double res) override;
+  std::shared_ptr<ArrayBuffer> compactCells(const std::shared_ptr<ArrayBuffer>& cells) override;
+  std::shared_ptr<ArrayBuffer> uncompactCells(const std::shared_ptr<ArrayBuffer>& cells, double res) override;
+
   // Misc
   double getHexagonAreaAvgKm2(double res) override;
   double getHexagonAreaAvgM2(double res) override;

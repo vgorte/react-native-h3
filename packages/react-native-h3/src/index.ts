@@ -1,4 +1,14 @@
 export { H3Error } from './H3Error'
+export {
+  cellToCenterChild,
+  cellToChildPos,
+  cellToChildren,
+  cellToChildrenSize,
+  cellToParent,
+  childPosToCell,
+  compactCells,
+  uncompactCells,
+} from './hierarchy'
 export { cellToBoundary, cellToLatLng, latLngToCell } from './indexing'
 export {
   cellFromString,

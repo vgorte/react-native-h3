@@ -69,4 +69,22 @@ TEST(Validation, ToCountCoversTheSafeIntegerRange) {
   EXPECT_THROW(h3core::toCount(9007199254740993.0, "bad"), std::runtime_error);
 }
 
+TEST(Validation, ToInt64NarrowsWithoutADomain) {
+  // H3 owns the domain: `validateChildPos` rejects a negative position itself (`h3Index.c:1371`).
+  EXPECT_EQ(h3core::toInt64(-1.0, "bad"), -1LL);
+  EXPECT_EQ(h3core::toInt64(0.0, "bad"), 0LL);
+  EXPECT_EQ(h3core::toInt64(9007199254740991.0, "bad"), 9007199254740991LL);
+}
+
+TEST(Validation, ToInt64RejectsWhatAJavaScriptNumberCannotHold) {
+  EXPECT_THROW(h3core::toInt64(9007199254740993.0, "bad"), std::runtime_error);
+  EXPECT_THROW(h3core::toInt64(-9007199254740993.0, "bad"), std::runtime_error);
+  try {
+    h3core::toInt64(1.5, "Child position must be an integer");
+    FAIL() << "expected an exception";
+  } catch (const std::runtime_error& error) {
+    EXPECT_EQ(std::string(error.what()), "Child position must be an integer");
+  }
+}
+
 } // namespace

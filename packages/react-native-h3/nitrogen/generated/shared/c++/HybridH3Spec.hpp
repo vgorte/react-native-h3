@@ -77,6 +77,14 @@ namespace margelo::nitro::h3 {
       virtual double greatCircleDistanceKm(double lat1, double lng1, double lat2, double lng2) = 0;
       virtual double greatCircleDistanceM(double lat1, double lng1, double lat2, double lng2) = 0;
       virtual double greatCircleDistanceRads(double lat1, double lng1, double lat2, double lng2) = 0;
+      virtual uint64_t cellToParent(uint64_t cell, double res) = 0;
+      virtual uint64_t cellToCenterChild(uint64_t cell, double res) = 0;
+      virtual double cellToChildrenSize(uint64_t cell, double res) = 0;
+      virtual double cellToChildPos(uint64_t cell, double parentRes) = 0;
+      virtual uint64_t childPosToCell(double childPos, uint64_t parent, double childRes) = 0;
+      virtual std::shared_ptr<ArrayBuffer> cellToChildren(uint64_t cell, double res) = 0;
+      virtual std::shared_ptr<ArrayBuffer> compactCells(const std::shared_ptr<ArrayBuffer>& cells) = 0;
+      virtual std::shared_ptr<ArrayBuffer> uncompactCells(const std::shared_ptr<ArrayBuffer>& cells, double res) = 0;
       virtual double getHexagonAreaAvgKm2(double res) = 0;
       virtual double getHexagonAreaAvgM2(double res) = 0;
       virtual double getHexagonEdgeLengthAvgKm(double res) = 0;

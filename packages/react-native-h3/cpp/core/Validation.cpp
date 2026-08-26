@@ -43,6 +43,14 @@ int64_t toCount(double value, const char* message) {
   return static_cast<int64_t>(value);
 }
 
+int64_t toInt64(double value, const char* message) {
+  requireIntegral(value, message);
+  if (value < -kMaxSafeInteger || value > kMaxSafeInteger) {
+    throwInvalidArgument(message);
+  }
+  return static_cast<int64_t>(value);
+}
+
 int toResolution(double res) {
   return toInteger(res, "Resolution must be an integer between 0 and 15");
 }
