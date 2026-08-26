@@ -45,7 +45,7 @@ TEST(H3ErrorMapping, CoversEveryDefinedErrorCode) {
 }
 
 TEST(H3ErrorMapping, HandlesAnUnknownCodeWithoutReadingOutOfBounds) {
-  // describeH3Error guards this itself; the test pins that we do not add our own table.
+  // pins that no local error table exists; describeH3Error guards the range
   try {
     h3core::throwOnError(9999);
     FAIL() << "expected an exception";
