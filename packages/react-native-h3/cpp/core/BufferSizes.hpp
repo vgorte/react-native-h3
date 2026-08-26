@@ -59,4 +59,4 @@ inline constexpr int64_t kDirectedEdgeToCellsSize = 2;
  */
 inline constexpr std::size_t kH3ToStringBufferSize = 17;
 
-}  // namespace h3core
+} // namespace h3core

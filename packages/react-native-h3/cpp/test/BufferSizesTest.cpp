@@ -55,7 +55,8 @@ TEST(BufferSizes, OriginToDirectedEdgesStillWritesSixForAPentagon) {
   EXPECT_EQ(writtenSlots(slots), h3core::kOriginToDirectedEdgesSize);
   int64_t real = 0;
   for (int64_t i = 0; i < h3core::kOriginToDirectedEdgesSize; i++) {
-    if (slots[static_cast<size_t>(i)] != H3_NULL) real++;
+    if (slots[static_cast<size_t>(i)] != H3_NULL)
+      real++;
   }
   EXPECT_EQ(real, 5);
 }
@@ -74,14 +75,15 @@ TEST(BufferSizes, CellToVertexesStillWritesSixForAPentagon) {
   EXPECT_EQ(writtenSlots(slots), h3core::kCellToVertexesSize);
   int64_t real = 0;
   for (int64_t i = 0; i < h3core::kCellToVertexesSize; i++) {
-    if (slots[static_cast<size_t>(i)] != H3_NULL) real++;
+    if (slots[static_cast<size_t>(i)] != H3_NULL)
+      real++;
   }
   EXPECT_EQ(real, 5);
 }
 
 TEST(BufferSizes, DirectedEdgeToCellsWritesExactlyTwo) {
   H3Index neighbor = H3_NULL;
-  ASSERT_EQ(cellToVertex(kSanFrancisco, 0, &neighbor), E_SUCCESS);  // any valid call to warm up
+  ASSERT_EQ(cellToVertex(kSanFrancisco, 0, &neighbor), E_SUCCESS); // any valid call to warm up
   // Edge produced by h3-js: `cellsToDirectedEdge("89283082803ffff", "8928308281bffff")` ==
   // `169283082803ffff`.
   constexpr H3Index kEdge = 0x169283082803ffffULL;
@@ -116,4 +118,4 @@ TEST(BufferSizes, SixteenBytesIsNotEnoughForH3ToString) {
   EXPECT_EQ(h3ToString(kAllOnes, text.data(), h3core::kH3ToStringBufferSize - 1), E_MEMORY_BOUNDS);
 }
 
-}  // namespace
+} // namespace
