@@ -7,7 +7,7 @@ import { native } from './native'
  * @param lat Latitude in degrees.
  * @param lng Longitude in degrees.
  * @param res Resolution, `0` to `15`.
- * @throws {@linkcode H3Error} If the coordinate or the resolution is out of range.
+ * @throws {@linkcode H3Error} if the coordinate or the resolution is out of range.
  */
 export function latLngToCell(lat: number, lng: number, res: number): bigint {
   try {

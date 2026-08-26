@@ -10,7 +10,7 @@ import { native } from './native'
  *
  * Diverges from `h3-js`, which returns cells derived from a nonsense origin instead of throwing.
  *
- * @throws {@linkcode H3Error} If the origin is not a valid cell or `k` is negative.
+ * @throws {@linkcode H3Error} if the origin is not a valid cell or `k` is negative.
  */
 export function gridDisk(origin: bigint, k: number): BigUint64Array {
   try {

@@ -4,7 +4,7 @@ buildscript {
     mavenCentral()
   }
   dependencies {
-    // Matches what the example app resolves; 8.7.2 rejects `compileSdk 36` (AGP 8.9+ accepts it).
+    // matches what the example app resolves; 8.7.2 rejects `compileSdk 36` (AGP 8.9+ accepts it).
     classpath "com.android.tools.build:gradle:9.2.1"
   }
 }
@@ -16,7 +16,7 @@ android {
   namespace "com.margelo.nitro.h3"
   compileSdk 36
 
-  // Follow the app's NDK, so a library build never downloads a second toolchain
+  // follow the app's NDK, so a library build never downloads a second toolchain
   ndkVersion rootProject.ext.has("ndkVersion") ? rootProject.ext.ndkVersion : "27.1.12297006"
 
   defaultConfig {

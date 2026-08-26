@@ -29,7 +29,7 @@ CellBuffer::CellBuffer(int64_t capacity) : capacity_(capacity), count_(0) {
   if (static_cast<uint64_t>(capacity) > std::numeric_limits<std::size_t>::max() / sizeof(uint64_t)) {
     throw std::invalid_argument("CellBuffer capacity exceeds addressable memory");
   }
-  // value-initialising `new[]` zeroes the block; never swap this for malloc or a reserve.
+  // value-initialising `new[]` zeroes the block; never swap this for `malloc` or a reserve.
   cells_ = std::unique_ptr<uint64_t[]>(new uint64_t[static_cast<std::size_t>(capacity)]());
 }
 

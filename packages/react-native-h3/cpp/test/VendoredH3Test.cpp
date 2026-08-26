@@ -16,7 +16,7 @@ extern "C" {
 
 namespace {
 
-// San Francisco at res 9; h3-js 4.5.0 produces "89283082803ffff".
+// San Francisco at res 9; `h3-js` 4.5.0 produces `89283082803ffff`.
 constexpr H3Index kSanFrancisco = 0x89283082803ffffULL;
 
 TEST(VendoredH3, LatLngToCellMatchesKnownValue) {
@@ -36,13 +36,13 @@ TEST(VendoredH3, ReportsTheVersionWeVendored) {
 }
 
 TEST(VendoredH3, DescribesErrorsWithUpstreamWording) {
-  // the exact strings the public API surfaces; see `h3Index.c` `H3ErrorDescriptions`.
+  // the exact strings the public API surfaces; see `H3ErrorDescriptions` in `h3Index.c`.
   EXPECT_STREQ(describeH3Error(E_RES_DOMAIN), "Resolution argument was outside of acceptable range");
   EXPECT_STREQ(describeH3Error(E_CELL_INVALID), "Cell argument was not valid");
 }
 
 TEST(VendoredH3, GridDiskLeavesHolesAroundAPentagon) {
-  // pentagon at res 1, from h3-js `getPentagons(1)[0]` == "81083ffffffffff".
+  // pentagon at res 1, from `h3-js` `getPentagons(1)[0]` == `81083ffffffffff`.
   constexpr H3Index kPentagon = 0x81083ffffffffffULL;
   ASSERT_EQ(isPentagon(kPentagon), 1);
 
