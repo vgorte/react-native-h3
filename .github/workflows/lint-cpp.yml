@@ -7,15 +7,24 @@ on:
       - 'packages/react-native-h3/android/src/main/cpp/**'
       - '.clang-format'
       - '.github/workflows/lint-cpp.yml'
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
 
 jobs:
   clang-format:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install clang-format
-        run: sudo apt-get update && sudo apt-get install -y clang-format
+      # The PyPI wheel is the reproducible way to a major-21 build: the runner's apt only carries
+      # whatever Ubuntu ships, and a venv sidesteps the distro's externally-managed pip.
+      - name: Install clang-format 21
+        run: |
+          python3 -m venv .clang-format-venv
+          .clang-format-venv/bin/pip install --quiet 'clang-format==21.1.*'
       - name: Check formatting
         run: |
           find packages/react-native-h3/cpp packages/react-native-h3/android/src/main/cpp \( -name '*.hpp' -o -name '*.cpp' \) -print0 \
-            | xargs -0 clang-format --dry-run --Werror
+            | xargs -0 .clang-format-venv/bin/clang-format --dry-run --Werror
