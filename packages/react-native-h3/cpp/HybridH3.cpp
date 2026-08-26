@@ -59,6 +59,11 @@ uint64_t HybridH3::latLngToCell(double lat, double lng, double res) {
 std::shared_ptr<ArrayBuffer> HybridH3::gridDisk(uint64_t origin, double k) {
   const int distance = toInteger(k, "k must be a non-negative integer");
 
+  // H3's `gridDisk` does not validate its origin (`algos.c:200`)
+  if (!::isValidCell(origin)) {
+    h3core::throwOnError(E_CELL_INVALID);
+  }
+
   int64_t maxSize = 0;
   // rejects a negative `k` with `E_DOMAIN` (`algos.c:169`)
   h3core::throwOnError(::maxGridDiskSize(distance, &maxSize));

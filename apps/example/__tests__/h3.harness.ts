@@ -51,8 +51,17 @@ test('errors arrive as H3Error with upstream wording and no Nitro prefix', () =>
   expect((thrown as H3Error).message).toBe('Resolution argument was outside of acceptable range')
 })
 
-// H3 4.5 does not validate the origin of `gridDisk` (`algos.c:200`), so `maxGridDiskSize` is
-// the only error this entry point can raise.
+test('an invalid cell is rejected by the C layer', () => {
+  let thrown: unknown
+  try {
+    gridDisk(1n, 1)
+  } catch (error) {
+    thrown = error
+  }
+  expect(thrown).toBeInstanceOf(H3Error)
+  expect((thrown as H3Error).message).toBe('Cell argument was not valid')
+})
+
 test('a negative k is rejected by the C layer', () => {
   let thrown: unknown
   try {
