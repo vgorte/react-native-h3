@@ -11,9 +11,8 @@
 
 #include "core/Geometry.hpp"
 
-namespace h3ops {
-
 /** Converts between cell sets and the shapes that cover them. */
+namespace h3ops {
 
 /**
  * Returns the outline of a set of cells, as GeoJSON-shaped polygons in degrees.

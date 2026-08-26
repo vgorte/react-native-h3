@@ -16,9 +16,9 @@
 
 namespace {
 
-// San Francisco at resolution 9, from h3-js: "89283082803ffff"
+// San Francisco at resolution 9, from h3-js: `"89283082803ffff"`
 constexpr uint64_t kSanFrancisco = 0x89283082803ffffULL;
-// resolution 1 pentagon, from h3-js `getPentagons(1)[0]` == "81083ffffffffff"
+// resolution 1 pentagon, from h3-js `getPentagons(1)[0]` == `"81083ffffffffff"`
 constexpr uint64_t kPentagon = 0x81083ffffffffffULL;
 
 TEST(IndexingOps, LatLngToCellMatchesH3Js) {

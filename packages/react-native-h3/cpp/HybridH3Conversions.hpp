@@ -22,14 +22,19 @@ namespace margelo::nitro::h3::detail {
 /** Hands a filled `CellBuffer` to JS as an owning `ArrayBuffer` of exactly `count() * 8` bytes. */
 inline std::shared_ptr<ArrayBuffer> toArrayBuffer(h3core::CellBuffer&& buffer) {
   const int64_t count = buffer.count();
-  uint64_t* cells = buffer.release();
-  if (cells == nullptr) {
+  // holds the block until `wrap` has taken it, so a throw in between does not leak
+  std::unique_ptr<uint64_t[]> owned(buffer.release());
+  if (owned == nullptr) {
     // unreachable for a non-empty result; `wrap` rejects `nullptr`, `new uint64_t[0]` does not
-    cells = new uint64_t[0];
+    owned.reset(new uint64_t[0]);
   }
+
+  uint64_t* cells = owned.get();
   // the deleter frees the `uint64_t*` allocated above, never the `uint8_t*` wrapped below
-  return ArrayBuffer::wrap(reinterpret_cast<uint8_t*>(cells), static_cast<size_t>(count) * sizeof(uint64_t),
-                           [cells]() { delete[] cells; });
+  auto wrapped = ArrayBuffer::wrap(reinterpret_cast<uint8_t*>(cells), static_cast<size_t>(count) * sizeof(uint64_t),
+                                   [cells]() { delete[] cells; });
+  owned.release();
+  return wrapped;
 }
 
 /** Borrows a read-only view of a cell set that arrived from JS. */

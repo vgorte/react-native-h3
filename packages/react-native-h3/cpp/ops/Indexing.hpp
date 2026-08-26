@@ -11,8 +11,6 @@
 
 #include "core/Geometry.hpp"
 
-namespace h3ops {
-
 /**
  * Turns a coordinate into a cell, and a cell back into geometry, in degrees.
  *
@@ -20,6 +18,7 @@ namespace h3ops {
  * so `HybridH3` stays a pure type adapter. Nothing here includes a Nitro header, which is what lets
  * the host tests drive the production code path rather than a copy of it.
  */
+namespace h3ops {
 
 /** Returns the cell containing a coordinate. `lat` and `lng` are degrees, `res` is `0` to `15`. */
 uint64_t latLngToCell(double lat, double lng, double res);
