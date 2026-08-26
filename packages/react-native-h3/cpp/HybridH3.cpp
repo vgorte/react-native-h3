@@ -7,43 +7,18 @@
 
 #include "HybridH3.hpp"
 
-#include <cmath>
 #include <cstdint>
 #include <memory>
 
 #include "core/CellBuffer.hpp"
 #include "core/H3ErrorMapping.hpp"
+#include "core/Validation.hpp"
 
 extern "C" {
 #include "h3api.h"
 }
 
 namespace margelo::nitro::h3 {
-
-namespace {
-
-/**
- * Narrows a JS number to `int`, throwing `what` when it is not an exact integer that fits.
- *
- * Only the narrowing belongs here. Every domain rule (a resolution of `0` to `15`, a
- * non-negative `k`) is H3's, so that upstream's `describeH3Error` wording is what reaches
- * JavaScript.
- */
-int toInteger(double value, const char* what) {
-  if (std::isnan(value) || std::isinf(value) || value != std::floor(value)) {
-    h3core::throwInvalidArgument(what);
-  }
-  if (value < static_cast<double>(INT32_MIN) || value > static_cast<double>(INT32_MAX)) {
-    h3core::throwInvalidArgument(what);
-  }
-  return static_cast<int>(value);
-}
-
-int toResolution(double res) {
-  return toInteger(res, "Resolution must be an integer between 0 and 15");
-}
-
-} // namespace
 
 uint64_t HybridH3::latLngToCell(double lat, double lng, double res) {
   LatLng coordinate{};
@@ -53,7 +28,7 @@ uint64_t HybridH3::latLngToCell(double lat, double lng, double res) {
 
   H3Index cell = H3_NULL;
   // the leading `::` picks the C function; unqualified recurses into this member
-  h3core::throwOnError(::latLngToCell(&coordinate, toResolution(res), &cell));
+  h3core::throwOnError(::latLngToCell(&coordinate, h3core::toResolution(res), &cell));
   return cell;
 }
 
@@ -63,7 +38,7 @@ std::shared_ptr<ArrayBuffer> HybridH3::gridDisk(uint64_t origin, double k) {
     h3core::throwOnError(E_CELL_INVALID);
   }
 
-  const int distance = toInteger(k, "k must be a non-negative integer");
+  const int distance = h3core::toInteger(k, "k must be an integer");
 
   int64_t maxSize = 0;
   // rejects a negative `k` with `E_DOMAIN` (`algos.c:169`)

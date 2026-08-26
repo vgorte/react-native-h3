@@ -32,6 +32,7 @@ target_compile_options(h3_vendored PRIVATE -w)
 add_library(nitro_free_core STATIC
   ${PACKAGE_ROOT}/cpp/core/CellBuffer.cpp
   ${PACKAGE_ROOT}/cpp/core/H3ErrorMapping.cpp
+  ${PACKAGE_ROOT}/cpp/core/Validation.cpp
 )
 target_include_directories(nitro_free_core PUBLIC ${PACKAGE_ROOT}/cpp)
 target_link_libraries(nitro_free_core PUBLIC h3_vendored)
@@ -61,6 +62,8 @@ set(TEST_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/CellBufferTest.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/H3ErrorMappingTest.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/BufferSizesTest.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/ValidationTest.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/OutParamCallTest.cpp
 )
 
 add_executable(tests ${TEST_SOURCES})
