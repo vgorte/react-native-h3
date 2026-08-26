@@ -50,8 +50,10 @@
     "react-native": "*",
     "react-native-nitro-modules": "*"
   },
+  "dependencies": {
+    "@babel/runtime": "^7.25.0"
+  },
   "devDependencies": {
-    "@babel/runtime": "^7.25.0",
     "@types/react": "^19.2.0",
     "nitrogen": "0.37.0",
     "react": "19.2.3",

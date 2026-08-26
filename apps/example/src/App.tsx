@@ -1,9 +1,10 @@
 import React from 'react'
-import { SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { ScrollView, StyleSheet, Text, View } from 'react-native'
 import { gridDisk, H3Error, latLngToCell } from 'react-native-h3'
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 
 const SAN_FRANCISCO = { lat: 37.7749, lng: -122.4194 }
-// Resolution 1 pentagon, from h3-js getPentagons(1)[0].
+// Resolution 1 pentagon, from `h3-js` `getPentagons(1)[0]`.
 const PENTAGON = 0x81083ffffffffffn
 
 function useResults(): string[] {
@@ -36,18 +37,20 @@ function useResults(): string[] {
 export default function App(): React.JSX.Element {
   const results = useResults()
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>react-native-h3</Text>
-        <View style={styles.results}>
-          {results.map((line) => (
-            <Text key={line} style={styles.line}>
-              {line}
-            </Text>
-          ))}
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+    <SafeAreaProvider>
+      <SafeAreaView style={styles.container}>
+        <ScrollView contentContainerStyle={styles.content}>
+          <Text style={styles.title}>react-native-h3</Text>
+          <View style={styles.results}>
+            {results.map((line) => (
+              <Text key={line} style={styles.line}>
+                {line}
+              </Text>
+            ))}
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    </SafeAreaProvider>
   )
 }
 

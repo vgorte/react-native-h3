@@ -8,14 +8,11 @@ This is a new [**React Native**](https://reactnative.dev) project, bootstrapped 
 
 First, you will need to run **Metro**, the JavaScript build tool for React Native.
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+Install the workspace once from the repository root, then start the Metro dev server:
 
 ```sh
-# Using npm
-npm start
-
-# OR using Yarn
-yarn start
+bun install
+bun run --cwd apps/example start
 ```
 
 ## Step 2: Build and run your app
@@ -25,11 +22,7 @@ With Metro running, open a new terminal window/pane from the root of your React 
 ### Android
 
 ```sh
-# Using npm
-npm run android
-
-# OR using Yarn
-yarn android
+bun run example:android
 ```
 
 ### iOS
@@ -51,16 +44,21 @@ bundle exec pod install
 For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
 
 ```sh
-# Using npm
-npm run ios
-
-# OR using Yarn
-yarn ios
+bun run example:ios
 ```
 
 If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
 
 This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+
+## On-device tests
+
+React Native Harness injects the suite in `__tests__/` into the debug build already installed on the simulator or emulator, so run the app once first.
+
+```sh
+bun run --cwd apps/example test:ios
+bun run --cwd apps/example test:android
+```
 
 ## Step 3: Modify your app
 

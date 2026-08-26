@@ -4,7 +4,8 @@ buildscript {
     mavenCentral()
   }
   dependencies {
-    classpath "com.android.tools.build:gradle:8.7.2"
+    // Matches what the example app resolves; 8.x rejects `compileSdk 36`.
+    classpath "com.android.tools.build:gradle:9.2.1"
   }
 }
 

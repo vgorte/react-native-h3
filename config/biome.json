@@ -14,6 +14,7 @@
       "!**/build",
       "!**/.cxx",
       "!**/.gradle",
+      "!**/.harness",
       "!**/Pods",
       "!**/*.xcassets"
     ]
