@@ -40,6 +40,7 @@ add_library(nitro_free_core STATIC
   ${PACKAGE_ROOT}/cpp/ops/Measurement.cpp
   ${PACKAGE_ROOT}/cpp/ops/Misc.cpp
   ${PACKAGE_ROOT}/cpp/ops/Regions.cpp
+  ${PACKAGE_ROOT}/cpp/ops/Traversal.cpp
   ${PACKAGE_ROOT}/cpp/ops/Units.cpp
 )
 target_include_directories(nitro_free_core PUBLIC ${PACKAGE_ROOT}/cpp)
@@ -78,6 +79,7 @@ set(TEST_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/InspectionOpsTest.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/MeasurementOpsTest.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/HierarchyOpsTest.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/TraversalOpsTest.cpp
 )
 
 add_executable(tests ${TEST_SOURCES})

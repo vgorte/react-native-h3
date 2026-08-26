@@ -34,6 +34,7 @@ add_library(
   ${PACKAGE_ROOT}/cpp/ops/Measurement.cpp
   ${PACKAGE_ROOT}/cpp/ops/Misc.cpp
   ${PACKAGE_ROOT}/cpp/ops/Regions.cpp
+  ${PACKAGE_ROOT}/cpp/ops/Traversal.cpp
   ${PACKAGE_ROOT}/cpp/ops/Units.cpp
   ${PACKAGE_ROOT}/cpp/HybridH3.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/main/cpp/cpp-adapter.cpp  # <-- `JNI_OnLoad`, Android only

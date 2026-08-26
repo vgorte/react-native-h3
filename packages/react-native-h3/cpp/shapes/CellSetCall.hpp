@@ -26,9 +26,13 @@ namespace h3shapes {
  */
 inline constexpr int64_t kMaxCellCount = 4000000;
 
-namespace detail {
-
-/** Runs the size query, rejects an impossible or unaffordable answer, and allocates. */
+/**
+ * Runs the size query, rejects an impossible or unaffordable answer, and allocates.
+ *
+ * Public because the ceiling is a property of the binding rather than of one template:
+ * `gridDiskDistances` allocates a parallel distance array of its own and so cannot use either fill
+ * below, but must still meet the same limit and report it in the same words.
+ */
 template <typename SizeQuery> h3core::CellBuffer allocateFor(SizeQuery&& sizeQuery) {
   const int64_t size = sizeQuery();
   if (size < 0) {
@@ -43,8 +47,6 @@ template <typename SizeQuery> h3core::CellBuffer allocateFor(SizeQuery&& sizeQue
   return h3core::CellBuffer(size);
 }
 
-} // namespace detail
-
 /**
  * Allocates what `sizeQuery` reports, hands `fill` a zeroed buffer of exactly that capacity, and
  * removes the `H3_NULL` holes. `sizeQuery` is any callable returning `int64_t`, so a size function,
@@ -55,7 +57,7 @@ template <typename SizeQuery> h3core::CellBuffer allocateFor(SizeQuery&& sizeQue
  * as `gridRingUnsafe`'s on `E_PENTAGON` is discarded rather than read.
  */
 template <typename SizeQuery, typename Fill> h3core::CellBuffer fillCompactedCells(SizeQuery&& sizeQuery, Fill&& fill) {
-  h3core::CellBuffer buffer = detail::allocateFor(std::forward<SizeQuery>(sizeQuery));
+  h3core::CellBuffer buffer = allocateFor(std::forward<SizeQuery>(sizeQuery));
   h3core::throwOnError(static_cast<uint32_t>(fill(buffer.data())));
   buffer.compact();
   return buffer;
@@ -71,7 +73,7 @@ template <typename SizeQuery, typename Fill> h3core::CellBuffer fillCompactedCel
  * length the caller is entitled to trust.
  */
 template <typename SizeQuery, typename Fill> h3core::CellBuffer fillExactCells(SizeQuery&& sizeQuery, Fill&& fill) {
-  h3core::CellBuffer buffer = detail::allocateFor(std::forward<SizeQuery>(sizeQuery));
+  h3core::CellBuffer buffer = allocateFor(std::forward<SizeQuery>(sizeQuery));
   h3core::throwOnError(static_cast<uint32_t>(fill(buffer.data())));
   buffer.setCount(buffer.capacity());
   return buffer;

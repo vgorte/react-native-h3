@@ -40,7 +40,16 @@ export {
   getNumCells,
 } from './misc'
 export { cellsToMultiPolygon } from './regions'
-export { gridDisk } from './traversal'
+export {
+  cellToLocalIj,
+  gridDisk,
+  gridDiskDistances,
+  gridDistance,
+  gridPathCells,
+  gridRing,
+  gridRingUnsafe,
+  localIjToCell,
+} from './traversal'
 export type { ContainmentModeValue, CoordIJ, LatLng, Ring } from './types'
 export { ContainmentMode } from './types'
 export { degsToRads, radsToDegs } from './units'

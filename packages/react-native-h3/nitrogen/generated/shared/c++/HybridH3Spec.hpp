@@ -15,10 +15,13 @@
 
 // Forward declaration of `LatLng` to properly resolve imports.
 namespace margelo::nitro::h3 { struct LatLng; }
+// Forward declaration of `CoordIJ` to properly resolve imports.
+namespace margelo::nitro::h3 { struct CoordIJ; }
 
-#include <NitroModules/ArrayBuffer.hpp>
 #include "LatLng.hpp"
 #include <vector>
+#include <NitroModules/ArrayBuffer.hpp>
+#include "CoordIJ.hpp"
 #include <string>
 
 namespace margelo::nitro::h3 {
@@ -53,10 +56,17 @@ namespace margelo::nitro::h3 {
     public:
       // Methods
       virtual uint64_t latLngToCell(double lat, double lng, double res) = 0;
-      virtual std::shared_ptr<ArrayBuffer> gridDisk(uint64_t origin, double k) = 0;
       virtual LatLng cellToLatLng(uint64_t cell) = 0;
       virtual std::vector<LatLng> cellToBoundary(uint64_t cell) = 0;
       virtual std::vector<std::vector<std::vector<LatLng>>> cellsToMultiPolygon(const std::shared_ptr<ArrayBuffer>& cells) = 0;
+      virtual std::shared_ptr<ArrayBuffer> gridDisk(uint64_t origin, double k) = 0;
+      virtual std::shared_ptr<ArrayBuffer> gridRing(uint64_t origin, double k) = 0;
+      virtual std::shared_ptr<ArrayBuffer> gridRingUnsafe(uint64_t origin, double k) = 0;
+      virtual std::vector<std::shared_ptr<ArrayBuffer>> gridDiskDistances(uint64_t origin, double k) = 0;
+      virtual std::shared_ptr<ArrayBuffer> gridPathCells(uint64_t start, uint64_t end) = 0;
+      virtual double gridDistance(uint64_t origin, uint64_t destination) = 0;
+      virtual CoordIJ cellToLocalIj(uint64_t origin, uint64_t cell) = 0;
+      virtual uint64_t localIjToCell(uint64_t origin, double i, double j) = 0;
       virtual double degsToRads(double degrees) = 0;
       virtual double radsToDegs(double radians) = 0;
       virtual bool isValidCell(uint64_t cell) = 0;

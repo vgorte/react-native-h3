@@ -7,17 +7,33 @@ export interface LatLng {
   lng: number
 }
 
+// Local IJ hexagon coordinates. Nitrogen generates a C++ struct of the same name in
+// `margelo::nitro::h3`, which is not H3's own `::CoordIJ`.
+export interface CoordIJ {
+  i: number
+  j: number
+}
+
 // Internal binding surface; the public API in `src/` wraps these methods.
 export interface H3 extends HybridObject<{ ios: 'c++'; android: 'c++' }> {
   // `bigint` without signedness is a nitrogen error, so cells are `UInt64`.
   latLngToCell(lat: number, lng: number, res: number): UInt64
-  // typed arrays are not spec types; the wrapper views this `ArrayBuffer` as a `BigUint64Array` without copying.
-  gridDisk(origin: UInt64, k: number): ArrayBuffer
-
   cellToLatLng(cell: UInt64): LatLng
   cellToBoundary(cell: UInt64): LatLng[]
   // three levels of nesting: polygons of loops of points, which nitrogen expands recursively.
   cellsToMultiPolygon(cells: ArrayBuffer): LatLng[][][]
+
+  // typed arrays are not spec types; the wrapper views this `ArrayBuffer` as a `BigUint64Array` without copying.
+  gridDisk(origin: UInt64, k: number): ArrayBuffer
+  gridRing(origin: UInt64, k: number): ArrayBuffer
+  gridRingUnsafe(origin: UInt64, k: number): ArrayBuffer
+  // one buffer per ring, so nitrogen wraps the `ArrayBuffer` type in a `std::vector`.
+  gridDiskDistances(origin: UInt64, k: number): ArrayBuffer[]
+  gridPathCells(start: UInt64, end: UInt64): ArrayBuffer
+  // C answers `int64_t`; a grid distance is far inside `2^53 - 1`, so the spec type is `number`.
+  gridDistance(origin: UInt64, destination: UInt64): number
+  cellToLocalIj(origin: UInt64, cell: UInt64): CoordIJ
+  localIjToCell(origin: UInt64, i: number, j: number): UInt64
 
   degsToRads(degrees: number): number
   radsToDegs(radians: number): number

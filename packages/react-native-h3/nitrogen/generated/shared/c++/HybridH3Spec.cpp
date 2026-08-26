@@ -15,10 +15,17 @@ namespace margelo::nitro::h3 {
     // load custom methods/properties
     registerHybrids(this, [](Prototype& prototype) {
       prototype.registerHybridMethod("latLngToCell", &HybridH3Spec::latLngToCell);
-      prototype.registerHybridMethod("gridDisk", &HybridH3Spec::gridDisk);
       prototype.registerHybridMethod("cellToLatLng", &HybridH3Spec::cellToLatLng);
       prototype.registerHybridMethod("cellToBoundary", &HybridH3Spec::cellToBoundary);
       prototype.registerHybridMethod("cellsToMultiPolygon", &HybridH3Spec::cellsToMultiPolygon);
+      prototype.registerHybridMethod("gridDisk", &HybridH3Spec::gridDisk);
+      prototype.registerHybridMethod("gridRing", &HybridH3Spec::gridRing);
+      prototype.registerHybridMethod("gridRingUnsafe", &HybridH3Spec::gridRingUnsafe);
+      prototype.registerHybridMethod("gridDiskDistances", &HybridH3Spec::gridDiskDistances);
+      prototype.registerHybridMethod("gridPathCells", &HybridH3Spec::gridPathCells);
+      prototype.registerHybridMethod("gridDistance", &HybridH3Spec::gridDistance);
+      prototype.registerHybridMethod("cellToLocalIj", &HybridH3Spec::cellToLocalIj);
+      prototype.registerHybridMethod("localIjToCell", &HybridH3Spec::localIjToCell);
       prototype.registerHybridMethod("degsToRads", &HybridH3Spec::degsToRads);
       prototype.registerHybridMethod("radsToDegs", &HybridH3Spec::radsToDegs);
       prototype.registerHybridMethod("isValidCell", &HybridH3Spec::isValidCell);

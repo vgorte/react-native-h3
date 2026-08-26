@@ -27,6 +27,13 @@ public:
 
   // Traversal
   std::shared_ptr<ArrayBuffer> gridDisk(uint64_t origin, double k) override;
+  std::shared_ptr<ArrayBuffer> gridRing(uint64_t origin, double k) override;
+  std::shared_ptr<ArrayBuffer> gridRingUnsafe(uint64_t origin, double k) override;
+  std::vector<std::shared_ptr<ArrayBuffer>> gridDiskDistances(uint64_t origin, double k) override;
+  std::shared_ptr<ArrayBuffer> gridPathCells(uint64_t start, uint64_t end) override;
+  double gridDistance(uint64_t origin, uint64_t destination) override;
+  CoordIJ cellToLocalIj(uint64_t origin, uint64_t cell) override;
+  uint64_t localIjToCell(uint64_t origin, double i, double j) override;
 
   // Regions
   std::vector<std::vector<std::vector<LatLng>>> cellsToMultiPolygon(const std::shared_ptr<ArrayBuffer>& cells) override;

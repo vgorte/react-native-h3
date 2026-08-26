@@ -15,19 +15,14 @@
 
 #include "HybridH3Conversions.hpp"
 #include "core/CellBuffer.hpp"
-#include "core/H3ErrorMapping.hpp"
-#include "core/Validation.hpp"
 #include "ops/Hierarchy.hpp"
 #include "ops/Indexing.hpp"
 #include "ops/Inspection.hpp"
 #include "ops/Measurement.hpp"
 #include "ops/Misc.hpp"
 #include "ops/Regions.hpp"
+#include "ops/Traversal.hpp"
 #include "ops/Units.hpp"
-
-extern "C" {
-#include "h3api.h"
-}
 
 using namespace margelo::nitro::h3::detail;
 
@@ -47,22 +42,43 @@ std::vector<LatLng> HybridH3::cellToBoundary(uint64_t cell) {
 }
 
 std::shared_ptr<ArrayBuffer> HybridH3::gridDisk(uint64_t origin, double k) {
-  // H3's `gridDisk` does not validate its origin (`algos.c:200`)
-  if (!::isValidCell(origin)) {
-    h3core::throwOnError(E_CELL_INVALID);
+  return toArrayBuffer(h3ops::gridDisk(origin, k));
+}
+
+std::shared_ptr<ArrayBuffer> HybridH3::gridRing(uint64_t origin, double k) {
+  return toArrayBuffer(h3ops::gridRing(origin, k));
+}
+
+std::shared_ptr<ArrayBuffer> HybridH3::gridRingUnsafe(uint64_t origin, double k) {
+  return toArrayBuffer(h3ops::gridRingUnsafe(origin, k));
+}
+
+std::vector<std::shared_ptr<ArrayBuffer>> HybridH3::gridDiskDistances(uint64_t origin, double k) {
+  std::vector<h3core::CellBuffer> rings = h3ops::gridDiskDistances(origin, k);
+  std::vector<std::shared_ptr<ArrayBuffer>> buffers;
+  buffers.reserve(rings.size());
+  for (h3core::CellBuffer& ring : rings) {
+    buffers.push_back(toArrayBuffer(std::move(ring)));
   }
+  return buffers;
+}
 
-  const int distance = h3core::toInteger(k, "k must be an integer");
+std::shared_ptr<ArrayBuffer> HybridH3::gridPathCells(uint64_t start, uint64_t end) {
+  return toArrayBuffer(h3ops::gridPathCells(start, end));
+}
 
-  int64_t maxSize = 0;
-  // rejects a negative `k` with `E_DOMAIN` (`algos.c:169`)
-  h3core::throwOnError(::maxGridDiskSize(distance, &maxSize));
+double HybridH3::gridDistance(uint64_t origin, uint64_t destination) {
+  // a grid distance is bounded by the number of cells at resolution 15, so the widening is exact
+  return static_cast<double>(h3ops::gridDistance(origin, destination));
+}
 
-  h3core::CellBuffer buffer(maxSize);
-  // the leading `::` picks the C function; unqualified recurses into this member
-  h3core::throwOnError(::gridDisk(origin, distance, buffer.data()));
-  buffer.compact();
-  return toArrayBuffer(std::move(buffer));
+CoordIJ HybridH3::cellToLocalIj(uint64_t origin, uint64_t cell) {
+  const h3core::IJ ij = h3ops::cellToLocalIj(origin, cell);
+  return CoordIJ(static_cast<double>(ij.i), static_cast<double>(ij.j));
+}
+
+uint64_t HybridH3::localIjToCell(uint64_t origin, double i, double j) {
+  return h3ops::localIjToCell(origin, i, j);
 }
 
 std::vector<std::vector<std::vector<LatLng>>> HybridH3::cellsToMultiPolygon(const std::shared_ptr<ArrayBuffer>& cells) {
