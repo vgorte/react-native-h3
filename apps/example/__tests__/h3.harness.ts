@@ -1,4 +1,11 @@
-import { gridDisk, H3Error, latLngToCell } from 'react-native-h3'
+import {
+  cellsToMultiPolygon,
+  cellToBoundary,
+  cellToLatLng,
+  gridDisk,
+  H3Error,
+  latLngToCell,
+} from 'react-native-h3'
 import { expect, test } from 'react-native-harness'
 
 const SAN_FRANCISCO_RES_9 = 0x89283082803ffffn
@@ -71,4 +78,34 @@ test('a negative k is rejected by the C layer', () => {
   }
   expect(thrown).toBeInstanceOf(H3Error)
   expect((thrown as H3Error).message).toBe('Argument was outside of acceptable range')
+})
+
+test('three-level nesting crosses the bridge intact', () => {
+  // `LatLng[][][]` is expressible in nitrogen but is not covered by Nitro's own test module.
+  const single = cellsToMultiPolygon(new BigUint64Array([SAN_FRANCISCO_RES_9]))
+  expect(Array.isArray(single)).toBe(true)
+  expect(single.length).toBe(1)
+  expect(single[0]?.length).toBe(1)
+  expect(single[0]?.[0]?.length).toBe(6)
+  expect(typeof single[0]?.[0]?.[0]?.lat).toBe('number')
+  expect(typeof single[0]?.[0]?.[0]?.lng).toBe('number')
+})
+
+test('a multi-cell outline keeps its shape', () => {
+  const disk = cellsToMultiPolygon(gridDisk(SAN_FRANCISCO_RES_9, 1))
+  expect(disk.length).toBe(1)
+  expect(disk[0]?.length).toBe(1)
+  expect(disk[0]?.[0]?.length).toBe(18)
+})
+
+test('a cell boundary is a flat array of structs', () => {
+  const boundary = cellToBoundary(SAN_FRANCISCO_RES_9)
+  expect(boundary.length).toBe(6)
+  expect(boundary[0]?.lat).toBeCloseTo(37.7720104773324, 9)
+  expect(boundary[0]?.lng).toBeCloseTo(-122.41701147197293, 9)
+})
+
+test('a cell centre round-trips to the same cell', () => {
+  const centre = cellToLatLng(SAN_FRANCISCO_RES_9)
+  expect(latLngToCell(centre.lat, centre.lng, 9)).toBe(SAN_FRANCISCO_RES_9)
 })

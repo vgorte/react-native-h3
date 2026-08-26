@@ -16,6 +16,9 @@ namespace margelo::nitro::h3 {
     registerHybrids(this, [](Prototype& prototype) {
       prototype.registerHybridMethod("latLngToCell", &HybridH3Spec::latLngToCell);
       prototype.registerHybridMethod("gridDisk", &HybridH3Spec::gridDisk);
+      prototype.registerHybridMethod("cellToLatLng", &HybridH3Spec::cellToLatLng);
+      prototype.registerHybridMethod("cellToBoundary", &HybridH3Spec::cellToBoundary);
+      prototype.registerHybridMethod("cellsToMultiPolygon", &HybridH3Spec::cellsToMultiPolygon);
     });
   }
 

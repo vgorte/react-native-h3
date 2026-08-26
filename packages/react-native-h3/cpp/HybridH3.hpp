@@ -20,9 +20,16 @@ class HybridH3 final : public HybridH3Spec {
 public:
   HybridH3() : HybridObject(TAG) {}
 
-  // Methods
+  // Indexing
   uint64_t latLngToCell(double lat, double lng, double res) override;
+  LatLng cellToLatLng(uint64_t cell) override;
+  std::vector<LatLng> cellToBoundary(uint64_t cell) override;
+
+  // Traversal
   std::shared_ptr<ArrayBuffer> gridDisk(uint64_t origin, double k) override;
+
+  // Regions
+  std::vector<std::vector<std::vector<LatLng>>> cellsToMultiPolygon(const std::shared_ptr<ArrayBuffer>& cells) override;
 };
 
 } // namespace margelo::nitro::h3

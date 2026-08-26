@@ -9,27 +9,35 @@
 
 #include <cstdint>
 #include <memory>
+#include <utility>
+#include <vector>
 
+#include "HybridH3Conversions.hpp"
 #include "core/CellBuffer.hpp"
 #include "core/H3ErrorMapping.hpp"
 #include "core/Validation.hpp"
+#include "ops/Indexing.hpp"
+#include "ops/Regions.hpp"
 
 extern "C" {
 #include "h3api.h"
 }
 
+using namespace margelo::nitro::h3::detail;
+
 namespace margelo::nitro::h3 {
 
 uint64_t HybridH3::latLngToCell(double lat, double lng, double res) {
-  LatLng coordinate{};
-  // H3 takes radians; the public API takes degrees, matching h3-js
-  coordinate.lat = ::degsToRads(lat);
-  coordinate.lng = ::degsToRads(lng);
+  return h3ops::latLngToCell(lat, lng, res);
+}
 
-  H3Index cell = H3_NULL;
-  // the leading `::` picks the C function; unqualified recurses into this member
-  h3core::throwOnError(::latLngToCell(&coordinate, h3core::toResolution(res), &cell));
-  return cell;
+LatLng HybridH3::cellToLatLng(uint64_t cell) {
+  const h3core::Point centre = h3ops::cellToLatLng(cell);
+  return LatLng(centre.lat, centre.lng);
+}
+
+std::vector<LatLng> HybridH3::cellToBoundary(uint64_t cell) {
+  return toLatLngs(h3ops::cellToBoundary(cell));
 }
 
 std::shared_ptr<ArrayBuffer> HybridH3::gridDisk(uint64_t origin, double k) {
@@ -47,22 +55,25 @@ std::shared_ptr<ArrayBuffer> HybridH3::gridDisk(uint64_t origin, double k) {
   h3core::CellBuffer buffer(maxSize);
   // the leading `::` picks the C function; unqualified recurses into this member
   h3core::throwOnError(::gridDisk(origin, distance, buffer.data()));
+  buffer.compact();
+  return toArrayBuffer(std::move(buffer));
+}
 
-  const int64_t count = buffer.compact();
-  // holds the block until `wrap` has taken it, so a throw in between does not leak
-  std::unique_ptr<uint64_t[]> owned(buffer.release());
-  if (owned == nullptr) {
-    // unreachable for a valid k, since `maxGridDiskSize` is at least 1
-    // `new uint64_t[0]` is unique, freeable and non-null, which `wrap` requires
-    owned.reset(new uint64_t[0]);
+std::vector<std::vector<std::vector<LatLng>>> HybridH3::cellsToMultiPolygon(const std::shared_ptr<ArrayBuffer>& cells) {
+  const CellSpan span = toCellSpan(cells);
+  const h3core::MultiPolygon polygons = h3ops::cellsToMultiPolygon(span.data, span.count);
+
+  std::vector<std::vector<std::vector<LatLng>>> result;
+  result.reserve(polygons.size());
+  for (const h3core::Polygon& polygon : polygons) {
+    std::vector<std::vector<LatLng>> loops;
+    loops.reserve(polygon.size());
+    for (const h3core::Ring& ring : polygon) {
+      loops.push_back(toLatLngs(ring));
+    }
+    result.push_back(std::move(loops));
   }
-
-  uint64_t* cells = owned.get();
-  // the deleter frees the `uint64_t*` allocated here, never the `uint8_t*` wrapped below
-  auto wrapped = ArrayBuffer::wrap(reinterpret_cast<uint8_t*>(cells), static_cast<size_t>(count) * sizeof(uint64_t),
-                                   [cells]() { delete[] cells; });
-  owned.release();
-  return wrapped;
+  return result;
 }
 
 } // namespace margelo::nitro::h3

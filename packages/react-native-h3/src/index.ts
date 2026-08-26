@@ -1,3 +1,6 @@
 export { H3Error } from './H3Error'
-export { latLngToCell } from './indexing'
+export { cellToBoundary, cellToLatLng, latLngToCell } from './indexing'
+export { cellsToMultiPolygon } from './regions'
 export { gridDisk } from './traversal'
+export type { ContainmentModeValue, CoordIJ, LatLng, Ring } from './types'
+export { ContainmentMode } from './types'

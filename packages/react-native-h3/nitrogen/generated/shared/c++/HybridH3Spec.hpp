@@ -13,9 +13,12 @@
 #error NitroModules cannot be found! Are you sure you installed NitroModules properly?
 #endif
 
-
+// Forward declaration of `LatLng` to properly resolve imports.
+namespace margelo::nitro::h3 { struct LatLng; }
 
 #include <NitroModules/ArrayBuffer.hpp>
+#include "LatLng.hpp"
+#include <vector>
 
 namespace margelo::nitro::h3 {
 
@@ -50,6 +53,9 @@ namespace margelo::nitro::h3 {
       // Methods
       virtual uint64_t latLngToCell(double lat, double lng, double res) = 0;
       virtual std::shared_ptr<ArrayBuffer> gridDisk(uint64_t origin, double k) = 0;
+      virtual LatLng cellToLatLng(uint64_t cell) = 0;
+      virtual std::vector<LatLng> cellToBoundary(uint64_t cell) = 0;
+      virtual std::vector<std::vector<std::vector<LatLng>>> cellsToMultiPolygon(const std::shared_ptr<ArrayBuffer>& cells) = 0;
 
     protected:
       // Hybrid Setup
