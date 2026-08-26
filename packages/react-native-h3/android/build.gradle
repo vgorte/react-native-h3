@@ -1,0 +1,54 @@
+buildscript {
+  repositories {
+    google()
+    mavenCentral()
+  }
+  dependencies {
+    // matches what the example app resolves; 8.7.2 rejects `compileSdk 36` (AGP 8.9+ accepts it).
+    classpath "com.android.tools.build:gradle:9.2.1"
+  }
+}
+
+apply plugin: 'com.android.library'
+apply plugin: 'org.jetbrains.kotlin.android'  // <-- compiles nitrogen's `NitroH3OnLoad.kt`
+
+android {
+  namespace "com.margelo.nitro.h3"
+  compileSdk 36
+
+  // follow the app's NDK, so a library build never downloads a second toolchain
+  ndkVersion rootProject.ext.has("ndkVersion") ? rootProject.ext.ndkVersion : "27.1.12297006"
+
+  defaultConfig {
+    minSdk 24
+    externalNativeBuild {
+      cmake {
+        cppFlags "-frtti -fexceptions -std=c++20"
+        arguments "-DANDROID_STL=c++_shared"
+      }
+    }
+  }
+
+  externalNativeBuild {
+    cmake {
+      path "CMakeLists.txt"
+    }
+  }
+
+  buildFeatures {
+    prefab true  // <-- the prefabs CMake resolves via find_package
+  }
+}
+
+repositories {
+  google()
+  mavenCentral()
+}
+
+dependencies {
+  implementation 'com.facebook.react:react-android'
+  implementation project(':react-native-nitro-modules')  // <-- the prefab CMake links against
+}
+
+// Nitrogen autolinking
+apply from: '../nitrogen/generated/android/NitroH3+autolinking.gradle'

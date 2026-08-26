@@ -1,0 +1,29 @@
+name: C++ tests
+
+on:
+  pull_request:
+    paths:
+      - 'packages/react-native-h3/cpp/**'
+      - 'packages/react-native-h3/third_party/**'
+      - '.github/workflows/cpp-tests.yml'
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  host-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [tests, tests_asan]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -S packages/react-native-h3/cpp/test -B build/host -DCMAKE_BUILD_TYPE=Debug
+      - name: Build
+        run: cmake --build build/host --target ${{ matrix.target }} -j
+      - name: Run
+        run: ./build/host/${{ matrix.target }}
