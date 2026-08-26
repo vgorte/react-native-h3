@@ -63,4 +63,4 @@ TEST(H3ErrorMapping, InvalidArgumentUsesOurOwnWording) {
   }
 }
 
-}  // namespace
+} // namespace

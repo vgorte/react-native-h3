@@ -71,4 +71,4 @@ TEST(VendoredH3, GridDiskDoesNotValidateItsOrigin) {
   EXPECT_EQ(gridDisk(kNotACell, 1, cells.data()), E_SUCCESS);
 }
 
-}  // namespace
+} // namespace

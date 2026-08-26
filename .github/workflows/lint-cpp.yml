@@ -1,0 +1,21 @@
+name: Lint C++
+
+on:
+  pull_request:
+    paths:
+      - 'packages/react-native-h3/cpp/**'
+      - 'packages/react-native-h3/android/src/main/cpp/**'
+      - '.clang-format'
+      - '.github/workflows/lint-cpp.yml'
+
+jobs:
+  clang-format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install clang-format
+        run: sudo apt-get update && sudo apt-get install -y clang-format
+      - name: Check formatting
+        run: |
+          find packages/react-native-h3/cpp packages/react-native-h3/android/src/main/cpp \( -name '*.hpp' -o -name '*.cpp' \) -print0 \
+            | xargs -0 clang-format --dry-run --Werror

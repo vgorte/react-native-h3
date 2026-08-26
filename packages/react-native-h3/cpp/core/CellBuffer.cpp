@@ -53,4 +53,4 @@ uint64_t* CellBuffer::release() noexcept {
   return cells_.release();
 }
 
-}  // namespace h3core
+} // namespace h3core

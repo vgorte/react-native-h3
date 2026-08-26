@@ -145,4 +145,4 @@ TEST(CellBuffer, CompactsARealPentagonGridDisk) {
   }
 }
 
-}  // namespace
+} // namespace

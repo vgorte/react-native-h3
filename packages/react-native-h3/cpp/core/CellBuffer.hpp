@@ -20,7 +20,7 @@ namespace h3core {
  * Stays free of Nitro so it can run in the host test target under AddressSanitizer.
  */
 class CellBuffer final {
- public:
+public:
   /** Allocates `capacity` zeroed slots. Throws `std::invalid_argument` for a negative capacity. */
   explicit CellBuffer(int64_t capacity);
 
@@ -54,10 +54,10 @@ class CellBuffer final {
    */
   uint64_t* release() noexcept;
 
- private:
+private:
   std::unique_ptr<uint64_t[]> cells_;
   int64_t capacity_;
   int64_t count_;
 };
 
-}  // namespace h3core
+} // namespace h3core

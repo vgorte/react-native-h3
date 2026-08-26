@@ -17,7 +17,7 @@ namespace margelo::nitro::h3 {
  * about Nitro.
  */
 class HybridH3 final : public HybridH3Spec {
- public:
+public:
   HybridH3() : HybridObject(TAG) {}
 
   // Methods
@@ -25,4 +25,4 @@ class HybridH3 final : public HybridH3Spec {
   std::shared_ptr<ArrayBuffer> gridDisk(uint64_t origin, double k) override;
 };
 
-}  // namespace margelo::nitro::h3
+} // namespace margelo::nitro::h3

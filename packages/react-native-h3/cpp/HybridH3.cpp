@@ -42,7 +42,7 @@ int toResolution(double res) {
   return toInteger(res, "Resolution must be an integer between 0 and 15");
 }
 
-}  // namespace
+} // namespace
 
 uint64_t HybridH3::latLngToCell(double lat, double lng, double res) {
   LatLng coordinate{};
@@ -80,9 +80,8 @@ std::shared_ptr<ArrayBuffer> HybridH3::gridDisk(uint64_t origin, double k) {
     cells = new uint64_t[0];
   }
   // the deleter frees the `uint64_t*` allocated here, never the `uint8_t*` wrapped below
-  return ArrayBuffer::wrap(reinterpret_cast<uint8_t*>(cells),
-                           static_cast<size_t>(count) * sizeof(uint64_t),
+  return ArrayBuffer::wrap(reinterpret_cast<uint8_t*>(cells), static_cast<size_t>(count) * sizeof(uint64_t),
                            [cells]() { delete[] cells; });
 }
 
-}  // namespace margelo::nitro::h3
+} // namespace margelo::nitro::h3

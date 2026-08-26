@@ -26,4 +26,4 @@ void throwInvalidArgument(const char* message) {
   throw std::runtime_error(message);
 }
 
-}  // namespace h3core
+} // namespace h3core
