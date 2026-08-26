@@ -27,9 +27,7 @@ function useResults(): string[] {
       const isH3Error = error instanceof H3Error
       lines.push(`error path: ${isH3Error ? 'H3Error' : 'wrong type'}`)
       lines.push(`  message:  ${(error as Error).message}`)
-      // The boundary check in `toResolution` rejects 99 before H3 sees it, so this is our
-      // wording, not `describeH3Error(E_RES_DOMAIN)`.
-      lines.push('  expected: Resolution must be an integer between 0 and 15')
+      lines.push('  expected: Resolution argument was outside of acceptable range')
     }
     return lines
   }, [])

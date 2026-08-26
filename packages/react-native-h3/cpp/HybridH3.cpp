@@ -22,9 +22,11 @@ namespace margelo::nitro::h3 {
 namespace {
 
 /**
- * Narrows a JS number to `int`, throwing `what` when it is not an exact integer in range.
- * Every integer argument passes through here once, at the boundary, so the interior can
- * trust its data.
+ * Narrows a JS number to `int`, throwing `what` when it is not an exact integer that fits.
+ *
+ * Only the narrowing belongs here. Every domain rule (a resolution of `0` to `15`, a
+ * non-negative `k`) is H3's, so that upstream's `describeH3Error` wording is what reaches
+ * JavaScript.
  */
 int toInteger(double value, const char* what) {
   if (std::isnan(value) || std::isinf(value) || value != std::floor(value)) {
@@ -37,11 +39,7 @@ int toInteger(double value, const char* what) {
 }
 
 int toResolution(double res) {
-  const int resolution = toInteger(res, "Resolution must be an integer between 0 and 15");
-  if (resolution < 0 || resolution > 15) {
-    h3core::throwInvalidArgument("Resolution must be an integer between 0 and 15");
-  }
-  return resolution;
+  return toInteger(res, "Resolution must be an integer between 0 and 15");
 }
 
 }  // namespace
@@ -60,11 +58,9 @@ uint64_t HybridH3::latLngToCell(double lat, double lng, double res) {
 
 std::shared_ptr<ArrayBuffer> HybridH3::gridDisk(uint64_t origin, double k) {
   const int distance = toInteger(k, "k must be a non-negative integer");
-  if (distance < 0) {
-    h3core::throwInvalidArgument("k must be a non-negative integer");
-  }
 
   int64_t maxSize = 0;
+  // rejects a negative `k` with `E_DOMAIN` (`algos.c:169`)
   h3core::throwOnError(::maxGridDiskSize(distance, &maxSize));
 
   h3core::CellBuffer buffer(maxSize);
