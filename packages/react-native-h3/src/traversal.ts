@@ -8,6 +8,8 @@ import { native } from './native'
  * H3 pads its output with holes around pentagons, and those are removed natively before the
  * buffer crosses. Expect fewer than `1 + 3k(k + 1)` entries near a pentagon.
  *
+ * Diverges from `h3-js`, which returns cells derived from a nonsense origin instead of throwing.
+ *
  * @throws {@linkcode H3Error} If the origin is not a valid cell or `k` is negative.
  */
 export function gridDisk(origin: bigint, k: number): BigUint64Array {

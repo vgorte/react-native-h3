@@ -6,7 +6,7 @@
     "apps/*"
   ],
   "scripts": {
-    "typecheck": "bun run --cwd packages/react-native-h3 typecheck",
+    "typecheck": "bun run --cwd packages/react-native-h3 typecheck && bun run --cwd apps/example typecheck",
     "build": "bun run --cwd packages/react-native-h3 build",
     "specs": "bun run --cwd packages/react-native-h3 specs",
     "lint": "biome check .",

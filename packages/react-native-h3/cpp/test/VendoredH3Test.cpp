@@ -58,4 +58,17 @@ TEST(VendoredH3, GridDiskLeavesHolesAroundAPentagon) {
   EXPECT_EQ(real, 6);
 }
 
+TEST(VendoredH3, GridDiskDoesNotValidateItsOrigin) {
+  // the reason `HybridH3::gridDisk` guards with `isValidCell`: upstream reports success and
+  // fills the buffer with cells derived from a nonsense origin (`algos.c:200`).
+  constexpr H3Index kNotACell = 1;
+  EXPECT_EQ(isValidCell(kNotACell), 0);
+
+  int64_t maxSize = 0;
+  ASSERT_EQ(maxGridDiskSize(1, &maxSize), E_SUCCESS);
+
+  std::vector<H3Index> cells(static_cast<size_t>(maxSize), H3_NULL);
+  EXPECT_EQ(gridDisk(kNotACell, 1, cells.data()), E_SUCCESS);
+}
+
 }  // namespace

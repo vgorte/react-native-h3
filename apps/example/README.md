@@ -12,7 +12,7 @@ Install the workspace once from the repository root, then start the Metro dev se
 
 ```sh
 bun install
-bun run --cwd apps/example start
+bun run example start
 ```
 
 ## Step 2: Build and run your app
@@ -64,7 +64,7 @@ bun run --cwd apps/example test:android
 
 Now that you have successfully run the app, let's make changes!
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+Open `src/App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
 
 When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
 
