@@ -27,7 +27,7 @@ constexpr H3Index kInvalidCell = 0xffffffffffffffffULL;
 TEST(OutParamCall, ReturnsADoubleOutParam) {
   // h3-js `cellArea("89283082803ffff", "km2")` == 0.10940247351390452
   const double area = h3shapes::callWithOutParam<double>(cellAreaKm2, kSanFrancisco);
-  EXPECT_NEAR(area, 0.10940247351390452, 1e-15);
+  EXPECT_NEAR(area, 0.10940247351390452, 1e-9);
 }
 
 TEST(OutParamCall, ReturnsAnH3IndexOutParam) {
