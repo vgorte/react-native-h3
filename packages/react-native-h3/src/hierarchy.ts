@@ -113,9 +113,9 @@ export function cellToChildren(cell: bigint, res: number): BigUint64Array {
  * Wherever all children of a cell are present they are replaced by that parent, recursively. The
  * input must hold no duplicates and no cell twice over at different resolutions.
  *
- * Diverges from `h3-js`, which accepts an index that is not a cell instead of throwing.
+ * Diverges from `h3-js`, which accepts a non-zero index that is not a cell instead of throwing.
  *
- * @param cells The cells to compact.
+ * @param cells The cells to compact; a `0n` entry is skipped, as H3 skips it.
  * @returns The compacted set, which is never longer than the input.
  * @throws {@linkcode H3Error} if the input holds a duplicate or a cell that is not valid.
  */
@@ -130,9 +130,9 @@ export function compactCells(cells: BigUint64Array): BigUint64Array {
 /**
  * Expands a compacted set so that every cell sits at the given resolution.
  *
- * Diverges from `h3-js`, which accepts an index that is not a cell instead of throwing.
+ * Diverges from `h3-js`, which accepts a non-zero index that is not a cell instead of throwing.
  *
- * @param cells The compacted cells, all at `res` or coarser.
+ * @param cells The compacted cells, all at `res` or coarser; a `0n` entry is skipped, as H3 skips it.
  * @param res The target resolution.
  * @returns Every cell of the expanded set, in input order.
  * @throws {@linkcode H3Error} if a cell is not valid or finer than `res`, or `res` is out of range.

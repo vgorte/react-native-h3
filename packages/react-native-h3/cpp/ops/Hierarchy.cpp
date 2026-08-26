@@ -22,7 +22,10 @@ namespace {
 
 void requireValidCells(const uint64_t* cells, int64_t count) {
   for (int64_t i = 0; i < count; i++) {
-    internal::requireValidCell(cells[i]);
+    // H3 skips an `H3_NULL` member rather than rejecting it (`h3Index.c:594`, `h3Index.c:812`)
+    if (cells[i] != H3_NULL) {
+      internal::requireValidCell(cells[i]);
+    }
   }
 }
 
@@ -57,9 +60,10 @@ uint64_t childPosToCell(double childPos, uint64_t parent, double childRes) {
   internal::requireValidCell(parent);
   // the position is the only H3 argument that is an `int64_t` rather than an index, and
   // `validateChildPos` owns its domain (`h3Index.c:1371`), so this narrows and nothing more.
-  return h3shapes::callWithOutParam<uint64_t>(::childPosToCell,
-                                              h3core::toInt64(childPos, "Child position must be an integer"), parent,
-                                              h3core::toResolution(childRes));
+  const int64_t position = h3core::toInt64(childPos, "Child position must be an integer");
+  // hoisted because the evaluation order of two arguments to one call is unspecified
+  const int resolution = h3core::toResolution(childRes);
+  return h3shapes::callWithOutParam<uint64_t>(::childPosToCell, position, parent, resolution);
 }
 
 h3core::CellBuffer cellToChildren(uint64_t cell, double res) {
@@ -88,8 +92,8 @@ h3core::CellBuffer uncompactCells(const uint64_t* cells, int64_t count, double r
   // `uncompactCellsSize` reads each member's resolution and nothing else (`h3Index.c:807`)
   requireValidCells(cells, count);
   const int resolution = h3core::toResolution(res);
-  // `_hasChildAtRes` answers `E_RES_MISMATCH` for a resolution above 15 (`h3Index.c:445`), and an
-  // empty set never reaches it, so H3 cannot be left to range-check this one.
+  // both callers of `_hasChildAtRes` answer `E_RES_MISMATCH` for a resolution above 15
+  // (`h3Index.c:786`, `h3Index.c:819`), and an empty set reaches neither.
   internal::requireResolution(resolution);
   // five arguments carrying two lengths. `uncompactCellsSize` is exact (`h3Index.c:807`), and
   // `uncompactCells` answers `E_MEMORY_BOUNDS` if the buffer is short of it anyway.

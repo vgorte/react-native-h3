@@ -153,8 +153,9 @@ TEST(HierarchyOps, UncompactRejectsACoarserTargetResolution) {
 
 TEST(HierarchyOps, UncompactRejectsAResolutionOutOfRange) {
   const uint64_t cells[] = {kParentRes5};
-  // `_hasChildAtRes` answers `E_RES_MISMATCH` for a resolution above 15 (`h3Index.c:445`), and an
-  // empty set never reaches it at all, so the range check cannot be left to H3.
+  // both callers of `_hasChildAtRes` answer `E_RES_MISMATCH` for a resolution above 15
+  // (`h3Index.c:786`, `h3Index.c:819`), and an empty set reaches neither, so the range check
+  // cannot be left to H3.
   try {
     h3ops::uncompactCells(cells, 1, 99);
     FAIL() << "expected an exception";
@@ -178,6 +179,27 @@ TEST(HierarchyOps, RejectsAnInvalidCell) {
   EXPECT_THROW(h3ops::cellToChildPos(1, 0), std::runtime_error);
   EXPECT_THROW(h3ops::childPosToCell(0, 1, 0), std::runtime_error);
   EXPECT_THROW(h3ops::cellToChildren(1, 1), std::runtime_error);
+}
+
+TEST(HierarchyOps, SkipsAnH3NullMemberOfASet) {
+  // `compactCells` skips a zero member (`h3Index.c:594`) and `uncompactCellsSize` continues past it
+  // (`h3Index.c:812`), so the guard leaves it alone rather than calling it an invalid cell.
+  const uint64_t nullFirst[] = {H3_NULL, kParentRes5};
+  const uint64_t nullLast[] = {kParentRes5, H3_NULL};
+  // h3-js `compactCells(["0000000000000000", "85283083fffffff"])` == `["85283083fffffff"]`, either
+  // way round, and the two orders take different paths through `compactCells`.
+  const h3core::CellBuffer compactedNullFirst = h3ops::compactCells(nullFirst, 2);
+  ASSERT_EQ(compactedNullFirst.count(), 1);
+  EXPECT_EQ(compactedNullFirst.data()[0], kParentRes5);
+  const h3core::CellBuffer compactedNullLast = h3ops::compactCells(nullLast, 2);
+  ASSERT_EQ(compactedNullLast.count(), 1);
+  EXPECT_EQ(compactedNullLast.data()[0], kParentRes5);
+
+  // h3-js `uncompactCells(["0000000000000000", "872830828ffffff"], 9).length` == 49
+  const uint64_t nullBesideRes7[] = {H3_NULL, kParentRes7};
+  EXPECT_EQ(h3ops::uncompactCells(nullBesideRes7, 2, 9).count(), 49);
+  // h3-js `uncompactCells(["85283083fffffff", "0000000000000000"], 9).length` == 2401
+  EXPECT_EQ(h3ops::uncompactCells(nullLast, 2, 9).count(), 2401);
 }
 
 TEST(HierarchyOps, RejectsAnInvalidCellInASet) {
