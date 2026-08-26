@@ -30,6 +30,8 @@ add_library(
   ${PACKAGE_ROOT}/cpp/core/LinkedGeoPolygonReader.cpp
   ${PACKAGE_ROOT}/cpp/ops/Indexing.cpp
   ${PACKAGE_ROOT}/cpp/ops/Inspection.cpp
+  ${PACKAGE_ROOT}/cpp/ops/Measurement.cpp
+  ${PACKAGE_ROOT}/cpp/ops/Misc.cpp
   ${PACKAGE_ROOT}/cpp/ops/Regions.cpp
   ${PACKAGE_ROOT}/cpp/ops/Units.cpp
   ${PACKAGE_ROOT}/cpp/HybridH3.cpp

@@ -35,4 +35,20 @@ export interface H3 extends HybridObject<{ ios: 'c++'; android: 'c++' }> {
   constructCell(baseCellNumber: number, digits: number[], res: number): UInt64
   cellToString(cell: UInt64): string
   cellFromString(text: string): UInt64
+
+  // the unit is part of the name, so no unit string crosses the bridge at call time.
+  cellAreaKm2(cell: UInt64): number
+  cellAreaM2(cell: UInt64): number
+  cellAreaRads2(cell: UInt64): number
+  // coordinates in degrees; the C functions take two `::LatLng` pointers in radians.
+  greatCircleDistanceKm(lat1: number, lng1: number, lat2: number, lng2: number): number
+  greatCircleDistanceM(lat1: number, lng1: number, lat2: number, lng2: number): number
+  greatCircleDistanceRads(lat1: number, lng1: number, lat2: number, lng2: number): number
+
+  getHexagonAreaAvgKm2(res: number): number
+  getHexagonAreaAvgM2(res: number): number
+  getHexagonEdgeLengthAvgKm(res: number): number
+  getHexagonEdgeLengthAvgM(res: number): number
+  // C answers `int64_t`; every value fits a JavaScript number exactly, so the spec type is `number`.
+  getNumCells(res: number): number
 }

@@ -48,6 +48,21 @@ public:
   uint64_t constructCell(double baseCellNumber, const std::vector<double>& digits, double res) override;
   std::string cellToString(uint64_t cell) override;
   uint64_t cellFromString(const std::string& text) override;
+
+  // Measurement
+  double cellAreaKm2(uint64_t cell) override;
+  double cellAreaM2(uint64_t cell) override;
+  double cellAreaRads2(uint64_t cell) override;
+  double greatCircleDistanceKm(double lat1, double lng1, double lat2, double lng2) override;
+  double greatCircleDistanceM(double lat1, double lng1, double lat2, double lng2) override;
+  double greatCircleDistanceRads(double lat1, double lng1, double lat2, double lng2) override;
+
+  // Misc
+  double getHexagonAreaAvgKm2(double res) override;
+  double getHexagonAreaAvgM2(double res) override;
+  double getHexagonEdgeLengthAvgKm(double res) override;
+  double getHexagonEdgeLengthAvgM(double res) override;
+  double getNumCells(double res) override;
 };
 
 } // namespace margelo::nitro::h3

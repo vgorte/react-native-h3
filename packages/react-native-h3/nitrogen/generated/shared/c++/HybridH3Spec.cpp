@@ -33,6 +33,17 @@ namespace margelo::nitro::h3 {
       prototype.registerHybridMethod("constructCell", &HybridH3Spec::constructCell);
       prototype.registerHybridMethod("cellToString", &HybridH3Spec::cellToString);
       prototype.registerHybridMethod("cellFromString", &HybridH3Spec::cellFromString);
+      prototype.registerHybridMethod("cellAreaKm2", &HybridH3Spec::cellAreaKm2);
+      prototype.registerHybridMethod("cellAreaM2", &HybridH3Spec::cellAreaM2);
+      prototype.registerHybridMethod("cellAreaRads2", &HybridH3Spec::cellAreaRads2);
+      prototype.registerHybridMethod("greatCircleDistanceKm", &HybridH3Spec::greatCircleDistanceKm);
+      prototype.registerHybridMethod("greatCircleDistanceM", &HybridH3Spec::greatCircleDistanceM);
+      prototype.registerHybridMethod("greatCircleDistanceRads", &HybridH3Spec::greatCircleDistanceRads);
+      prototype.registerHybridMethod("getHexagonAreaAvgKm2", &HybridH3Spec::getHexagonAreaAvgKm2);
+      prototype.registerHybridMethod("getHexagonAreaAvgM2", &HybridH3Spec::getHexagonAreaAvgM2);
+      prototype.registerHybridMethod("getHexagonEdgeLengthAvgKm", &HybridH3Spec::getHexagonEdgeLengthAvgKm);
+      prototype.registerHybridMethod("getHexagonEdgeLengthAvgM", &HybridH3Spec::getHexagonEdgeLengthAvgM);
+      prototype.registerHybridMethod("getNumCells", &HybridH3Spec::getNumCells);
     });
   }
 

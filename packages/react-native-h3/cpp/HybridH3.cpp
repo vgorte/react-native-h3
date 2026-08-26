@@ -19,6 +19,8 @@
 #include "core/Validation.hpp"
 #include "ops/Indexing.hpp"
 #include "ops/Inspection.hpp"
+#include "ops/Measurement.hpp"
+#include "ops/Misc.hpp"
 #include "ops/Regions.hpp"
 #include "ops/Units.hpp"
 
@@ -133,6 +135,51 @@ std::string HybridH3::cellToString(uint64_t cell) {
 
 uint64_t HybridH3::cellFromString(const std::string& text) {
   return h3ops::cellFromString(text);
+}
+
+double HybridH3::cellAreaKm2(uint64_t cell) {
+  return h3ops::cellAreaKm2(cell);
+}
+
+double HybridH3::cellAreaM2(uint64_t cell) {
+  return h3ops::cellAreaM2(cell);
+}
+
+double HybridH3::cellAreaRads2(uint64_t cell) {
+  return h3ops::cellAreaRads2(cell);
+}
+
+double HybridH3::greatCircleDistanceKm(double lat1, double lng1, double lat2, double lng2) {
+  return h3ops::greatCircleDistanceKm(lat1, lng1, lat2, lng2);
+}
+
+double HybridH3::greatCircleDistanceM(double lat1, double lng1, double lat2, double lng2) {
+  return h3ops::greatCircleDistanceM(lat1, lng1, lat2, lng2);
+}
+
+double HybridH3::greatCircleDistanceRads(double lat1, double lng1, double lat2, double lng2) {
+  return h3ops::greatCircleDistanceRads(lat1, lng1, lat2, lng2);
+}
+
+double HybridH3::getHexagonAreaAvgKm2(double res) {
+  return h3ops::getHexagonAreaAvgKm2(res);
+}
+
+double HybridH3::getHexagonAreaAvgM2(double res) {
+  return h3ops::getHexagonAreaAvgM2(res);
+}
+
+double HybridH3::getHexagonEdgeLengthAvgKm(double res) {
+  return h3ops::getHexagonEdgeLengthAvgKm(res);
+}
+
+double HybridH3::getHexagonEdgeLengthAvgM(double res) {
+  return h3ops::getHexagonEdgeLengthAvgM(res);
+}
+
+double HybridH3::getNumCells(double res) {
+  // `569707381193162` at resolution `15` is well inside `2^53 - 1`, so the widening is exact
+  return static_cast<double>(h3ops::getNumCells(res));
 }
 
 } // namespace margelo::nitro::h3

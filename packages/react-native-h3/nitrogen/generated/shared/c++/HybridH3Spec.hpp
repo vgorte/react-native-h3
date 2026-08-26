@@ -71,6 +71,17 @@ namespace margelo::nitro::h3 {
       virtual uint64_t constructCell(double baseCellNumber, const std::vector<double>& digits, double res) = 0;
       virtual std::string cellToString(uint64_t cell) = 0;
       virtual uint64_t cellFromString(const std::string& text) = 0;
+      virtual double cellAreaKm2(uint64_t cell) = 0;
+      virtual double cellAreaM2(uint64_t cell) = 0;
+      virtual double cellAreaRads2(uint64_t cell) = 0;
+      virtual double greatCircleDistanceKm(double lat1, double lng1, double lat2, double lng2) = 0;
+      virtual double greatCircleDistanceM(double lat1, double lng1, double lat2, double lng2) = 0;
+      virtual double greatCircleDistanceRads(double lat1, double lng1, double lat2, double lng2) = 0;
+      virtual double getHexagonAreaAvgKm2(double res) = 0;
+      virtual double getHexagonAreaAvgM2(double res) = 0;
+      virtual double getHexagonEdgeLengthAvgKm(double res) = 0;
+      virtual double getHexagonEdgeLengthAvgM(double res) = 0;
+      virtual double getNumCells(double res) = 0;
 
     protected:
       // Hybrid Setup

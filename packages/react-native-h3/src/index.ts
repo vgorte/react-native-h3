@@ -14,6 +14,21 @@ export {
   isValidIndex,
   isValidVertex,
 } from './inspection'
+export {
+  cellAreaKm2,
+  cellAreaM2,
+  cellAreaRads2,
+  greatCircleDistanceKm,
+  greatCircleDistanceM,
+  greatCircleDistanceRads,
+} from './measurement'
+export {
+  getHexagonAreaAvgKm2,
+  getHexagonAreaAvgM2,
+  getHexagonEdgeLengthAvgKm,
+  getHexagonEdgeLengthAvgM,
+  getNumCells,
+} from './misc'
 export { cellsToMultiPolygon } from './regions'
 export { gridDisk } from './traversal'
 export type { ContainmentModeValue, CoordIJ, LatLng, Ring } from './types'
