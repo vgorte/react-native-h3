@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="react-native-h3">
+  <title>react-native-h3</title>
+  <!--
+    One H3 cell holding its seven children, at the library's real aperture-7 rotation of
+    19.107 degrees (asin(sqrt(3/28))), not an eyeballed angle.
+
+    The gaps are the parent cell showing through rather than a painted background, so the mark
+    carries no backdrop of its own and sits on light and dark surfaces alike. Every gap is
+    6px at a 256px viewBox, which is still 1.5px when rendered at 64px.
+
+    Palette: the children are light against a dark parent, which is what makes the seven-cell
+    structure survive. Parent against children is 13.5 to 1; an earlier
+    two-dark-tones palette managed 1.4 to 1 and read as a solid blob. On a light page the dark
+    outer shape carries the mark, on a dark page the light cells do.
+
+    The centre cell uses React's darker brand blue, not the familiar #61DAFB. That cyan is a
+    light colour: against light children it reaches 1.4 to 1 and stops being a focal point at
+    all. #087EA4 is 4.0 to 1 against the children and 3.4 to 1 against the frame, so the centre
+    reads on both sides of the mark and still in greyscale.
+  -->
+  <polygon points="236.00,128.00 182.00,221.53 74.00,221.53 20.00,128.00 74.00,34.47 182.00,34.47" fill="#20232A" />
+  <g fill="#E8EEF4">
+    <polygon points="196.91,183.70 173.28,204.16 143.74,193.93 137.84,163.23 161.47,142.77 191.01,153.00" />
+    <polygon points="137.85,195.07 114.22,215.53 84.68,205.30 78.77,174.60 102.40,154.13 131.94,164.37" />
+    <polygon points="98.48,149.60 74.85,170.06 45.31,159.83 39.40,129.13 63.03,108.67 92.57,118.90" />
+    <polygon points="118.16,92.77 94.53,113.23 64.99,103.00 59.09,72.30 82.72,51.84 112.26,62.07" />
+    <polygon points="177.23,81.40 153.60,101.87 124.06,91.63 118.15,60.93 141.78,40.47 171.32,50.70" />
+    <polygon points="216.60,126.87 192.97,147.33 163.43,137.10 157.52,106.40 181.15,85.94 210.69,96.17" />
+  </g>
+  <polygon points="157.54,138.23 133.91,158.70 104.37,148.47 98.46,117.77 122.09,97.30 151.63,107.53" fill="#087EA4" />
+</svg>

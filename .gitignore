@@ -1,2 +1,72 @@
+# OSX
+**/.DS_Store
+
+# IntelliJ based IDEs
+.idea
+
+# VSCode
+.vscode
+
+# Claude Code local settings (the vendored skills stay in the repo)
+.claude/settings.local.json
+
+# node.js
 node_modules/
-.DS_Store
+npm-debug.log
+
+# bun is the package manager here, nothing else
+/package-lock.json
+/yarn.lock
+
+# Xcode
+**/.xcode.env.local
+build/
+*.pbxuser
+!default.pbxuser
+*.perspectivev3
+!default.perspectivev3
+xcuserdata
+*.xccheckout
+*.moved-aside
+DerivedData
+*.hmap
+*.ipa
+*.xcuserstate
+project.xcworkspace
+
+# CocoaPods
+apps/example/ios/Pods
+
+# Ruby
+apps/example/vendor/
+
+# Android
+.kotlin
+.classpath
+.cxx
+.gradle
+.project
+.settings
+local.properties
+*.iml
+
+# TypeScript build output
+lib/
+*.tsbuildinfo
+
+# caches
+.cache
+compile_commands.json
+coverage
+
+# npm pack rehearsals
+*.tgz
+
+# React Native Harness
+apps/example/.harness/
+
+# Local planning record: design decisions, implementation plans and the research
+# behind them. Kept on disk, deliberately outside the repository, because upstream
+# React Native packages use docs/ for the user manual, not for a design archive.
+docs/superpowers/
+docs/research/
