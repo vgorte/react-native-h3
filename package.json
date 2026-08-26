@@ -1,0 +1,23 @@
+{
+  "name": "react-native-h3-root",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "typecheck": "bun --cwd packages/react-native-h3 run typecheck",
+    "build": "bun --cwd packages/react-native-h3 run build",
+    "specs": "bun --cwd packages/react-native-h3 run specs",
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "vendor:h3": "bun run scripts/vendor-h3.ts",
+    "example": "bun --cwd apps/example",
+    "example:ios": "bun --cwd apps/example ios",
+    "example:android": "bun --cwd apps/example android"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.0.0",
+    "typescript": "^5.6.0"
+  }
+}

@@ -70,3 +70,6 @@ apps/example/.harness/
 # React Native packages use docs/ for the user manual, not for a design archive.
 docs/superpowers/
 docs/research/
+Pods/
+*.xcworkspace
+!apps/example/ios/*.xcworkspace
