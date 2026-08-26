@@ -53,8 +53,8 @@ h3core::CellBuffer gridRing(uint64_t origin, double k) {
 h3core::CellBuffer gridRingUnsafe(uint64_t origin, double k) {
   internal::requireValidCell(origin);
   const int distance = h3core::toInteger(k, kIntegerK);
-  // on `E_PENTAGON` part of the buffer has already been written (`algos.c:846`); the fill template
-  // destroys it while the exception unwinds, so nothing meaningless is published.
+  // a pentagon origin bails before writing (`algos.c:803`), but a ring that runs into one fails
+  // mid-buffer (`algos.c:846`), and the fill template destroys it while the exception unwinds.
   return h3shapes::fillCompactedCells([&] { return h3shapes::callWithOutParam<int64_t>(::maxGridRingSize, distance); },
                                       [&](uint64_t* out) { return ::gridRingUnsafe(origin, distance, out); });
 }
@@ -74,9 +74,12 @@ std::vector<h3core::CellBuffer> gridDiskDistances(uint64_t origin, double k) {
   // empty rather than missing and the index is always the grid distance.
   std::vector<int64_t> counts(static_cast<size_t>(distance) + 1, 0);
   for (size_t i = 0; i < capacity; i++) {
-    if (cells.data()[i] != H3_NULL) {
-      counts[static_cast<size_t>(distances[i])]++;
+    const size_t ring = static_cast<size_t>(distances[i]);
+    // the buckets are sized from `k`, not from H3's output, so an unexpected distance is dropped
+    if (cells.data()[i] == H3_NULL || ring >= counts.size()) {
+      continue;
     }
+    counts[ring]++;
   }
 
   std::vector<h3core::CellBuffer> rings;
@@ -88,10 +91,11 @@ std::vector<h3core::CellBuffer> gridDiskDistances(uint64_t origin, double k) {
   std::vector<int64_t> written(counts.size(), 0);
   for (size_t i = 0; i < capacity; i++) {
     const uint64_t cell = cells.data()[i];
-    if (cell == H3_NULL) {
+    const size_t ring = static_cast<size_t>(distances[i]);
+    // dropped by the same test as in the counting pass, so the two stay in step
+    if (cell == H3_NULL || ring >= rings.size()) {
       continue;
     }
-    const size_t ring = static_cast<size_t>(distances[i]);
     rings[ring].data()[written[ring]] = cell;
     written[ring]++;
   }

@@ -22,6 +22,20 @@ constexpr uint64_t kSanFrancisco = 0x89283082803ffffULL;
 constexpr uint64_t kNeighbor = 0x8928308281bffffULL;
 // a resolution 1 pentagon; h3-js `isPentagon("81083ffffffffff")` is `true`
 constexpr uint64_t kPentagonRes1 = 0x81083ffffffffffULL;
+// one step off that pentagon, from h3-js `gridRing("81083ffffffffff", 1)`, and not one itself
+constexpr uint64_t kBesidePentagonRes1 = 0x81093ffffffffffULL;
+
+// asserts H3's `E_CELL_INVALID` wording rather than any error, because several of these operations
+// fail with `E_PENTAGON` or answer a plausible number when the guard is missing.
+template <typename Call> void expectInvalidCell(const char* label, Call&& call) {
+  SCOPED_TRACE(label);
+  try {
+    call();
+    FAIL() << "expected an exception";
+  } catch (const std::runtime_error& error) {
+    EXPECT_EQ(std::string(error.what()), "Cell argument was not valid");
+  }
+}
 
 TEST(TraversalOps, GridDiskMatchesH3Js) {
   // h3-js `gridDisk(sf, k).length` for `k` of 0, 1, 2 and 3
@@ -66,10 +80,18 @@ TEST(TraversalOps, GridRingUsesMaxGridRingSizeRatherThanAFormula) {
 
 TEST(TraversalOps, GridRingUnsafeThrowsOnAPentagonAndPublishesNothing) {
   EXPECT_EQ(h3ops::gridRingUnsafe(kSanFrancisco, 1).count(), 6);
-  // it answers `E_PENTAGON` having already written part of the buffer (`algos.c:846`); those
-  // contents are meaningless, and the buffer is destroyed while the exception unwinds.
+  // a pentagon origin bails before writing anything (`algos.c:803`)
   try {
     h3ops::gridRingUnsafe(kPentagonRes1, 1);
+    FAIL() << "expected an exception";
+  } catch (const std::runtime_error& error) {
+    EXPECT_EQ(std::string(error.what()), "Pentagon distortion was encountered");
+  }
+  // a ring that runs into a pentagon instead fails with four of its six slots already written
+  // (`algos.c:846`); those contents are meaningless, and the buffer is destroyed while the
+  // exception unwinds.
+  try {
+    h3ops::gridRingUnsafe(kBesidePentagonRes1, 1);
     FAIL() << "expected an exception";
   } catch (const std::runtime_error& error) {
     EXPECT_EQ(std::string(error.what()), "Pentagon distortion was encountered");
@@ -152,22 +174,17 @@ TEST(TraversalOps, LocalIjRejectsAFractionalCoordinate) {
 TEST(TraversalOps, RejectsAnInvalidCell) {
   // every one of these reads a malformed index as a resolution 0 cell and answers with cells
   // derived from it, so the guard is the only thing between the caller and nonsense.
-  try {
-    h3ops::gridDisk(1, 1);
-    FAIL() << "expected an exception";
-  } catch (const std::runtime_error& error) {
-    EXPECT_EQ(std::string(error.what()), "Cell argument was not valid");
-  }
-  EXPECT_THROW(h3ops::gridRing(1, 0), std::runtime_error);
-  EXPECT_THROW(h3ops::gridRingUnsafe(1, 1), std::runtime_error);
-  EXPECT_THROW(h3ops::gridDiskDistances(1, 1), std::runtime_error);
-  EXPECT_THROW(h3ops::gridDistance(1, 1), std::runtime_error);
-  EXPECT_THROW(h3ops::gridDistance(kSanFrancisco, 1), std::runtime_error);
-  EXPECT_THROW(h3ops::gridPathCells(1, 1), std::runtime_error);
-  EXPECT_THROW(h3ops::gridPathCells(kSanFrancisco, 1), std::runtime_error);
-  EXPECT_THROW(h3ops::cellToLocalIj(1, 1), std::runtime_error);
-  EXPECT_THROW(h3ops::cellToLocalIj(kSanFrancisco, 1), std::runtime_error);
-  EXPECT_THROW(h3ops::localIjToCell(1, 0, 0), std::runtime_error);
+  expectInvalidCell("gridDisk", [] { h3ops::gridDisk(1, 1); });
+  expectInvalidCell("gridRing", [] { h3ops::gridRing(1, 0); });
+  expectInvalidCell("gridRingUnsafe", [] { h3ops::gridRingUnsafe(1, 1); });
+  expectInvalidCell("gridDiskDistances", [] { h3ops::gridDiskDistances(1, 1); });
+  expectInvalidCell("gridDistance origin", [] { h3ops::gridDistance(1, 1); });
+  expectInvalidCell("gridDistance destination", [] { h3ops::gridDistance(kSanFrancisco, 1); });
+  expectInvalidCell("gridPathCells start", [] { h3ops::gridPathCells(1, 1); });
+  expectInvalidCell("gridPathCells end", [] { h3ops::gridPathCells(kSanFrancisco, 1); });
+  expectInvalidCell("cellToLocalIj origin", [] { h3ops::cellToLocalIj(1, 1); });
+  expectInvalidCell("cellToLocalIj cell", [] { h3ops::cellToLocalIj(kSanFrancisco, 1); });
+  expectInvalidCell("localIjToCell", [] { h3ops::localIjToCell(1, 0, 0); });
 }
 
 } // namespace
