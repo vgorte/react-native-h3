@@ -11,6 +11,7 @@
 #include <cstddef>
 #include <limits>
 #include <stdexcept>
+#include <utility>
 
 extern "C" {
 #include "h3api.h"
@@ -33,6 +34,19 @@ CellBuffer::CellBuffer(int64_t capacity) : capacity_(capacity), count_(0) {
   cells_ = std::unique_ptr<uint64_t[]>(new uint64_t[static_cast<std::size_t>(capacity)]());
 }
 
+CellBuffer::CellBuffer(CellBuffer&& other) noexcept
+    : cells_(std::move(other.cells_)), capacity_(std::exchange(other.capacity_, 0)),
+      count_(std::exchange(other.count_, 0)) {}
+
+CellBuffer& CellBuffer::operator=(CellBuffer&& other) noexcept {
+  if (this != &other) {
+    cells_ = std::move(other.cells_);
+    capacity_ = std::exchange(other.capacity_, 0);
+    count_ = std::exchange(other.count_, 0);
+  }
+  return *this;
+}
+
 int64_t CellBuffer::compact() noexcept {
   if (cells_ == nullptr) {
     count_ = 0;
@@ -45,6 +59,13 @@ int64_t CellBuffer::compact() noexcept {
   // keeps a repeated compact() idempotent instead of reporting stale duplicates.
   std::fill(newEnd, end, static_cast<uint64_t>(H3_NULL));
   return count_;
+}
+
+void CellBuffer::setCount(int64_t count) {
+  if (count < 0 || count > capacity_) {
+    throw std::invalid_argument("CellBuffer count must be between 0 and the capacity");
+  }
+  count_ = count;
 }
 
 uint64_t* CellBuffer::release() noexcept {

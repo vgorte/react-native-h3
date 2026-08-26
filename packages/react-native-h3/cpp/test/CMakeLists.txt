@@ -64,6 +64,7 @@ set(TEST_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/BufferSizesTest.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/ValidationTest.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/OutParamCallTest.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/CellSetCallTest.cpp
 )
 
 add_executable(tests ${TEST_SOURCES})
