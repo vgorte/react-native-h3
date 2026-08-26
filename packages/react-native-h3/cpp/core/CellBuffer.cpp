@@ -8,6 +8,8 @@
 #include "core/CellBuffer.hpp"
 
 #include <algorithm>
+#include <cstddef>
+#include <limits>
 #include <stdexcept>
 
 extern "C" {
@@ -23,8 +25,12 @@ CellBuffer::CellBuffer(int64_t capacity) : capacity_(capacity), count_(0) {
   if (capacity == 0) {
     return;
   }
-  // value-initialising `new[]` zeroes the block, which H3 requires.
-  cells_ = std::unique_ptr<uint64_t[]>(new uint64_t[static_cast<size_t>(capacity)]());
+  // 32-bit ABIs (armeabi-v7a, x86) have a `size_t` narrower than `int64_t`; reject before it wraps.
+  if (static_cast<uint64_t>(capacity) > std::numeric_limits<std::size_t>::max() / sizeof(uint64_t)) {
+    throw std::invalid_argument("CellBuffer capacity exceeds addressable memory");
+  }
+  // value-initialising `new[]` zeroes the block; never swap this for malloc or a reserve.
+  cells_ = std::unique_ptr<uint64_t[]>(new uint64_t[static_cast<std::size_t>(capacity)]());
 }
 
 int64_t CellBuffer::compact() noexcept {
@@ -36,10 +42,14 @@ int64_t CellBuffer::compact() noexcept {
   uint64_t* end = begin + capacity_;
   uint64_t* newEnd = std::remove(begin, end, static_cast<uint64_t>(H3_NULL));
   count_ = static_cast<int64_t>(newEnd - begin);
+  // keeps a repeated compact() idempotent instead of reporting stale duplicates.
+  std::fill(newEnd, end, static_cast<uint64_t>(H3_NULL));
   return count_;
 }
 
 uint64_t* CellBuffer::release() noexcept {
+  capacity_ = 0;
+  count_ = 0;
   return cells_.release();
 }
 

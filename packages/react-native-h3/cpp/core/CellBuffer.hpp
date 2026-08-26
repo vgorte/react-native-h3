@@ -14,8 +14,8 @@ namespace h3core {
 
 /**
  * Owns a zero-initialised block of H3 cell indexes and removes `H3_NULL` holes in place.
- * `gridDisk`, `gridRing` and `polygonToCells` require the buffer to arrive zero-filled
- * (`algos.c:193-198`), and pentagons leave holes anywhere in the output.
+ * `gridDisk` (`algos.c:193`), `gridRing` (`algos.c:360`) and `polygonToCells` (`algos.c:990`)
+ * all require the buffer to arrive zero-filled, and pentagons leave holes anywhere in the output.
  *
  * Stays free of Nitro so it can run in the host test target under AddressSanitizer.
  */
@@ -30,19 +30,20 @@ class CellBuffer final {
   CellBuffer& operator=(CellBuffer&&) noexcept = default;
   ~CellBuffer() = default;
 
-  /** Writable slots for H3 to fill. `nullptr` after `release()`. */
+  /** Returns the writable slots for H3 to fill. `nullptr` after `release()`. */
   uint64_t* data() noexcept { return cells_.get(); }
   const uint64_t* data() const noexcept { return cells_.get(); }
 
   int64_t capacity() const noexcept { return capacity_; }
 
-  /** Number of real cells, valid only after `compact()`. */
+  /** Returns the number of real cells, valid only after `compact()`. */
   int64_t count() const noexcept { return count_; }
 
   /**
    * Removes every `H3_NULL` entry in place, preserving order, and returns the count of real cells.
-   * Never shrinks the underlying block: reallocating to size would trade a scan for a copy on
-   * the path this package exists for.
+   * Resets `[count(), capacity())` to `H3_NULL`, so a repeated call is idempotent. Never shrinks
+   * the underlying block: reallocating to size would trade a scan for a copy on the path this
+   * package exists for.
    */
   int64_t compact() noexcept;
 

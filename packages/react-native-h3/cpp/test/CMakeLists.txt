@@ -54,7 +54,7 @@ enable_testing()
 include(GoogleTest)
 
 # Test targets
-# Tasks 4 and 5 append their sources to both lists below.
+# Test sources, shared by the plain and the sanitised executable
 set(TEST_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/VendoredH3Test.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/CellBufferTest.cpp

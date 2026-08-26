@@ -7,6 +7,8 @@
 
 #include <gtest/gtest.h>
 
+#include <cstddef>
+#include <limits>
 #include <memory>
 #include <stdexcept>
 
@@ -81,6 +83,22 @@ TEST(CellBuffer, CompactHandlesNoHoles) {
   EXPECT_EQ(buffer.compact(), 3);
 }
 
+TEST(CellBuffer, CompactIsIdempotentAndZeroesTheTail) {
+  CellBuffer buffer(5);
+  buffer.data()[0] = 10;
+  buffer.data()[1] = H3_NULL;
+  buffer.data()[2] = 20;
+  buffer.data()[3] = H3_NULL;
+  buffer.data()[4] = 30;
+
+  EXPECT_EQ(buffer.compact(), 3);
+  EXPECT_EQ(buffer.compact(), 3);
+  EXPECT_EQ(buffer.count(), 3);
+  for (int64_t i = buffer.count(); i < buffer.capacity(); i++) {
+    EXPECT_EQ(buffer.data()[i], H3_NULL) << "slot " << i << " was not reset";
+  }
+}
+
 TEST(CellBuffer, SupportsAnEmptyBuffer) {
   CellBuffer buffer(0);
   EXPECT_EQ(buffer.capacity(), 0);
@@ -95,12 +113,23 @@ TEST(CellBuffer, ReleaseTransfersOwnership) {
   ASSERT_NE(raw, nullptr);
   EXPECT_EQ(raw[0], 7u);
   EXPECT_EQ(buffer.data(), nullptr);
+  EXPECT_EQ(buffer.capacity(), 0);
   // the caller now owns it; under ASan this line is what proves the contract.
   delete[] raw;
 }
 
 TEST(CellBuffer, RejectsANegativeCapacity) {
   EXPECT_THROW(CellBuffer(-1), std::invalid_argument);
+}
+
+TEST(CellBuffer, RejectsACapacityThatDoesNotFitInSizeT) {
+  // only meaningful on 32-bit ABIs (armeabi-v7a, x86), where `size_t` is narrower than `int64_t`.
+  if constexpr (sizeof(std::size_t) < sizeof(int64_t)) {
+    constexpr int64_t kUnaddressable = std::numeric_limits<int64_t>::max();
+    EXPECT_THROW(CellBuffer{kUnaddressable}, std::invalid_argument);
+  } else {
+    GTEST_SKIP();
+  }
 }
 
 TEST(CellBuffer, CompactsARealPentagonGridDisk) {
