@@ -18,4 +18,21 @@ export interface H3 extends HybridObject<{ ios: 'c++'; android: 'c++' }> {
   cellToBoundary(cell: UInt64): LatLng[]
   // three levels of nesting: polygons of loops of points, which nitrogen expands recursively.
   cellsToMultiPolygon(cells: ArrayBuffer): LatLng[][][]
+
+  degsToRads(degrees: number): number
+  radsToDegs(radians: number): number
+
+  isValidCell(cell: UInt64): boolean
+  isValidIndex(index: UInt64): boolean
+  isValidDirectedEdge(edge: UInt64): boolean
+  isValidVertex(vertex: UInt64): boolean
+  isPentagon(cell: UInt64): boolean
+  isResClassIII(cell: UInt64): boolean
+  getResolution(index: UInt64): number
+  getBaseCellNumber(cell: UInt64): number
+  getIndexDigit(cell: UInt64, digit: number): number
+  // digits arrive as `number[]`, which nitrogen maps to `const std::vector<double>&`.
+  constructCell(baseCellNumber: number, digits: number[], res: number): UInt64
+  cellToString(cell: UInt64): string
+  cellFromString(text: string): UInt64
 }

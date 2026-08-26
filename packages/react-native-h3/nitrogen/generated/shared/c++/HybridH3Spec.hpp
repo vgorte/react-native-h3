@@ -19,6 +19,7 @@ namespace margelo::nitro::h3 { struct LatLng; }
 #include <NitroModules/ArrayBuffer.hpp>
 #include "LatLng.hpp"
 #include <vector>
+#include <string>
 
 namespace margelo::nitro::h3 {
 
@@ -56,6 +57,20 @@ namespace margelo::nitro::h3 {
       virtual LatLng cellToLatLng(uint64_t cell) = 0;
       virtual std::vector<LatLng> cellToBoundary(uint64_t cell) = 0;
       virtual std::vector<std::vector<std::vector<LatLng>>> cellsToMultiPolygon(const std::shared_ptr<ArrayBuffer>& cells) = 0;
+      virtual double degsToRads(double degrees) = 0;
+      virtual double radsToDegs(double radians) = 0;
+      virtual bool isValidCell(uint64_t cell) = 0;
+      virtual bool isValidIndex(uint64_t index) = 0;
+      virtual bool isValidDirectedEdge(uint64_t edge) = 0;
+      virtual bool isValidVertex(uint64_t vertex) = 0;
+      virtual bool isPentagon(uint64_t cell) = 0;
+      virtual bool isResClassIII(uint64_t cell) = 0;
+      virtual double getResolution(uint64_t index) = 0;
+      virtual double getBaseCellNumber(uint64_t cell) = 0;
+      virtual double getIndexDigit(uint64_t cell, double digit) = 0;
+      virtual uint64_t constructCell(double baseCellNumber, const std::vector<double>& digits, double res) = 0;
+      virtual std::string cellToString(uint64_t cell) = 0;
+      virtual uint64_t cellFromString(const std::string& text) = 0;
 
     protected:
       // Hybrid Setup

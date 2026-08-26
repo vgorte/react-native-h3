@@ -30,6 +30,24 @@ public:
 
   // Regions
   std::vector<std::vector<std::vector<LatLng>>> cellsToMultiPolygon(const std::shared_ptr<ArrayBuffer>& cells) override;
+
+  // Units
+  double degsToRads(double degrees) override;
+  double radsToDegs(double radians) override;
+
+  // Inspection
+  bool isValidCell(uint64_t cell) override;
+  bool isValidIndex(uint64_t index) override;
+  bool isValidDirectedEdge(uint64_t edge) override;
+  bool isValidVertex(uint64_t vertex) override;
+  bool isPentagon(uint64_t cell) override;
+  bool isResClassIII(uint64_t cell) override;
+  double getResolution(uint64_t index) override;
+  double getBaseCellNumber(uint64_t cell) override;
+  double getIndexDigit(uint64_t cell, double digit) override;
+  uint64_t constructCell(double baseCellNumber, const std::vector<double>& digits, double res) override;
+  std::string cellToString(uint64_t cell) override;
+  uint64_t cellFromString(const std::string& text) override;
 };
 
 } // namespace margelo::nitro::h3

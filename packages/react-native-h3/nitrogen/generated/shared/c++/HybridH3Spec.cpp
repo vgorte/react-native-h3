@@ -19,6 +19,20 @@ namespace margelo::nitro::h3 {
       prototype.registerHybridMethod("cellToLatLng", &HybridH3Spec::cellToLatLng);
       prototype.registerHybridMethod("cellToBoundary", &HybridH3Spec::cellToBoundary);
       prototype.registerHybridMethod("cellsToMultiPolygon", &HybridH3Spec::cellsToMultiPolygon);
+      prototype.registerHybridMethod("degsToRads", &HybridH3Spec::degsToRads);
+      prototype.registerHybridMethod("radsToDegs", &HybridH3Spec::radsToDegs);
+      prototype.registerHybridMethod("isValidCell", &HybridH3Spec::isValidCell);
+      prototype.registerHybridMethod("isValidIndex", &HybridH3Spec::isValidIndex);
+      prototype.registerHybridMethod("isValidDirectedEdge", &HybridH3Spec::isValidDirectedEdge);
+      prototype.registerHybridMethod("isValidVertex", &HybridH3Spec::isValidVertex);
+      prototype.registerHybridMethod("isPentagon", &HybridH3Spec::isPentagon);
+      prototype.registerHybridMethod("isResClassIII", &HybridH3Spec::isResClassIII);
+      prototype.registerHybridMethod("getResolution", &HybridH3Spec::getResolution);
+      prototype.registerHybridMethod("getBaseCellNumber", &HybridH3Spec::getBaseCellNumber);
+      prototype.registerHybridMethod("getIndexDigit", &HybridH3Spec::getIndexDigit);
+      prototype.registerHybridMethod("constructCell", &HybridH3Spec::constructCell);
+      prototype.registerHybridMethod("cellToString", &HybridH3Spec::cellToString);
+      prototype.registerHybridMethod("cellFromString", &HybridH3Spec::cellFromString);
     });
   }
 
