@@ -6,19 +6,21 @@
  * supersampling scanline fill and a hand-rolled PNG encoder cover exactly.
  *
  * Usage:
- *   bun run scripts/generate-app-icons.ts
+ *   bun run icons           rewrite the icons from `img/logo.svg`
+ *   bun run icons --check   fail if the committed icons differ from `img/logo.svg`
  */
 
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { deflateSync } from 'node:zlib'
+import { deflateSync, inflateSync } from 'node:zlib'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(HERE, '..')
 const LOGO = join(ROOT, 'img', 'logo.svg')
-const IOS_ICONSET = join(ROOT, 'apps/example/ios/H3Example/Images.xcassets/AppIcon.appiconset')
-const ANDROID_RES = join(ROOT, 'apps/example/android/app/src/main/res')
+const IOS_ICONSET = 'apps/example/ios/H3Example/Images.xcassets/AppIcon.appiconset'
+const ANDROID_RES = 'apps/example/android/app/src/main/res'
 
 // The mark sits on an opaque ground: iOS rejects alpha outright, and the dark outer hexagon
 // is what carries the silhouette on a light surface.
@@ -42,7 +44,7 @@ function parsePolygons(svg: string): Polygon[] {
   // `fill` is either on the polygon or inherited from the one enclosing `<g>`
   let groupFill: string | null = null
   const tags = svg.matchAll(/<(g|\/g|polygon)\b([^>]*)>/g)
-  for (const [, tag, attributes] of tags) {
+  for (const [, tag = '', attributes = ''] of tags) {
     if (tag === '/g') {
       groupFill = null
       continue
@@ -64,7 +66,7 @@ function parsePolygons(svg: string): Polygon[] {
         .split(/\s+/)
         .map((pair) => {
           const [x, y] = pair.split(',').map(Number)
-          if (!Number.isFinite(x) || !Number.isFinite(y)) {
+          if (x == null || y == null || !Number.isFinite(x) || !Number.isFinite(y)) {
             throw new Error(`Malformed point "${pair}"`)
           }
           return { x, y }
@@ -76,26 +78,57 @@ function parsePolygons(svg: string): Polygon[] {
 
 function parseViewBox(svg: string): number {
   const viewBox = svg.match(/viewBox="0 0 (\d+) (\d+)"/)
-  if (viewBox == null || viewBox[1] !== viewBox[2]) {
+  const width = viewBox?.[1]
+  if (width == null || width !== viewBox?.[2]) {
     throw new Error('Expected a square viewBox anchored at the origin')
   }
-  return Number(viewBox[1])
+  return Number(width)
 }
 
 function parseColor(hex: string): [number, number, number] {
-  const value = Number.parseInt(hex.slice(1), 16)
+  // `none` and the three-digit shorthand would silently become NaN channels
+  const digits = hex.match(/^#([0-9a-fA-F]{6})$/)?.[1]
+  if (digits == null) {
+    throw new Error(`Unsupported fill "${hex}"; only six-digit hex colours are rendered`)
+  }
+  const value = Number.parseInt(digits, 16)
   return [(value >> 16) & 0xff, (value >> 8) & 0xff, value & 0xff]
+}
+
+/** Throws unless polygon 0, the enclosing hexagon, bounds every other polygon. */
+function assertOuterEnclosesTheRest(polygons: Polygon[]): void {
+  const [outer, ...rest] = polygons
+  if (outer == null) {
+    throw new Error('The logo has no polygons')
+  }
+  const xs = outer.points.map((p) => p.x)
+  const ys = outer.points.map((p) => p.y)
+  const minX = Math.min(...xs)
+  const maxX = Math.max(...xs)
+  const minY = Math.min(...ys)
+  const maxY = Math.max(...ys)
+  for (const [index, polygon] of rest.entries()) {
+    for (const point of polygon.points) {
+      if (point.x < minX || point.x > maxX || point.y < minY || point.y > maxY) {
+        throw new Error(
+          `Polygon ${index + 1} leaves the outer hexagon at ${point.x},${point.y}; ` +
+            'the mark radius is taken from polygon 0',
+        )
+      }
+    }
+  }
 }
 
 /** Reports whether the point is inside the polygon, by counting ray crossings. */
 function contains(polygon: Point[], x: number, y: number): boolean {
   let inside = false
-  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-    const a = polygon[i]
-    const b = polygon[j]
+  let b = polygon[polygon.length - 1]
+  if (b == null) return false
+  for (const a of polygon) {
     if (a.y > y !== b.y > y && x < ((b.x - a.x) * (y - a.y)) / (b.y - a.y) + a.x) {
       inside = !inside
     }
+    b = a
   }
   return inside
 }
@@ -106,39 +139,46 @@ type RenderOptions = {
   contentScale: number
   /** Clips the background to an inscribed circle, for the legacy round launcher icon. */
   round?: boolean
-  /** Drops the background entirely, for the adaptive icon's foreground layer. */
-  transparent?: boolean
 }
 
 const SAMPLES = 4
 
+/** Source-over with premultiplication undone, so edges over transparency stay clean. */
+function blend(
+  source: number,
+  previous: number,
+  alpha: number,
+  under: number,
+  over: number,
+): number {
+  return Math.round((source * alpha + previous * under * (1 - alpha)) / over)
+}
+
 function render(polygons: Polygon[], viewBox: number, options: RenderOptions): Uint8Array {
-  const { size, contentScale, round = false, transparent = false } = options
+  const { size, contentScale, round = false } = options
   const rgba = new Uint8Array(size * size * 4)
 
-  if (!transparent) {
-    const [r, g, b] = parseColor(BACKGROUND)
-    const radius = size / 2
-    for (let y = 0; y < size; y++) {
-      for (let x = 0; x < size; x++) {
-        let coverage = 1
-        if (round) {
-          coverage = 0
-          for (let sy = 0; sy < SAMPLES; sy++) {
-            for (let sx = 0; sx < SAMPLES; sx++) {
-              const dx = x + (sx + 0.5) / SAMPLES - radius
-              const dy = y + (sy + 0.5) / SAMPLES - radius
-              if (dx * dx + dy * dy <= radius * radius) coverage++
-            }
+  const [backgroundR, backgroundG, backgroundB] = parseColor(BACKGROUND)
+  const radius = size / 2
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      let coverage = 1
+      if (round) {
+        coverage = 0
+        for (let sy = 0; sy < SAMPLES; sy++) {
+          for (let sx = 0; sx < SAMPLES; sx++) {
+            const dx = x + (sx + 0.5) / SAMPLES - radius
+            const dy = y + (sy + 0.5) / SAMPLES - radius
+            if (dx * dx + dy * dy <= radius * radius) coverage++
           }
-          coverage /= SAMPLES * SAMPLES
         }
-        const at = (y * size + x) * 4
-        rgba[at] = r
-        rgba[at + 1] = g
-        rgba[at + 2] = b
-        rgba[at + 3] = Math.round(coverage * 255)
+        coverage /= SAMPLES * SAMPLES
       }
+      const at = (y * size + x) * 4
+      rgba[at] = backgroundR
+      rgba[at + 1] = backgroundG
+      rgba[at + 2] = backgroundB
+      rgba[at + 3] = Math.round(coverage * 255)
     }
   }
 
@@ -172,15 +212,11 @@ function render(polygons: Polygon[], viewBox: number, options: RenderOptions): U
 
         const alpha = hits / (SAMPLES * SAMPLES)
         const at = (y * size + x) * 4
-        const under = rgba[at + 3] / 255
+        const under = (rgba[at + 3] ?? 0) / 255
         const over = alpha + under * (1 - alpha)
-        // source-over with premultiplication undone, so edges over transparency stay clean
-        for (let channel = 0; channel < 3; channel++) {
-          const source = [r, g, b][channel]
-          rgba[at + channel] = Math.round(
-            (source * alpha + rgba[at + channel] * under * (1 - alpha)) / over,
-          )
-        }
+        rgba[at] = blend(r, rgba[at] ?? 0, alpha, under, over)
+        rgba[at + 1] = blend(g, rgba[at + 1] ?? 0, alpha, under, over)
+        rgba[at + 2] = blend(b, rgba[at + 2] ?? 0, alpha, under, over)
         rgba[at + 3] = Math.round(over * 255)
       }
     }
@@ -197,7 +233,7 @@ const CRC_TABLE = Array.from({ length: 256 }, (_, n) => {
 
 function crc32(bytes: Uint8Array): number {
   let c = 0xffffffff
-  for (const byte of bytes) c = CRC_TABLE[(c ^ byte) & 0xff] ^ (c >>> 8)
+  for (const byte of bytes) c = (CRC_TABLE[(c ^ byte) & 0xff] ?? 0) ^ (c >>> 8)
   return (c ^ 0xffffffff) >>> 0
 }
 
@@ -220,10 +256,10 @@ function encodePng(rgba: Uint8Array, size: number, withAlpha: boolean): Buffer {
     for (let x = 0; x < size; x++) {
       const from = (y * size + x) * 4
       const to = row + 1 + x * channels
-      raw[to] = rgba[from]
-      raw[to + 1] = rgba[from + 1]
-      raw[to + 2] = rgba[from + 2]
-      if (withAlpha) raw[to + 3] = rgba[from + 3]
+      raw[to] = rgba[from] ?? 0
+      raw[to + 1] = rgba[from + 1] ?? 0
+      raw[to + 2] = rgba[from + 2] ?? 0
+      if (withAlpha) raw[to + 3] = rgba[from + 3] ?? 0
     }
   }
 
@@ -238,6 +274,82 @@ function encodePng(rgba: Uint8Array, size: number, withAlpha: boolean): Buffer {
     chunk('IDAT', deflateSync(raw, { level: 9 })),
     chunk('IEND', new Uint8Array()),
   ])
+}
+
+function paeth(a: number, b: number, c: number): number {
+  const p = a + b - c
+  const pa = Math.abs(p - a)
+  const pb = Math.abs(p - b)
+  const pc = Math.abs(p - c)
+  if (pa <= pb && pa <= pc) return a
+  return pb <= pc ? b : c
+}
+
+type Decoded = { width: number; height: number; channels: number; pixels: Buffer }
+
+/** Decodes an 8-bit RGB or RGBA PNG to unfiltered scanlines. */
+function decodePng(bytes: Buffer): Decoded {
+  let header: Buffer | null = null
+  const parts: Buffer[] = []
+  let at = 8
+  while (at + 8 <= bytes.length) {
+    const length = bytes.readUInt32BE(at)
+    const type = bytes.toString('ascii', at + 4, at + 8)
+    const data = bytes.subarray(at + 8, at + 8 + length)
+    if (type === 'IHDR') header = Buffer.from(data)
+    if (type === 'IDAT') parts.push(Buffer.from(data))
+    at += 12 + length
+  }
+  if (header == null || parts.length === 0) {
+    throw new Error('Not a PNG this script can read: no IHDR or no IDAT')
+  }
+
+  const width = header.readUInt32BE(0)
+  const height = header.readUInt32BE(4)
+  const colourType = header[9]
+  if (header[8] !== 8 || (colourType !== 2 && colourType !== 6)) {
+    throw new Error(`Unsupported PNG: bit depth ${header[8]}, colour type ${colourType}`)
+  }
+  const channels = colourType === 6 ? 4 : 3
+
+  const raw = inflateSync(Buffer.concat(parts))
+  const stride = width * channels
+  const pixels = Buffer.alloc(height * stride)
+  let from = 0
+  for (let y = 0; y < height; y++) {
+    const filter = raw[from++] ?? 0
+    const row = y * stride
+    const prior = row - stride
+    for (let i = 0; i < stride; i++) {
+      const x = raw[from + i] ?? 0
+      const a = i >= channels ? (pixels[row + i - channels] ?? 0) : 0
+      const b = y > 0 ? (pixels[prior + i] ?? 0) : 0
+      const c = i >= channels && y > 0 ? (pixels[prior + i - channels] ?? 0) : 0
+      let value: number
+      switch (filter) {
+        case 0:
+          value = x
+          break
+        case 1:
+          value = x + a
+          break
+        case 2:
+          value = x + b
+          break
+        case 3:
+          value = x + ((a + b) >> 1)
+          break
+        case 4:
+          value = x + paeth(a, b, c)
+          break
+        default:
+          throw new Error(`Unknown PNG filter type ${filter}`)
+      }
+      pixels[row + i] = value & 0xff
+    }
+    from += stride
+  }
+  return { width, height, channels, pixels }
 }
 
 /** Returns the mark's bounding radius in viewBox units, taken from the outer hexagon. */
@@ -270,25 +382,41 @@ ${paths}
 `
 }
 
-async function main(): Promise<void> {
+type Generated = { files: string[]; markShare: number }
+
+/** Writes every icon below `root` and returns their paths relative to it. */
+async function generate(root: string): Promise<Generated> {
   const svg = await readFile(LOGO, 'utf8')
-  const viewBox = parseViewBox(svg)
-  const polygons = parsePolygons(svg)
-  if (polygons.length !== 8) {
-    throw new Error(`Expected 8 polygons in the logo, found ${polygons.length}`)
+  if (svg.includes('transform=')) {
+    throw new Error('The logo carries a transform; this renderer projects raw coordinates only')
   }
 
-  const radius = markRadius(polygons[0], viewBox)
+  const viewBox = parseViewBox(svg)
+  const polygons = parsePolygons(svg)
+  const outer = polygons[0]
+  if (polygons.length !== 8 || outer == null) {
+    throw new Error(`Expected 8 polygons in the logo, found ${polygons.length}`)
+  }
+  assertOuterEnclosesTheRest(polygons)
+
+  const radius = markRadius(outer, viewBox)
   // the contentScale that makes the mark's bounding circle span the given share of the canvas
   const fill = (share: number) => (share * viewBox) / (2 * radius)
 
+  const files: string[] = []
+  const write = async (relative: string, contents: Buffer | string): Promise<void> => {
+    const absolute = join(root, relative)
+    await mkdir(dirname(absolute), { recursive: true })
+    await writeFile(absolute, contents)
+    files.push(relative)
+  }
+
   // iOS: one universal 1024 slot, opaque, the viewBox filling the canvas.
-  await mkdir(IOS_ICONSET, { recursive: true })
-  await writeFile(
+  await write(
     join(IOS_ICONSET, 'AppIcon.png'),
     encodePng(render(polygons, viewBox, { size: 1024, contentScale: 1 }), 1024, false),
   )
-  await writeFile(
+  await write(
     join(IOS_ICONSET, 'Contents.json'),
     `${JSON.stringify(
       {
@@ -305,13 +433,12 @@ async function main(): Promise<void> {
   // Android: PNGs for API 24 and 25, which predate the adaptive icon.
   for (const [density, size] of Object.entries(LEGACY_DENSITIES)) {
     const directory = join(ANDROID_RES, `mipmap-${density}`)
-    await mkdir(directory, { recursive: true })
     const contentScale = fill(LEGACY_FILL)
-    await writeFile(
+    await write(
       join(directory, 'ic_launcher.png'),
       encodePng(render(polygons, viewBox, { size, contentScale }), size, true),
     )
-    await writeFile(
+    await write(
       join(directory, 'ic_launcher_round.png'),
       encodePng(render(polygons, viewBox, { size, contentScale, round: true }), size, true),
     )
@@ -325,15 +452,14 @@ async function main(): Promise<void> {
     })
     .join('\n')
   const drawable = join(ANDROID_RES, 'drawable')
-  await mkdir(drawable, { recursive: true })
-  await writeFile(join(drawable, 'ic_launcher_foreground.xml'), vectorDrawable(foreground))
+  await write(join(drawable, 'ic_launcher_foreground.xml'), vectorDrawable(foreground))
 
   // The themed icon is the outer hexagon with the seven children punched out, so the system
   // can tint one shape. `evenOdd` over a single path is what makes the holes holes.
   const monochromePath = polygons
     .map((polygon) => toAdaptivePath(polygon.points, viewBox, radius))
     .join(' ')
-  await writeFile(
+  await write(
     join(drawable, 'ic_launcher_monochrome.xml'),
     vectorDrawable(
       `    <path android:fillColor="#FFFFFF" android:fillType="evenOdd" android:pathData="${monochromePath}" />`,
@@ -341,17 +467,16 @@ async function main(): Promise<void> {
   )
 
   const anydpi = join(ANDROID_RES, 'mipmap-anydpi-v26')
-  await mkdir(anydpi, { recursive: true })
   const adaptive = `<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
     <background android:drawable="@color/ic_launcher_background" />
     <foreground android:drawable="@drawable/ic_launcher_foreground" />
     <monochrome android:drawable="@drawable/ic_launcher_monochrome" />
 </adaptive-icon>
 `
-  await writeFile(join(anydpi, 'ic_launcher.xml'), adaptive)
-  await writeFile(join(anydpi, 'ic_launcher_round.xml'), adaptive)
+  await write(join(anydpi, 'ic_launcher.xml'), adaptive)
+  await write(join(anydpi, 'ic_launcher_round.xml'), adaptive)
 
-  await writeFile(
+  await write(
     join(ANDROID_RES, 'values', 'ic_launcher_background.xml'),
     `<resources>
     <color name="ic_launcher_background">${BACKGROUND}</color>
@@ -359,11 +484,67 @@ async function main(): Promise<void> {
 `,
   )
 
+  return { files, markShare: (2 * radius) / viewBox }
+}
+
+// PNGs are compared decoded: the compressed bytes depend on the zlib build, the committed
+// pixels do not.
+async function differs(committed: string, generated: string): Promise<boolean> {
+  const fresh = await readFile(generated)
+  let existing: Buffer
+  try {
+    existing = await readFile(committed)
+  } catch {
+    return true
+  }
+  if (!committed.endsWith('.png')) {
+    return existing.toString('utf8') !== fresh.toString('utf8')
+  }
+  const a = decodePng(existing)
+  const b = decodePng(fresh)
+  return (
+    a.width !== b.width ||
+    a.height !== b.height ||
+    a.channels !== b.channels ||
+    !a.pixels.equals(b.pixels)
+  )
+}
+
+async function check(): Promise<void> {
+  const scratch = await mkdtemp(join(tmpdir(), 'app-icons-'))
+  try {
+    const { files } = await generate(scratch)
+    const differing: string[] = []
+    for (const relative of files) {
+      if (await differs(join(ROOT, relative), join(scratch, relative))) {
+        differing.push(relative)
+      }
+    }
+    if (differing.length > 0) {
+      process.stderr.write('App icons differ from img/logo.svg; run `bun run icons`:\n')
+      for (const relative of differing) {
+        process.stderr.write(`  ${relative}\n`)
+      }
+      process.exit(1)
+    }
+    process.stdout.write(`${files.length} app icons match img/logo.svg\n`)
+  } finally {
+    await rm(scratch, { recursive: true, force: true })
+  }
+}
+
+async function main(): Promise<void> {
+  if (process.argv.includes('--check')) {
+    await check()
+    return
+  }
+
+  const { files, markShare } = await generate(ROOT)
   console.log(
-    `Wrote the iOS icon, ${Object.keys(LEGACY_DENSITIES).length * 2} legacy PNGs and the adaptive icon.`,
+    `Wrote the iOS icon, ${Object.keys(LEGACY_DENSITIES).length * 2} legacy PNGs and the adaptive icon (${files.length} files).`,
   )
   console.log(
-    `Mark spans ${((2 * radius) / viewBox) * 100}% of the iOS canvas and ` +
+    `Mark spans ${markShare * 100}% of the iOS canvas and ` +
       `${ADAPTIVE_SAFE_DIAMETER}dp of the ${ADAPTIVE_CANVAS}dp adaptive canvas.`,
   )
 }
