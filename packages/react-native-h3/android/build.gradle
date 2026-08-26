@@ -1,0 +1,48 @@
+buildscript {
+  repositories {
+    google()
+    mavenCentral()
+  }
+  dependencies {
+    classpath "com.android.tools.build:gradle:8.7.2"
+  }
+}
+
+apply plugin: 'com.android.library'
+
+android {
+  namespace "com.margelo.nitro.h3"
+  compileSdk 35
+
+  defaultConfig {
+    minSdk 24
+    externalNativeBuild {
+      cmake {
+        cppFlags "-frtti -fexceptions -std=c++20"
+        arguments "-DANDROID_STL=c++_shared"
+      }
+    }
+  }
+
+  externalNativeBuild {
+    cmake {
+      path "CMakeLists.txt"
+    }
+  }
+
+  buildFeatures {
+    prefab true  // <-- the prefabs CMake resolves via find_package
+  }
+}
+
+repositories {
+  google()
+  mavenCentral()
+}
+
+dependencies {
+  implementation 'com.facebook.react:react-android'
+}
+
+// Nitrogen autolinking
+apply from: '../nitrogen/generated/android/NitroH3+autolinking.gradle'
