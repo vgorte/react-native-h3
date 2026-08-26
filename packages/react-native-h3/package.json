@@ -7,7 +7,7 @@
   "types": "lib/index.d.ts",
   "react-native": "src/index",
   "source": "src/index",
-  "license": "Apache-2.0",
+  "license": "MIT",
   "author": "Viktor Gorte",
   "homepage": "https://github.com/vgorte/react-native-h3#readme",
   "repository": {

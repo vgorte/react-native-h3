@@ -2,7 +2,8 @@
 
 Fast H3 geospatial indexing for React Native, powered by [Nitro Modules](https://nitro.margelo.com).
 The H3 C library is vendored at v4.5.0 and compiled into the app, so calls run natively on iOS and
-Android without a JavaScript port. Apache-2.0, like H3 itself.
+Android without a JavaScript port. This package is MIT licensed. The vendored H3 library is
+Apache-2.0; its LICENSE and NOTICE files ship under `third_party/h3/`.
 
 ## Install
 
