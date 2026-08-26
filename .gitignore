@@ -50,8 +50,8 @@ apps/example/vendor/
 local.properties
 *.iml
 
-# TypeScript build output
-lib/
+# TypeScript build output (package root only; not third_party/h3/lib, which holds vendored C sources)
+/packages/*/lib/
 *.tsbuildinfo
 
 # caches
