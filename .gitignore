@@ -14,7 +14,7 @@
 node_modules/
 npm-debug.log
 
-# bun is the package manager here, nothing else
+# bun only; no npm or yarn lockfiles
 /package-lock.json
 /yarn.lock
 
@@ -50,7 +50,7 @@ apps/example/vendor/
 local.properties
 *.iml
 
-# TypeScript build output (package root only; not third_party/h3/lib, which holds vendored C sources)
+# TypeScript build output (package root only; not `third_party/h3/lib`, which holds vendored C sources)
 /packages/*/lib/
 *.tsbuildinfo
 
@@ -65,9 +65,8 @@ coverage
 # React Native Harness
 apps/example/.harness/
 
-# Local planning record: design decisions, implementation plans and the research
-# behind them. Kept on disk, deliberately outside the repository, because upstream
-# React Native packages use docs/ for the user manual, not for a design archive.
+# Local planning record (design decisions, plans and research)
+# Kept outside the repo; upstream React Native packages use `docs/` for the user manual, not a design archive.
 docs/superpowers/
 docs/research/
 Pods/

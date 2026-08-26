@@ -1,10 +1,10 @@
 /**
- * Vendors the upstream H3 C library into packages/react-native-h3/third_party/h3.
+ * Vendors the upstream H3 C library into `packages/react-native-h3/third_party/h3`.
  *
- * Rationale (design section 3): a git submodule is silently dangerous at publish time, because
- * `npm pack` takes what is on disk. An uninitialised submodule publishes an empty directory
- * without error and breaks at the consumer's native build. Copying in-tree makes an upstream
- * bump a reviewable commit instead of a repository state.
+ * A git submodule is silently dangerous at publish time: `npm pack` takes what is on disk, and an
+ * uninitialised submodule publishes an empty directory without error, breaking the consumer's
+ * native build. Copying in-tree makes an upstream bump a reviewable commit instead of a repository
+ * state.
  *
  * Usage:
  *   bun run scripts/vendor-h3.ts           rewrite the vendor directory from H3_TAG
@@ -42,7 +42,7 @@ async function download(into: string): Promise<string> {
   return join(into, root.name)
 }
 
-/** h3api.h.in has exactly three substitutions; CMake is not needed to resolve them. */
+/** Substitutes `h3api.h.in`'s three version macros; CMake is not needed to resolve them. */
 function substituteVersion(template: string, version: string): string {
   const parts = version.trim().split('.')
   if (parts.length !== 3) {
