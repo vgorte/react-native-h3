@@ -1,0 +1,21 @@
+{
+  "$schema": "https://nitro.margelo.com/nitro.schema.json",
+  "cxxNamespace": ["h3"],
+  "ios": {
+    "iosModuleName": "NitroH3"
+  },
+  "android": {
+    "androidNamespace": ["h3"],
+    "androidCxxLibName": "NitroH3"
+  },
+  "autolinking": {
+    "H3": {
+      "all": {
+        "language": "c++",
+        "implementationClassName": "HybridH3"
+      }
+    }
+  },
+  "ignorePaths": ["**/node_modules", "third_party"],
+  "gitAttributesGeneratedFlag": true
+}

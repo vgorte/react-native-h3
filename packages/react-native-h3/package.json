@@ -1,0 +1,58 @@
+{
+  "name": "react-native-h3",
+  "version": "0.1.0",
+  "description": "Fast H3 geospatial indexing for React Native, powered by Nitro Modules",
+  "main": "lib/index",
+  "module": "lib/index",
+  "types": "lib/index.d.ts",
+  "react-native": "src/index",
+  "source": "src/index",
+  "license": "Apache-2.0",
+  "keywords": [
+    "react-native",
+    "nitro-modules",
+    "h3",
+    "geospatial",
+    "hexagon",
+    "ios",
+    "android"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "tsc",
+    "specs": "nitrogen",
+    "test": "bun test"
+  },
+  "files": [
+    "src",
+    "lib",
+    "nitrogen",
+    "nitro.json",
+    "*.podspec",
+    "cpp/**/*.h",
+    "cpp/**/*.hpp",
+    "cpp/**/*.cpp",
+    "third_party/h3/include/**/*.h",
+    "third_party/h3/lib/**/*.c",
+    "third_party/h3/LICENSE",
+    "third_party/h3/NOTICE",
+    "third_party/h3/H3_VERSION",
+    "third_party/h3/sources.json",
+    "android/build.gradle",
+    "android/gradle.properties",
+    "android/CMakeLists.txt",
+    "android/src",
+    "README.md",
+    "LICENSE"
+  ],
+  "peerDependencies": {
+    "react": "*",
+    "react-native": "*",
+    "react-native-nitro-modules": "*"
+  },
+  "devDependencies": {
+    "nitrogen": "0.37.0",
+    "react-native-nitro-modules": "0.37.0",
+    "typescript": "^5.6.0"
+  }
+}
