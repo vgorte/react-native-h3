@@ -9,6 +9,7 @@
 
 #include <cmath>
 #include <cstdint>
+#include <memory>
 
 #include "core/CellBuffer.hpp"
 #include "core/H3ErrorMapping.hpp"
@@ -73,15 +74,20 @@ std::shared_ptr<ArrayBuffer> HybridH3::gridDisk(uint64_t origin, double k) {
   h3core::throwOnError(::gridDisk(origin, distance, buffer.data()));
 
   const int64_t count = buffer.compact();
-  uint64_t* cells = buffer.release();
-  if (cells == nullptr) {
+  // holds the block until `wrap` has taken it, so a throw in between does not leak
+  std::unique_ptr<uint64_t[]> owned(buffer.release());
+  if (owned == nullptr) {
     // unreachable for a valid k, since `maxGridDiskSize` is at least 1
     // `new uint64_t[0]` is unique, freeable and non-null, which `wrap` requires
-    cells = new uint64_t[0];
+    owned.reset(new uint64_t[0]);
   }
+
+  uint64_t* cells = owned.get();
   // the deleter frees the `uint64_t*` allocated here, never the `uint8_t*` wrapped below
-  return ArrayBuffer::wrap(reinterpret_cast<uint8_t*>(cells), static_cast<size_t>(count) * sizeof(uint64_t),
-                           [cells]() { delete[] cells; });
+  auto wrapped = ArrayBuffer::wrap(reinterpret_cast<uint8_t*>(cells), static_cast<size_t>(count) * sizeof(uint64_t),
+                                   [cells]() { delete[] cells; });
+  owned.release();
+  return wrapped;
 }
 
 } // namespace margelo::nitro::h3

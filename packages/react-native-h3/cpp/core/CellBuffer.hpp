@@ -21,13 +21,16 @@ namespace h3core {
  */
 class CellBuffer final {
 public:
-  /** Allocates `capacity` zeroed slots. Throws `std::invalid_argument` for a negative capacity. */
+  /**
+   * Allocates `capacity` zeroed slots. Throws `std::invalid_argument` for a negative capacity,
+   * and for one that does not fit in `size_t` once scaled to bytes.
+   */
   explicit CellBuffer(int64_t capacity);
 
   CellBuffer(const CellBuffer&) = delete;
   CellBuffer& operator=(const CellBuffer&) = delete;
-  CellBuffer(CellBuffer&&) noexcept = default;
-  CellBuffer& operator=(CellBuffer&&) noexcept = default;
+  CellBuffer(CellBuffer&&) = delete;
+  CellBuffer& operator=(CellBuffer&&) = delete;
   ~CellBuffer() = default;
 
   /** Returns the writable slots for H3 to fill. `nullptr` after `release()`. */
@@ -48,9 +51,9 @@ public:
   int64_t compact() noexcept;
 
   /**
-   * Hands the raw block to the caller, who takes ownership and must `delete[]` it.
-   * Feeds Nitro's `ArrayBuffer::wrap`, whose deleter frees the `uint64_t*` allocated here, not
-   * the `uint8_t*` the buffer is wrapped as.
+   * Hands the raw block to the caller, who takes ownership and must `delete[]` it. `capacity()`
+   * and `count()` read `0` afterwards. Feeds Nitro's `ArrayBuffer::wrap`, whose deleter frees the
+   * `uint64_t*` allocated here, not the `uint8_t*` the buffer is wrapped as.
    */
   uint64_t* release() noexcept;
 

@@ -7,7 +7,6 @@
 
 #include <gtest/gtest.h>
 
-#include <cstddef>
 #include <limits>
 #include <memory>
 #include <stdexcept>
@@ -123,13 +122,9 @@ TEST(CellBuffer, RejectsANegativeCapacity) {
 }
 
 TEST(CellBuffer, RejectsACapacityThatDoesNotFitInSizeT) {
-  // only meaningful on 32-bit ABIs (armeabi-v7a, x86), where `size_t` is narrower than `int64_t`.
-  if constexpr (sizeof(std::size_t) < sizeof(int64_t)) {
-    constexpr int64_t kUnaddressable = std::numeric_limits<int64_t>::max();
-    EXPECT_THROW(CellBuffer{kUnaddressable}, std::invalid_argument);
-  } else {
-    GTEST_SKIP();
-  }
+  // 64-bit included: `SIZE_MAX / sizeof(uint64_t)` stays below `INT64_MAX` on every ABI.
+  constexpr int64_t kUnaddressable = std::numeric_limits<int64_t>::max();
+  EXPECT_THROW(CellBuffer{kUnaddressable}, std::invalid_argument);
 }
 
 TEST(CellBuffer, CompactsARealPentagonGridDisk) {
