@@ -33,6 +33,7 @@ add_library(nitro_free_core STATIC
   ${PACKAGE_ROOT}/cpp/core/CellBuffer.cpp
   ${PACKAGE_ROOT}/cpp/core/H3ErrorMapping.cpp
   ${PACKAGE_ROOT}/cpp/core/Validation.cpp
+  ${PACKAGE_ROOT}/cpp/core/LinkedGeoPolygonReader.cpp
 )
 target_include_directories(nitro_free_core PUBLIC ${PACKAGE_ROOT}/cpp)
 target_link_libraries(nitro_free_core PUBLIC h3_vendored)
@@ -65,6 +66,7 @@ set(TEST_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/ValidationTest.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/OutParamCallTest.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/CellSetCallTest.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/LinkedGeoPolygonReaderTest.cpp
 )
 
 add_executable(tests ${TEST_SOURCES})

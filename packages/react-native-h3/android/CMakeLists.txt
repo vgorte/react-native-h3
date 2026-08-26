@@ -27,6 +27,7 @@ add_library(
   ${PACKAGE_ROOT}/cpp/core/CellBuffer.cpp
   ${PACKAGE_ROOT}/cpp/core/H3ErrorMapping.cpp
   ${PACKAGE_ROOT}/cpp/core/Validation.cpp
+  ${PACKAGE_ROOT}/cpp/core/LinkedGeoPolygonReader.cpp
   ${PACKAGE_ROOT}/cpp/HybridH3.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/main/cpp/cpp-adapter.cpp  # <-- `JNI_OnLoad`, Android only
 )
