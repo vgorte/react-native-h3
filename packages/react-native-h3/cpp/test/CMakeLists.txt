@@ -26,6 +26,16 @@ target_include_directories(h3_vendored PUBLIC ${H3_ROOT}/include)
 # upstream builds with these warnings off; we do not own this code.
 target_compile_options(h3_vendored PRIVATE -w)
 
+# Nitro-free core
+# Every memory hazard in the project lives here, so it must stay free of Nitro headers and
+# therefore testable on the host under sanitizers.
+add_library(nitro_free_core STATIC
+  ${PACKAGE_ROOT}/cpp/core/CellBuffer.cpp
+)
+target_include_directories(nitro_free_core PUBLIC ${PACKAGE_ROOT}/cpp)
+target_link_libraries(nitro_free_core PUBLIC h3_vendored)
+target_compile_options(nitro_free_core PRIVATE -Wall -Wextra -Wpedantic -Werror)
+
 # GoogleTest
 # Use an installed copy of 1.18.0 when there is one, fetch otherwise.
 find_package(GTest 1.18.0 QUIET)
@@ -47,15 +57,16 @@ include(GoogleTest)
 # Tasks 4 and 5 append their sources to both lists below.
 set(TEST_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/VendoredH3Test.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/CellBufferTest.cpp
 )
 
 add_executable(tests ${TEST_SOURCES})
-target_link_libraries(tests PRIVATE h3_vendored GTest::gtest_main)
+target_link_libraries(tests PRIVATE nitro_free_core GTest::gtest_main)
 gtest_discover_tests(tests)
 
 # Sanitised twin
 # LeakSanitizer needs Linux (CI or Docker); it does not exist on macOS/arm64.
 add_executable(tests_asan ${TEST_SOURCES})
-target_link_libraries(tests_asan PRIVATE h3_vendored GTest::gtest_main)
+target_link_libraries(tests_asan PRIVATE nitro_free_core GTest::gtest_main)
 target_compile_options(tests_asan PRIVATE -fsanitize=address,undefined -fno-omit-frame-pointer -g -O1)
 target_link_options(tests_asan PRIVATE -fsanitize=address,undefined)
