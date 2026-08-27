@@ -23,7 +23,7 @@ endforeach()
 
 add_library(h3_vendored STATIC ${H3_SOURCES})
 target_include_directories(h3_vendored PUBLIC ${H3_ROOT}/include)
-# upstream builds with these warnings off; we do not own this code.
+# upstream builds with these warnings off; this package does not own this code.
 target_compile_options(h3_vendored PRIVATE -w)
 
 # Nitro-free core

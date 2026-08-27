@@ -21,7 +21,7 @@ namespace {
 
 // San Francisco at resolution 9, from h3-js 4.5.0's `89283082803ffff`.
 constexpr H3Index kSanFrancisco = 0x89283082803ffffULL;
-// Names base cell `127`, of which only 122 exist, so `_h3ToFaceIjk` rejects it (`h3Index.c:1120`).
+// names base cell `127`, of which only 122 exist, so `_h3ToFaceIjk` rejects it (`h3Index.c:1120`).
 constexpr H3Index kInvalidCell = 0xffffffffffffffffULL;
 
 TEST(OutParamCall, ReturnsADoubleOutParam) {
@@ -75,7 +75,7 @@ TEST(OutParamCall, ThrowsUpstreamWordingOnAnH3Error) {
 }
 
 TEST(OutParamCall, LeavesNoValueBehindWhenItThrows) {
-  // The out-param is a local, so a failing call cannot publish a half-written value anywhere.
+  // the out-param is a local, so a failing call cannot publish a half-written value anywhere.
   double area = -1.0;
   try {
     area = h3shapes::callWithOutParam<double>(cellAreaKm2, kInvalidCell);

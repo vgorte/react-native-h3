@@ -1,6 +1,6 @@
 import { describe, expect, mock, test } from 'bun:test'
 
-// The HybridObject cannot exist off-device, and `src/native.ts` creates it at module scope. Mocking
+// the HybridObject cannot exist off-device, and `src/native.ts` creates it at module scope. Mocking
 // here, before the barrel is imported inside the tests, is what lets the export surface be checked.
 mock.module('react-native-nitro-modules', () => ({
   NitroModules: {

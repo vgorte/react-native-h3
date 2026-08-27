@@ -21,7 +21,7 @@ export interface Probe {
   close(): void
 }
 
-// The header of `cpp/test/ParityProbe.cpp` carries the argument and result encodings.
+// the header of `cpp/test/ParityProbe.cpp` carries the argument and result encodings.
 
 const BUILD_INSTRUCTIONS =
   'The parity probe is not built. Run:\n' +

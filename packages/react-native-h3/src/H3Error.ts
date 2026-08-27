@@ -6,7 +6,7 @@
  * documentation.
  */
 export class H3Error extends Error {
-  /** The H3 error code, or `undefined` when the failure is this package's own. */
+  /** Holds the H3 error code, or `undefined` when the failure is this package's own. */
   readonly code: number | undefined
 
   constructor(message: string, code?: number) {

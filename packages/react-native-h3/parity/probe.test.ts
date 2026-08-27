@@ -1,7 +1,7 @@
 import { describe, expect, mock, test } from 'bun:test'
 import { callMany, openProbe, skipWithoutProbe } from './probe'
 
-// The HybridObject cannot exist off-device, and `src/native.ts` creates it at module scope. Mocking
+// the HybridObject cannot exist off-device, and `src/native.ts` creates it at module scope. Mocking
 // here, before the barrel is imported, is what lets the export surface be compared with the probe.
 mock.module('react-native-nitro-modules', () => ({
   NitroModules: {
@@ -76,7 +76,7 @@ describe.skipIf(skipWithoutProbe)('parity probe', () => {
     const probe = openProbe()
     try {
       expect(() => probe.call('cellAreaKm2', '1')).toThrow('Cell argument was not valid')
-      // The process is still usable afterwards, which is what makes a long-lived suite viable.
+      // the process is still usable afterwards, which is what makes a long-lived suite viable.
       expect(probe.cell('latLngToCell', '0', '0', '0')).toBe('8075fffffffffff')
     } finally {
       probe.close()

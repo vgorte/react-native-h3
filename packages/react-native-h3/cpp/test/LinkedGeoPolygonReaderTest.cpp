@@ -86,7 +86,7 @@ TEST(LinkedGeoPolygonReader, ReturnsDegreesNotRadians) {
 }
 
 TEST(LinkedGeoPolygonReader, ThrowsAndCleansUpOnAResolutionMismatch) {
-  // Mixed resolutions are rejected by `cellsToLinkedMultiPolygon`. Under LeakSanitizer this test is
+  // mixed resolutions are rejected by `cellsToLinkedMultiPolygon`; under LeakSanitizer this test is
   // the proof that `destroyLinkedMultiPolygon` runs on the error path, where partial structure may
   // already be linked.
   uint64_t parent = 0;

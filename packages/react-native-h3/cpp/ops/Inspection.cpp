@@ -59,8 +59,7 @@ int getIndexDigit(uint64_t cell, double digit) {
   // `getIndexDigit` validates only its `res` (`h3Index.c:116-122`), so a malformed index otherwise
   // yields a digit rather than an error.
   internal::requireValidCell(cell);
-  // H3 rejects a `res` outside `1` to `15` with `E_RES_DOMAIN` (`h3Index.c:117`), so that range
-  // check is left to it; only the narrowing happens here.
+  // H3 range-checks `res` itself, with `E_RES_DOMAIN` (`h3Index.c:117`); only the narrowing happens here.
   return h3shapes::callWithOutParam<int>(::getIndexDigit, cell, h3core::toInteger(digit, "Digit must be an integer"));
 }
 

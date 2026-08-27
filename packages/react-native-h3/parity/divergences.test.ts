@@ -26,8 +26,8 @@ type Expect<T extends true> = T
 /** Answers `true` only when the two types are the same in both directions. */
 type IsExactly<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false
 
-// The probe speaks JSON, so `tsc` is what proves our half of the two shape rows; the h3-js half is
-// asserted at run time in `divergence: the shape of the public surface`.
+// the probe speaks JSON, so `tsc` is what proves this package's half of the two shape rows; the
+// h3-js half is asserted at run time in `divergence: the shape of the public surface`.
 export type CellIsABigint = Expect<IsExactly<ReturnType<typeof api.latLngToCell>, bigint>>
 export type CellSetIsATypedArray = Expect<
   IsExactly<ReturnType<typeof api.gridDisk>, BigUint64Array>
@@ -200,7 +200,7 @@ describe.skipIf(skipWithoutProbe)('divergence: an argument that is not an intege
     ]
     for (const [request, message, produce, truncated] of cases) {
       expect(refusal(request), request).toBe(message)
-      // our wording carries no `(code: N)`, because H3 never saw the argument
+      // this package's wording carries no `(code: N)`, because H3 never saw the argument
       expect(codeOf(message), request).toBeUndefined()
       expect(produce(), request).toEqual(truncated)
     }

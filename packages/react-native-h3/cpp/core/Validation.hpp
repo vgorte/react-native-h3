@@ -11,15 +11,13 @@
 
 namespace h3core {
 
-/**
- * Narrows the doubles arriving from JavaScript to the integer types H3 takes, in one place, so the
- * interior can trust its arguments. Only the narrowing belongs here: every domain rule (a
- * resolution of `0` to `15`, a non-negative `k`) is H3's, so that upstream's `describeH3Error`
- * wording is what reaches JavaScript.
- *
- * Each of these throws `std::runtime_error` through `h3core::throwInvalidArgument`, whose message
- * is the whole error contract once Nitro has erased everything but `what()`.
- */
+// narrows the doubles arriving from JavaScript to the integer types H3 takes, in one place, so
+// the interior can trust its arguments. Only the narrowing belongs here: every domain rule (a
+// resolution of `0` to `15`, a non-negative `k`) is H3's, so that upstream's `describeH3Error`
+// wording is what reaches JavaScript.
+//
+// each of these throws `std::runtime_error` through `h3core::throwInvalidArgument`, whose
+// message is the whole error contract once Nitro has erased everything but `what()`.
 
 /** Converts an integral double to `int`, throwing `message` when it is not one, or does not fit. */
 int toInteger(double value, const char* message);
@@ -27,7 +25,7 @@ int toInteger(double value, const char* message);
 /**
  * Converts an integral double to `int64_t`, rejecting negatives and anything a JavaScript number
  * cannot represent exactly. Describes the length of a JavaScript array, which H3 never sees, so
- * these bounds are the only ones there are.
+ * `toCount`'s bounds are the only ones there are.
  */
 int64_t toCount(double value, const char* message);
 

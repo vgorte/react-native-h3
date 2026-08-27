@@ -30,7 +30,7 @@ namespace {
 
 double cellAreaKm2(uint64_t cell) {
   // all three areas run through `cellAreaRads2`, which only reaches `_h3ToFaceIjk` and its base cell
-  // range check (`h3Index.c:1120`), so a malformed index otherwise measures as something.
+  // range check (`h3Index.c:1120`), so a malformed index otherwise yields a resolution-0 area.
   internal::requireValidCell(cell);
   return h3shapes::callWithOutParam<double>(::cellAreaKm2, cell);
 }

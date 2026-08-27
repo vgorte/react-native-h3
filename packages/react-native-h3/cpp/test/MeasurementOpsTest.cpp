@@ -69,7 +69,7 @@ TEST(MiscOps, HexagonAveragesRejectAnImpossibleResolution) {
 }
 
 TEST(MiscOps, HexagonAveragesRejectAFractionalResolution) {
-  // a resolution H3 has no way to express is the one case our own wording covers
+  // a resolution H3 has no way to express is the one case this package's own wording covers
   try {
     h3ops::getHexagonAreaAvgKm2(9.5);
     FAIL() << "expected an exception";

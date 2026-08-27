@@ -7,7 +7,7 @@ import { native } from './native'
  *
  * @param res The resolution, `0` to `15`.
  * @returns The average area in square kilometres.
- * @throws {@linkcode H3Error} if the resolution is out of range.
+ * @throws {@linkcode H3Error} if the resolution is fractional or out of range.
  */
 export function getHexagonAreaAvgKm2(res: number): number {
   try {
@@ -22,7 +22,7 @@ export function getHexagonAreaAvgKm2(res: number): number {
  *
  * @param res The resolution, `0` to `15`.
  * @returns The average area in square metres.
- * @throws {@linkcode H3Error} if the resolution is out of range.
+ * @throws {@linkcode H3Error} if the resolution is fractional or out of range.
  */
 export function getHexagonAreaAvgM2(res: number): number {
   try {
@@ -37,7 +37,7 @@ export function getHexagonAreaAvgM2(res: number): number {
  *
  * @param res The resolution, `0` to `15`.
  * @returns The average edge length in kilometres.
- * @throws {@linkcode H3Error} if the resolution is out of range.
+ * @throws {@linkcode H3Error} if the resolution is fractional or out of range.
  */
 export function getHexagonEdgeLengthAvgKm(res: number): number {
   try {
@@ -52,7 +52,7 @@ export function getHexagonEdgeLengthAvgKm(res: number): number {
  *
  * @param res The resolution, `0` to `15`.
  * @returns The average edge length in metres.
- * @throws {@linkcode H3Error} if the resolution is out of range.
+ * @throws {@linkcode H3Error} if the resolution is fractional or out of range.
  */
 export function getHexagonEdgeLengthAvgM(res: number): number {
   try {
@@ -70,7 +70,7 @@ export function getHexagonEdgeLengthAvgM(res: number): number {
  *
  * @param res The resolution, `0` to `15`.
  * @returns The number of cells.
- * @throws {@linkcode H3Error} if the resolution is out of range.
+ * @throws {@linkcode H3Error} if the resolution is fractional or out of range.
  */
 export function getNumCells(res: number): number {
   try {
@@ -104,7 +104,7 @@ export function getRes0Cells(): BigUint64Array {
  *
  * @param res The resolution, `0` to `15`.
  * @returns The twelve pentagons.
- * @throws {@linkcode H3Error} if the resolution is out of range.
+ * @throws {@linkcode H3Error} if the resolution is fractional or out of range.
  */
 export function getPentagons(res: number): BigUint64Array {
   try {

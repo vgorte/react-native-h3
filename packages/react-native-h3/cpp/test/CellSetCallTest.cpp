@@ -23,7 +23,7 @@ namespace {
 
 // San Francisco at resolution 9, from h3-js 4.5.0's `89283082803ffff`.
 constexpr H3Index kSanFrancisco = 0x89283082803ffffULL;
-// Resolution 1 pentagon, from h3-js `getPentagons(1)[0]` == `81083ffffffffff`.
+// resolution 1 pentagon, from h3-js `getPentagons(1)[0]` == `81083ffffffffff`.
 constexpr H3Index kPentagon = 0x81083ffffffffffULL;
 
 TEST(CellSetCall, FillsAndCompactsAGridDisk) {

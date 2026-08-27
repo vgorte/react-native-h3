@@ -34,7 +34,7 @@ const DISTANCE_TOLERANCE = 1e-14
  */
 const CONVERSION_TOLERANCE = 1e-15
 
-/** Compares our answer to h3-js's for every input, reporting every mismatch rather than the first. */
+/** Compares this package's answer to h3-js's for every input, reporting every mismatch rather than the first. */
 function compare<T>(
   requests: string[],
   inputs: string[],

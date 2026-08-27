@@ -14,7 +14,7 @@ describe('H3Error', () => {
   })
 
   test('leaves an unprefixed message alone', () => {
-    // Promise rejections arrive without the prefix.
+    // `Promise` rejections arrive without the prefix.
     try {
       rethrowAsH3Error(new Error('Cell argument was not valid (code: 5)'))
     } catch (error) {

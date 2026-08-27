@@ -1,20 +1,20 @@
 import type { HybridObject, UInt64 } from 'react-native-nitro-modules'
 
-// A latitude and longitude in degrees. Nitrogen generates a C++ struct of the same name in
+// a latitude and longitude in degrees. Nitrogen generates a C++ struct of the same name in
 // `margelo::nitro::h3`, which is not H3's own `::LatLng`, and that one carries radians.
 export interface LatLng {
   lat: number
   lng: number
 }
 
-// Local IJ hexagon coordinates. Nitrogen generates a C++ struct of the same name in
+// local IJ hexagon coordinates. Nitrogen generates a C++ struct of the same name in
 // `margelo::nitro::h3`, which is not H3's own `::CoordIJ`.
 export interface CoordIJ {
   i: number
   j: number
 }
 
-// Internal binding surface; the public API in `src/` wraps these methods.
+// internal binding surface; the public API in `src/` wraps these methods.
 export interface H3 extends HybridObject<{ ios: 'c++'; android: 'c++' }> {
   // `bigint` without signedness is a nitrogen error, so cells are `UInt64`.
   latLngToCell(lat: number, lng: number, res: number): UInt64

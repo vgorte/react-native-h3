@@ -5,7 +5,7 @@ import type { ContainmentModeName, ContainmentModeValue, LatLng, Ring } from './
 import { CONTAINMENT_MODE_BY_NAME } from './types'
 
 // H3's `CONTAINMENT_INVALID`, so an unrecognised mode name earns the same `E_OPTION_INVALID` that
-// h3-js reports for one, rather than a wording of ours.
+// h3-js reports for one, rather than this package's own wording.
 const CONTAINMENT_INVALID = 4
 
 /**

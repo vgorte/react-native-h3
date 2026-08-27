@@ -83,7 +83,7 @@ h3core::CellBuffer compactCells(const uint64_t* cells, int64_t count) {
   // through whatever it cannot parent
   requireValidCells(cells, count);
   // the one function with no size function anywhere: the header says `numHexes` "is the size of the
-  // input and output arrays". The output is `H3_NULL` padded, so this is the compacting path.
+  // input and output arrays", and the `H3_NULL`-padded output makes this the compacting path.
   return h3shapes::fillCompactedCells([&] { return count; },
                                       [&](uint64_t* out) { return ::compactCells(cells, out, count); });
 }
@@ -95,14 +95,15 @@ h3core::CellBuffer uncompactCells(const uint64_t* cells, int64_t count, double r
   // both callers of `_hasChildAtRes` answer `E_RES_MISMATCH` for a resolution above 15
   // (`h3Index.c:786`, `h3Index.c:819`), and an empty set reaches neither.
   internal::requireResolution(resolution);
-  // five arguments carrying two lengths. `uncompactCellsSize` is exact (`h3Index.c:807`), and
-  // `uncompactCells` answers `E_MEMORY_BOUNDS` if the buffer is short of it anyway.
+  // `uncompactCellsSize` is exact (`h3Index.c:807`), and `uncompactCells` answers `E_MEMORY_BOUNDS`
+  // if the buffer is short of it anyway.
   int64_t size = 0;
   return h3shapes::fillExactCells(
       [&] {
         size = h3shapes::callWithOutParam<int64_t>(::uncompactCellsSize, cells, count, resolution);
         return size;
       },
+      // five arguments carrying two lengths: `count` and `size`
       [&](uint64_t* out) { return ::uncompactCells(cells, count, out, size, resolution); });
 }
 

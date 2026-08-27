@@ -44,8 +44,8 @@ h3core::CellBuffer gridRing(uint64_t origin, double k) {
   // `gridRingUnsafe` short-circuits `k` of 0 to the origin itself (`algos.c:794`)
   internal::requireValidCell(origin);
   const int distance = h3core::toInteger(k, kIntegerK);
-  // `maxGridRingSize` returns 1 for `k` of 0 and `6 * k` otherwise (`algos.c:344`), which is the
-  // formula h3-js computes inline. Calling it keeps one source of truth for the ring size.
+  // `maxGridRingSize` returns 1 for `k` of 0 and `6 * k` otherwise (`algos.c:344`); calling it
+  // instead of reimplementing the formula keeps one source of truth for the ring size.
   return h3shapes::fillCompactedCells([&] { return h3shapes::callWithOutParam<int64_t>(::maxGridRingSize, distance); },
                                       [&](uint64_t* out) { return ::gridRing(origin, distance, out); });
 }
@@ -109,8 +109,8 @@ h3core::CellBuffer gridPathCells(uint64_t start, uint64_t end) {
   // `cellToLocalIjk` checks the base cell range and nothing more (`localij.c:145`)
   internal::requireValidCell(start);
   internal::requireValidCell(end);
-  // `gridPathCellsSize` is `gridDistance` plus one and therefore exact (`localij.c:620`). h3-js
-  // drops the error check at this one call site; keeping it is a divergence worth asserting.
+  // `gridPathCellsSize` is `gridDistance` plus one and therefore exact (`localij.c:620`); h3-js
+  // drops the error check at this one call site, but keeping it is a divergence worth asserting.
   return h3shapes::fillExactCells([&] { return h3shapes::callWithOutParam<int64_t>(::gridPathCellsSize, start, end); },
                                   [&](uint64_t* out) { return ::gridPathCells(start, end, out); });
 }

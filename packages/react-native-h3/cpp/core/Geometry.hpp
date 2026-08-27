@@ -11,12 +11,10 @@
 
 namespace h3core {
 
-/**
- * Describes the geometry the public API exposes, in degrees, for the Nitro-free core.
- *
- * These stay separate types from H3's own `::LatLng` and `::CoordIJ`, which carry radians, so that
- * a unit mix-up is a compile error rather than an answer wrong by a factor of 57.
- */
+// describes the geometry the public API exposes, in degrees, for the Nitro-free core.
+//
+// these stay separate types from H3's own `::LatLng` and `::CoordIJ`, which carry radians, so
+// that a unit mix-up is a compile error rather than an answer wrong by a factor of 57.
 
 /** Holds a latitude and a longitude in degrees. */
 struct Point {

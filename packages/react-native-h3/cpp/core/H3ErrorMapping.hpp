@@ -19,7 +19,7 @@ namespace h3core {
  */
 void throwOnError(uint32_t error);
 
-/** Throws a `std::runtime_error` for an argument H3 itself would not reject, with our own wording. */
+/** Throws a `std::runtime_error` for an argument H3 itself would not reject, with this package's own wording. */
 [[noreturn]] void throwInvalidArgument(const char* message);
 
 } // namespace h3core

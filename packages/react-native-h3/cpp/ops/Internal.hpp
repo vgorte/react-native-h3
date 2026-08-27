@@ -43,8 +43,8 @@ inline void requireValidCell(uint64_t cell) {
 /**
  * Rejects a resolution outside `0` to `15`, with `E_RES_DOMAIN`.
  *
- * For operations whose own checks would otherwise run before H3 sees the resolution, so that a
- * nonsense resolution still reaches the caller in H3's wording.
+ * Some operations' own checks would otherwise run before H3 sees the resolution; calling this
+ * first keeps a nonsense resolution's error in H3's wording.
  */
 inline void requireResolution(int res) {
   if (res < 0 || res > kMaxResolution) {

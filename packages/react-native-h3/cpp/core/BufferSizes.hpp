@@ -12,14 +12,12 @@
 
 namespace h3core {
 
-/**
- * Pins the four H3 output buffer sizes that have no size function and no hint in their signature.
- * Passing an undersized buffer to any of them is a silent heap overflow, not an `H3Error`, so none
- * of the numbers below are ever written as inline literals at a call site; each is instead pinned
- * by a canary test in `cpp/test/BufferSizesTest.cpp` that asserts the count H3 actually writes.
- *
- * Verified against uber/h3 `v4.5.0` (commit `1b536c34`).
- */
+// pins the four H3 output buffer sizes that have no size function and no hint in their signature.
+// passing an undersized buffer to any of them is a silent heap overflow, not an `H3Error`, so none
+// of the numbers below are ever written as inline literals at a call site; each is instead pinned
+// by a canary test in `cpp/test/BufferSizesTest.cpp` that asserts the count H3 actually writes.
+//
+// verified against uber/h3 `v4.5.0` (commit `1b536c34`).
 
 /**
  * Pins the required capacity for `originToDirectedEdges(H3Index origin, H3Index *edges)`.
