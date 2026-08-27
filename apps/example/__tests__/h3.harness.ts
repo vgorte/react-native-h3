@@ -1,8 +1,24 @@
-import { gridDisk, H3Error, latLngToCell } from 'react-native-h3'
+import {
+  ContainmentMode,
+  cellsToMultiPolygon,
+  cellToBoundary,
+  cellToLatLng,
+  getResolution,
+  gridDisk,
+  H3Error,
+  latLngToCell,
+  polygonToCellsExperimental,
+} from 'react-native-h3'
 import { expect, test } from 'react-native-harness'
 
 const SAN_FRANCISCO_RES_9 = 0x89283082803ffffn
 const PENTAGON_RES_1 = 0x81083ffffffffffn
+const SAN_FRANCISCO_RECTANGLE: [lat: number, lng: number][] = [
+  [37.85, -122.5],
+  [37.85, -122.35],
+  [37.7, -122.35],
+  [37.7, -122.5],
+]
 
 test('a UInt64 with the high bit set survives the crossing', () => {
   const cell = latLngToCell(37.7749, -122.4194, 9)
@@ -48,7 +64,10 @@ test('errors arrive as H3Error with upstream wording and no Nitro prefix', () =>
     thrown = error
   }
   expect(thrown).toBeInstanceOf(H3Error)
-  expect((thrown as H3Error).message).toBe('Resolution argument was outside of acceptable range')
+  expect((thrown as H3Error).message).toBe(
+    'Resolution argument was outside of acceptable range (code: 4)',
+  )
+  expect((thrown as H3Error).code).toBe(4)
 })
 
 test('an invalid cell is rejected by the C layer', () => {
@@ -59,7 +78,8 @@ test('an invalid cell is rejected by the C layer', () => {
     thrown = error
   }
   expect(thrown).toBeInstanceOf(H3Error)
-  expect((thrown as H3Error).message).toBe('Cell argument was not valid')
+  expect((thrown as H3Error).message).toBe('Cell argument was not valid (code: 5)')
+  expect((thrown as H3Error).code).toBe(5)
 })
 
 test('a negative k is rejected by the C layer', () => {
@@ -70,5 +90,65 @@ test('a negative k is rejected by the C layer', () => {
     thrown = error
   }
   expect(thrown).toBeInstanceOf(H3Error)
-  expect((thrown as H3Error).message).toBe('Argument was outside of acceptable range')
+  expect((thrown as H3Error).message).toBe('Argument was outside of acceptable range (code: 2)')
+  expect((thrown as H3Error).code).toBe(2)
+})
+
+test('three-level nesting crosses the bridge intact', () => {
+  // `LatLng[][][]` is expressible in nitrogen but is not covered by Nitro's own test module.
+  const single = cellsToMultiPolygon(new BigUint64Array([SAN_FRANCISCO_RES_9]))
+  expect(Array.isArray(single)).toBe(true)
+  expect(single.length).toBe(1)
+  expect(single[0]?.length).toBe(1)
+  expect(single[0]?.[0]?.length).toBe(6)
+  expect(typeof single[0]?.[0]?.[0]?.lat).toBe('number')
+  expect(typeof single[0]?.[0]?.[0]?.lng).toBe('number')
+})
+
+test('a multi-cell outline keeps its shape', () => {
+  const disk = cellsToMultiPolygon(gridDisk(SAN_FRANCISCO_RES_9, 1))
+  expect(disk.length).toBe(1)
+  expect(disk[0]?.length).toBe(1)
+  expect(disk[0]?.[0]?.length).toBe(18)
+})
+
+test('a cell boundary is a flat array of structs', () => {
+  const boundary = cellToBoundary(SAN_FRANCISCO_RES_9)
+  expect(boundary.length).toBe(6)
+  expect(boundary[0]?.lat).toBeCloseTo(37.7720104773324, 9)
+  expect(boundary[0]?.lng).toBeCloseTo(-122.41701147197293, 9)
+})
+
+test('a cell centre round-trips to the same cell', () => {
+  const centre = cellToLatLng(SAN_FRANCISCO_RES_9)
+  expect(latLngToCell(centre.lat, centre.lng, 9)).toBe(SAN_FRANCISCO_RES_9)
+})
+
+test('getResolution answers -1 for anything that is not a cell', () => {
+  expect(getResolution(SAN_FRANCISCO_RES_9)).toBe(9)
+  // h3-js guards this with `isValidCell` alone; `1n` is not a cell at all.
+  expect(getResolution(1n)).toBe(-1)
+})
+
+test('a containment mode may be named the way h3-js names it', () => {
+  const byName = polygonToCellsExperimental([SAN_FRANCISCO_RECTANGLE], 7, 'containmentCenter')
+  const byNumber = polygonToCellsExperimental([SAN_FRANCISCO_RECTANGLE], 7, ContainmentMode.center)
+  // h3-js `polygonToCellsExperimental(rect, 7, 'containmentCenter')` has 41 cells
+  expect(byName.length).toBe(41)
+  // the name resolves before the call, so both arguments must reach H3 as the same mode.
+  expect(Array.from(byName)).toEqual(Array.from(byNumber))
+})
+
+test('an unknown containment mode name is rejected by the C layer', () => {
+  let thrown: unknown
+  try {
+    // @ts-expect-error the point is what happens when the type is ignored
+    polygonToCellsExperimental([SAN_FRANCISCO_RECTANGLE], 7, 'containmentNone')
+  } catch (error) {
+    thrown = error
+  }
+  expect(thrown).toBeInstanceOf(H3Error)
+  // the name resolves to `CONTAINMENT_INVALID`, so H3 words the rejection and h3-js's code matches.
+  expect((thrown as H3Error).message).toBe('Mode or flags argument was not valid (code: 15)')
+  expect((thrown as H3Error).code).toBe(15)
 })
