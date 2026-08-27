@@ -20,10 +20,10 @@ namespace {
 constexpr uint64_t kSanFrancisco = 0x89283082803ffffULL;
 
 TEST(MeasurementOps, CellAreaSplitsByUnit) {
-  // h3-js `cellArea("89283082803ffff", unit)`
-  EXPECT_NEAR(h3ops::cellAreaKm2(kSanFrancisco), 0.10940247351390452, 1e-15);
-  EXPECT_NEAR(h3ops::cellAreaM2(kSanFrancisco), 109402.47351390452, 1e-9);
-  EXPECT_NEAR(h3ops::cellAreaRads2(kSanFrancisco), 2.695323836286712e-9, 1e-23);
+  // h3-js `cellArea("89283082803ffff", unit)`; bounds are 1e-11 relative because Linux libm differs by 5e-12
+  EXPECT_NEAR(h3ops::cellAreaKm2(kSanFrancisco), 0.10940247351390452, 1e-12);
+  EXPECT_NEAR(h3ops::cellAreaM2(kSanFrancisco), 109402.47351390452, 1e-6);
+  EXPECT_NEAR(h3ops::cellAreaRads2(kSanFrancisco), 2.695323836286712e-9, 3e-20);
 }
 
 TEST(MeasurementOps, CellAreaRejectsAnInvalidCell) {
