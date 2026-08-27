@@ -83,6 +83,7 @@ set(TEST_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/HierarchyOpsTest.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/TraversalOpsTest.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/EdgesOpsTest.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/MiscListsOpsTest.cpp
 )
 
 add_executable(tests ${TEST_SOURCES})

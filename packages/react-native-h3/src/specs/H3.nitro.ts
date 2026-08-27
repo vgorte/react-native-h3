@@ -95,4 +95,9 @@ export interface H3 extends HybridObject<{ ios: 'c++'; android: 'c++' }> {
   getHexagonEdgeLengthAvgM(res: number): number
   // C answers `int64_t`; every value fits a JavaScript number exactly, so the spec type is `number`.
   getNumCells(res: number): number
+  getRes0Cells(): ArrayBuffer
+  getPentagons(res: number): ArrayBuffer
+  // the one cell set whose elements are face numbers rather than indexes, so it crosses as
+  // `std::vector<double>` rather than as a buffer.
+  getIcosahedronFaces(cell: UInt64): number[]
 }

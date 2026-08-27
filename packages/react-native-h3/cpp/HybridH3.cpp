@@ -293,4 +293,22 @@ double HybridH3::getNumCells(double res) {
   return static_cast<double>(h3ops::getNumCells(res));
 }
 
+std::shared_ptr<ArrayBuffer> HybridH3::getRes0Cells() {
+  return toArrayBuffer(h3ops::getRes0Cells());
+}
+
+std::shared_ptr<ArrayBuffer> HybridH3::getPentagons(double res) {
+  return toArrayBuffer(h3ops::getPentagons(res));
+}
+
+std::vector<double> HybridH3::getIcosahedronFaces(uint64_t cell) {
+  const std::vector<int> faces = h3ops::getIcosahedronFaces(cell);
+  std::vector<double> widened;
+  widened.reserve(faces.size());
+  for (const int face : faces) {
+    widened.push_back(static_cast<double>(face));
+  }
+  return widened;
+}
+
 } // namespace margelo::nitro::h3

@@ -114,6 +114,9 @@ namespace margelo::nitro::h3 {
       virtual double getHexagonEdgeLengthAvgKm(double res) = 0;
       virtual double getHexagonEdgeLengthAvgM(double res) = 0;
       virtual double getNumCells(double res) = 0;
+      virtual std::shared_ptr<ArrayBuffer> getRes0Cells() = 0;
+      virtual std::shared_ptr<ArrayBuffer> getPentagons(double res) = 0;
+      virtual std::vector<double> getIcosahedronFaces(uint64_t cell) = 0;
 
     protected:
       // Hybrid Setup

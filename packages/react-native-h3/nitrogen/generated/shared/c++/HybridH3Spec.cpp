@@ -73,6 +73,9 @@ namespace margelo::nitro::h3 {
       prototype.registerHybridMethod("getHexagonEdgeLengthAvgKm", &HybridH3Spec::getHexagonEdgeLengthAvgKm);
       prototype.registerHybridMethod("getHexagonEdgeLengthAvgM", &HybridH3Spec::getHexagonEdgeLengthAvgM);
       prototype.registerHybridMethod("getNumCells", &HybridH3Spec::getNumCells);
+      prototype.registerHybridMethod("getRes0Cells", &HybridH3Spec::getRes0Cells);
+      prototype.registerHybridMethod("getPentagons", &HybridH3Spec::getPentagons);
+      prototype.registerHybridMethod("getIcosahedronFaces", &HybridH3Spec::getIcosahedronFaces);
     });
   }
 

@@ -98,6 +98,9 @@ public:
   double getHexagonEdgeLengthAvgKm(double res) override;
   double getHexagonEdgeLengthAvgM(double res) override;
   double getNumCells(double res) override;
+  std::shared_ptr<ArrayBuffer> getRes0Cells() override;
+  std::shared_ptr<ArrayBuffer> getPentagons(double res) override;
+  std::vector<double> getIcosahedronFaces(uint64_t cell) override;
 };
 
 } // namespace margelo::nitro::h3

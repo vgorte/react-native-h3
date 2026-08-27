@@ -50,7 +50,10 @@ export {
   getHexagonAreaAvgM2,
   getHexagonEdgeLengthAvgKm,
   getHexagonEdgeLengthAvgM,
+  getIcosahedronFaces,
   getNumCells,
+  getPentagons,
+  getRes0Cells,
 } from './misc'
 export { cellsToMultiPolygon } from './regions'
 export {
