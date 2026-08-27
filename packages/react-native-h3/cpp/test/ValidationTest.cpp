@@ -61,18 +61,12 @@ TEST(Validation, NarrowsAResolutionWithoutCheckingItsRange) {
   }
 }
 
-TEST(Validation, ToCountCoversTheSafeIntegerRange) {
-  // the largest count H3 can report is `getNumCells(15)` == 569,707,381,193,162, which is well
-  // inside the range a JS number represents exactly, and far outside the `int` range.
-  EXPECT_EQ(h3core::toCount(569707381193162.0, "bad"), 569707381193162LL);
-  EXPECT_THROW(h3core::toCount(-1.0, "bad"), std::runtime_error);
-  EXPECT_THROW(h3core::toCount(9007199254740993.0, "bad"), std::runtime_error);
-}
-
 TEST(Validation, ToInt64NarrowsWithoutADomain) {
   // H3 owns the domain: `validateChildPos` rejects a negative position itself (`h3Index.c:1371`).
   EXPECT_EQ(h3core::toInt64(-1.0, "bad"), -1LL);
   EXPECT_EQ(h3core::toInt64(0.0, "bad"), 0LL);
+  // the largest count H3 can report is `getNumCells(15)` == 569,707,381,193,162
+  EXPECT_EQ(h3core::toInt64(569707381193162.0, "bad"), 569707381193162LL);
   EXPECT_EQ(h3core::toInt64(9007199254740991.0, "bad"), 9007199254740991LL);
 }
 

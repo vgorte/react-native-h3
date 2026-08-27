@@ -24,13 +24,6 @@ namespace h3core {
 int toInteger(double value, const char* message);
 
 /**
- * Converts an integral double to `int64_t`, rejecting negatives and anything a JavaScript number
- * cannot represent exactly. Describes the length of a JavaScript array, which H3 never sees, so
- * `toCount`'s bounds are the only ones there are.
- */
-int64_t toCount(double value, const char* message);
-
-/**
  * Converts an integral double to `int64_t`, rejecting anything a JavaScript number cannot represent
  * exactly. Imposes no domain of its own, so a negative value passes for H3 to judge.
  */
