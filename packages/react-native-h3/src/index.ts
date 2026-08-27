@@ -55,7 +55,7 @@ export {
   getPentagons,
   getRes0Cells,
 } from './misc'
-export { cellsToMultiPolygon } from './regions'
+export { cellsToMultiPolygon, polygonToCells, polygonToCellsExperimental } from './regions'
 export {
   cellToLocalIj,
   gridDisk,

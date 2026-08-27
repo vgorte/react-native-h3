@@ -22,6 +22,11 @@ export interface H3 extends HybridObject<{ ios: 'c++'; android: 'c++' }> {
   cellToBoundary(cell: UInt64): LatLng[]
   // three levels of nesting: polygons of loops of points, which nitrogen expands recursively.
   cellsToMultiPolygon(cells: ArrayBuffer): LatLng[][][]
+  // `number[][][]` rather than a named point struct, so the public `Ring[]` passes straight through;
+  // nitrogen maps it to `const std::vector<std::vector<std::vector<double>>>&`.
+  polygonToCells(rings: number[][][], res: number): ArrayBuffer
+  // the containment mode crosses as a `number`, which C++ narrows to the `uint32_t` flags word.
+  polygonToCellsExperimental(rings: number[][][], res: number, flags: number): ArrayBuffer
 
   // typed arrays are not spec types; the wrapper views this `ArrayBuffer` as a `BigUint64Array` without copying.
   gridDisk(origin: UInt64, k: number): ArrayBuffer

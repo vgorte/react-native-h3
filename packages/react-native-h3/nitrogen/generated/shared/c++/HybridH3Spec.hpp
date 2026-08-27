@@ -59,6 +59,8 @@ namespace margelo::nitro::h3 {
       virtual LatLng cellToLatLng(uint64_t cell) = 0;
       virtual std::vector<LatLng> cellToBoundary(uint64_t cell) = 0;
       virtual std::vector<std::vector<std::vector<LatLng>>> cellsToMultiPolygon(const std::shared_ptr<ArrayBuffer>& cells) = 0;
+      virtual std::shared_ptr<ArrayBuffer> polygonToCells(const std::vector<std::vector<std::vector<double>>>& rings, double res) = 0;
+      virtual std::shared_ptr<ArrayBuffer> polygonToCellsExperimental(const std::vector<std::vector<std::vector<double>>>& rings, double res, double flags) = 0;
       virtual std::shared_ptr<ArrayBuffer> gridDisk(uint64_t origin, double k) = 0;
       virtual std::shared_ptr<ArrayBuffer> gridRing(uint64_t origin, double k) = 0;
       virtual std::shared_ptr<ArrayBuffer> gridRingUnsafe(uint64_t origin, double k) = 0;

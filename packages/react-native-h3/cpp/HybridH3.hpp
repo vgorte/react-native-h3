@@ -55,6 +55,10 @@ public:
 
   // Regions
   std::vector<std::vector<std::vector<LatLng>>> cellsToMultiPolygon(const std::shared_ptr<ArrayBuffer>& cells) override;
+  std::shared_ptr<ArrayBuffer> polygonToCells(const std::vector<std::vector<std::vector<double>>>& rings,
+                                              double res) override;
+  std::shared_ptr<ArrayBuffer> polygonToCellsExperimental(const std::vector<std::vector<std::vector<double>>>& rings,
+                                                          double res, double flags) override;
 
   // Units
   double degsToRads(double degrees) override;

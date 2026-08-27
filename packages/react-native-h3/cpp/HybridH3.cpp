@@ -157,6 +157,17 @@ std::vector<std::vector<std::vector<LatLng>>> HybridH3::cellsToMultiPolygon(cons
   return result;
 }
 
+std::shared_ptr<ArrayBuffer> HybridH3::polygonToCells(const std::vector<std::vector<std::vector<double>>>& rings,
+                                                      double res) {
+  return toArrayBuffer(h3ops::polygonToCells(rings, res));
+}
+
+std::shared_ptr<ArrayBuffer>
+HybridH3::polygonToCellsExperimental(const std::vector<std::vector<std::vector<double>>>& rings, double res,
+                                     double flags) {
+  return toArrayBuffer(h3ops::polygonToCellsExperimental(rings, res, flags));
+}
+
 double HybridH3::degsToRads(double degrees) {
   return h3ops::degsToRads(degrees);
 }
