@@ -50,20 +50,31 @@ constants (`ContainmentMode.center`, `.full`, `.overlapping`, `.overlappingBbox`
 `'containmentOverlappingBbox'`) both work. The constants are what this package recommends: a name
 costs a lookup on a path that exists to be fast.
 
-**Three behaviours differ deliberately.**
+**Four behaviours differ deliberately.**
 
-1. `constructCell(baseCellNumber, digits, res)` keeps h3-js's argument order rather than the C
-   library's `(res, baseCellNumber, digits)`.
-2. Error messages come from H3's own `describeH3Error`, so they match the upstream documentation
+1. An invalid cell, directed edge or vertex raises an `H3Error` worded by H3 itself
+   (`E_CELL_INVALID`, `E_DIR_EDGE_INVALID`, `E_VERTEX_INVALID`) where h3-js passes it to H3
+   unchecked, which answers with whatever the bits mean or fails with a different code. Validation
+   happens once, at the boundary, in C++. Nine functions are the exception, because they have no
+   error channel and answer for any input: `isValidCell`, `isValidIndex`, `isPentagon`,
+   `isResClassIII`, `isValidDirectedEdge`, `isValidVertex`, `getResolution`, `getBaseCellNumber`
+   and `cellToString`.
+2. An argument that is not an integer is refused where h3-js truncates it: `gridDisk(cell, 1.5)`
+   throws here and returns the `k` of 1 disk there. So are a malformed polygon point, a digit list
+   whose length is not the resolution, and any request for more than 4,000,000 cells, which a phone
+   cannot afford to allocate.
+3. Error messages come from H3's own `describeH3Error`, so they match the upstream documentation
    rather than h3-js's separate table. Errors are instances of `H3Error` and carry a `message` and
-   a `code` exactly as h3-js does, with the code repeated in the message as `(code: 5)`. Failures
-   this package reports itself, such as a resolution that is not an integer, have no H3 counterpart
-   and so carry no `code`.
-3. An invalid cell, directed edge or vertex raises an `H3Error` worded by H3 itself
-   (`E_CELL_INVALID`, `E_DIR_EDGE_INVALID`, `E_VERTEX_INVALID`) where h3-js returns an undefined
-   value. Validation happens once, at the boundary, in C++.
-   `getResolution`, `getBaseCellNumber` and the `is*` predicates are the exception: they have no
-   error channel and answer for any input. So is `cellToString`, which formats any index.
+   a `code`, with the code repeated in the message as `(code: 5)`. The code always matches h3-js's,
+   and so does the text for seventeen of the nineteen H3 codes. Failures this package reports
+   itself, such as a resolution that is not an integer, have no H3 counterpart and so carry no
+   `code`.
+4. `constructCell(baseCellNumber, digits, res)` keeps h3-js's argument order rather than the C
+   library's `(res, baseCellNumber, digits)`, so nothing has to be transposed.
+
+[docs/h3-js-divergences.md](docs/h3-js-divergences.md) lists every case with the h3-js answer beside
+ours, including the two message texts h3-js has let drift from H3's, the wording of a rejected
+containment mode, and how far the arithmetic moves near a pole.
 
 **`h3IndexToSplitLong` and `splitLongToH3Index` do not exist.** They work around JavaScript's lack
 of 64-bit integers in an emscripten build and have no counterpart in the C library.

@@ -52,7 +52,15 @@ interface Response {
   err?: string
 }
 
+/**
+ * Whether a suite may skip because the probe is not built.
+ *
+ * CI sets `H3_PARITY_REQUIRED`, so a probe missing there fails the build instead of passing quietly.
+ */
+export const skipWithoutProbe = findProbe() === undefined && process.env.H3_PARITY_REQUIRED !== '1'
+
 function run(executable: string, requests: string[]): Response[] {
+  // bun 1.3.14: a repository-wide discovery walk leaves this stdio unusable, so run from the package
   const result = spawnSync(executable, {
     input: `${requests.join('\n')}\n`,
     encoding: 'utf8',

@@ -1,0 +1,37 @@
+name: Parity
+
+on:
+  pull_request:
+    paths:
+      - 'packages/react-native-h3/cpp/**'
+      - 'packages/react-native-h3/parity/**'
+      - 'packages/react-native-h3/src/**'
+      - 'packages/react-native-h3/third_party/**'
+      - 'packages/react-native-h3/package.json'
+      - '.github/workflows/parity.yml'
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  h3js-oracle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14  # <-- pinned: `latest` turns an upstream release into a red build
+      - run: bun install --frozen-lockfile
+      - name: Configure
+        run: cmake -S packages/react-native-h3/cpp/test -B build/host -DCMAKE_BUILD_TYPE=Release
+      - name: Build the probe
+        run: cmake --build build/host --target parity_probe -j
+      # The suite runs from the package directory, where bun's discovery walk stays small enough to
+      # leave the probe's stdio usable. `H3_PARITY_REQUIRED` turns a missing probe into a failure.
+      - name: Compare against h3-js 4.5.0
+        run: bun run --cwd packages/react-native-h3 parity
+        env:
+          H3_PARITY_PROBE: ${{ github.workspace }}/build/host/parity_probe
+          H3_PARITY_REQUIRED: '1'

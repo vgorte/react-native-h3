@@ -1,5 +1,5 @@
 import { describe, expect, mock, test } from 'bun:test'
-import { callMany, findProbe, openProbe } from './probe'
+import { callMany, openProbe, skipWithoutProbe } from './probe'
 
 // The HybridObject cannot exist off-device, and `src/native.ts` creates it at module scope. Mocking
 // here, before the barrel is imported, is what lets the export surface be compared with the probe.
@@ -10,9 +10,8 @@ mock.module('react-native-nitro-modules', () => ({
 }))
 
 // `bun test` runs everywhere, the probe is built only where CMake has run, so these skip rather
-// than fail when it is absent.
-const built = findProbe() !== undefined
-if (!built) {
+// than fail when it is absent. CI sets `H3_PARITY_REQUIRED`, and then they fail instead.
+if (skipWithoutProbe) {
   console.warn(
     'Skipping the parity probe suite: build it with\n' +
       '  cmake -S packages/react-native-h3/cpp/test -B build/host -DCMAKE_BUILD_TYPE=Release\n' +
@@ -20,7 +19,7 @@ if (!built) {
   )
 }
 
-describe.skipIf(!built)('parity probe', () => {
+describe.skipIf(skipWithoutProbe)('parity probe', () => {
   test('answers a scalar operation', () => {
     const probe = openProbe()
     try {
