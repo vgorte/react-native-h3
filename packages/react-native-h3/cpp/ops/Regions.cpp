@@ -10,6 +10,7 @@
 #include "core/GeoPolygonBuilder.hpp"
 #include "core/LinkedGeoPolygonReader.hpp"
 #include "core/Validation.hpp"
+#include "ops/Internal.hpp"
 #include "shapes/CellSetCall.hpp"
 #include "shapes/OutParamCall.hpp"
 
@@ -45,7 +46,10 @@ h3core::CellBuffer polygonToCells(const std::vector<std::vector<std::vector<doub
   const h3core::GeoPolygonBuilder builder(rings);
   if (builder.polygon()->geoloop.numVerts == 0) {
     // `bboxHexEstimate` answers `E_FAILED` for a bounding box of zero width (`bbox.c:203`), so an
-    // empty polygon is answered here instead, as h3-js answers it in JavaScript.
+    // empty polygon is answered here instead, as h3-js answers it in JavaScript. The short circuit
+    // skips H3, so the resolution it would have range-checked is checked here, as h3-js does before
+    // its own guard.
+    internal::requireResolution(resolution);
     return h3core::CellBuffer(0);
   }
   return h3shapes::fillCompactedCells(

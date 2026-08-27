@@ -146,13 +146,17 @@ TEST(RegionsOps, PolygonToCellsCompactsThePaddedOutput) {
 }
 
 TEST(RegionsOps, PolygonToCellsAnswersNothingForAnEmptyPolygon) {
-  // h3-js answers `[]` for all four of these. The experimental pair is H3's own special case
-  // (`polyfill.c:736`); the stable pair is guarded here, because H3 answers `E_FAILED` for a
+  // h3-js answers `[]` for all six of these. The experimental half is H3's own special case
+  // (`polyfill.c:736`); the stable half is guarded here, because H3 answers `E_FAILED` for a
   // bounding box of zero width (`bbox.c:203`).
   EXPECT_EQ(h3ops::polygonToCells({}, 7).count(), 0);
   EXPECT_EQ(h3ops::polygonToCells({{}}, 7).count(), 0);
   EXPECT_EQ(h3ops::polygonToCellsExperimental({}, 7, 0).count(), 0);
   EXPECT_EQ(h3ops::polygonToCellsExperimental({{}}, 7, 0).count(), 0);
+  // an empty outer ring keeps its holes, and a hole alone still covers nothing
+  const Rings emptyOuterWithHole = {{}, rectangleWithHole()[1]};
+  EXPECT_EQ(h3ops::polygonToCells(emptyOuterWithHole, 7).count(), 0);
+  EXPECT_EQ(h3ops::polygonToCellsExperimental(emptyOuterWithHole, 7, 0).count(), 0);
 }
 
 TEST(RegionsOps, PolygonToCellsNarrowsTheResolutionAndLeavesItsRangeToH3) {
@@ -166,6 +170,13 @@ TEST(RegionsOps, PolygonToCellsNarrowsTheResolutionAndLeavesItsRangeToH3) {
                 [] { h3ops::polygonToCellsExperimental(sanFranciscoTriangle(), 16, 0); });
   expectMessage("sixteen, experimental and empty", "Resolution argument was outside of acceptable range",
                 [] { h3ops::polygonToCellsExperimental({}, 16, 0); });
+  // the empty polygon short circuit skips H3, so the range is checked before it, as h3-js does
+  expectMessage("sixteen and empty", "Resolution argument was outside of acceptable range",
+                [] { h3ops::polygonToCells({}, 16); });
+  expectMessage("minus one and empty", "Resolution argument was outside of acceptable range",
+                [] { h3ops::polygonToCells({}, -1); });
+  expectMessage("sixteen and an empty outer ring", "Resolution argument was outside of acceptable range",
+                [] { h3ops::polygonToCells({{}}, 16); });
   // the one condition H3 never sees, because the narrowing runs first
   expectMessage("fractional", "Resolution must be an integer between 0 and 15",
                 [] { h3ops::polygonToCells(sanFranciscoTriangle(), 7.5); });

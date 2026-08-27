@@ -16,8 +16,7 @@ namespace h3core {
 
 namespace {
 
-// rejects only what H3 cannot express: a point that is not a pair, and a coordinate that is not
-// finite. A coordinate outside the globe is left alone, because H3 normalises it and answers.
+// rejects only what H3 cannot express; H3 normalises a coordinate outside the globe and answers
 std::vector<::LatLng> toRadians(const std::vector<std::vector<double>>& ring) {
   std::vector<::LatLng> verts;
   verts.reserve(ring.size());
