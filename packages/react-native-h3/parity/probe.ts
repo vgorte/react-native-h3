@@ -1,6 +1,5 @@
 import { spawnSync } from 'node:child_process'
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 
 /**
@@ -22,9 +21,7 @@ export interface Probe {
   close(): void
 }
 
-// Argument tokens are whitespace-free: a cell is lowercase hexadecimal without `0x`, a number is
-// decimal, a list is comma-separated with `-` for empty, and a polygon separates rings by `|`,
-// points by `;` and `lat,lng` by `,`. `cpp/test/ParityProbe.cpp` carries the full table.
+// The header of `cpp/test/ParityProbe.cpp` carries the argument and result encodings.
 
 const BUILD_INSTRUCTIONS =
   'The parity probe is not built. Run:\n' +
@@ -56,36 +53,22 @@ interface Response {
 }
 
 function run(executable: string, requests: string[]): Response[] {
-  const directory = mkdtempSync(join(tmpdir(), 'h3-parity-'))
-  const requestFile = join(directory, 'requests')
-  const responseFile = join(directory, 'responses')
-  const errorFile = join(directory, 'errors')
-  try {
-    writeFileSync(requestFile, `${requests.join('\n')}\n`)
-    // Bun 1.3.14 loses piped child output, and mangles inherited descriptors, whenever `bun test`
-    // runs under a path filter, so the shell redirects and the answers come back through a file.
-    const result = spawnSync(
-      '/bin/sh',
-      ['-c', '"$1" < "$2" > "$3" 2> "$4"', 'sh', executable, requestFile, responseFile, errorFile],
-      { stdio: 'ignore' },
-    )
-    if (result.error != null) {
-      throw result.error
-    }
-    if (result.status !== 0) {
-      const reported = readFileSync(errorFile, 'utf8')
-      throw new Error(`The parity probe exited with ${result.status}: ${reported}`)
-    }
-    const lines = readFileSync(responseFile, 'utf8')
-      .split('\n')
-      .filter((line) => line.length > 0)
-    if (lines.length !== requests.length) {
-      throw new Error(`The probe answered ${lines.length} of ${requests.length} requests`)
-    }
-    return lines.map((line) => JSON.parse(line) as Response)
-  } finally {
-    rmSync(directory, { force: true, recursive: true })
+  const result = spawnSync(executable, {
+    input: `${requests.join('\n')}\n`,
+    encoding: 'utf8',
+    maxBuffer: 512 * 1024 * 1024,
+  })
+  if (result.error != null) {
+    throw result.error
   }
+  if (result.status !== 0) {
+    throw new Error(`The parity probe exited with ${result.status}: ${result.stderr}`)
+  }
+  const lines = result.stdout.split('\n').filter((line) => line.length > 0)
+  if (lines.length !== requests.length) {
+    throw new Error(`The probe answered ${lines.length} of ${requests.length} requests`)
+  }
+  return lines.map((line) => JSON.parse(line) as Response)
 }
 
 /** Opens a probe over the built executable, and throws with build instructions when it is absent. */

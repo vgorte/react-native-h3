@@ -11,29 +11,20 @@
  *
  * It links `nitro_free_core` and includes no Nitro header, so every answer comes from the code that
  * ships. The podspec's `exclude_files` keeps `cpp/test` out of the published pod.
+ *
+ * Each line of stdin is one request, `<op> <arg>...` with whitespace-free arguments, and each line
+ * of stdout is one response, `{"ok":<value>}` or `{"err":"<message>"}`. `__ops` answers the name of
+ * every operation, and a blank line earns no response.
+ *
+ * An argument is a cell (lowercase hexadecimal without `0x`), a number (decimal, `stod` syntax), a
+ * comma-separated list of either with `-` for empty, or a polygon, whose rings are separated by
+ * `|`, points by `;` and `lat,lng` by `,`.
+ *
+ * A result is a cell or an array of cells as hexadecimal strings, a point as `[lat, lng]`, a ring
+ * as an array of points, a multi polygon as an array of arrays of rings, local coordinates as
+ * `{"i":<number>,"j":<number>}`, or a number written `%.17g` so that every double round-trips.
+ * `int64` results are numbers too: the largest reachable value, `getNumCells(15)`, is below `2^53`.
  */
-
-// Protocol
-// Request:  one line per request on stdin, `<op> <arg>...`, arguments whitespace-free.
-// Response: one JSON line per request, `{"ok":<value>}` or `{"err":"<message>"}`.
-// `__ops`   answers the name of every operation.
-//
-// Argument tokens
-//   cell      lowercase hexadecimal without `0x`
-//   number    decimal, `stod` syntax
-//   cells     comma-separated hexadecimal, `-` when empty
-//   digits    comma-separated decimal, `-` when empty
-//   polygon   rings separated by `|`, points by `;`, `lat,lng` within a point, `-` when empty
-//
-// Result values
-//   cell      lowercase hexadecimal string
-//   cells     array of hexadecimal strings
-//   point     `[lat, lng]`
-//   ring      array of points
-//   multi     array of polygons, a polygon being an array of rings
-//   ij        `{"i":<number>,"j":<number>}`
-//   int64     a JSON number: the largest reachable value, `getNumCells(15)`, is below `2^53`
-//   number    `%.17g`, so every double round-trips
 
 #include <cmath>
 #include <cstdint>
@@ -78,7 +69,8 @@ std::vector<std::string> split(const std::string& text, char separator) {
 
 const std::string& rawArg(const Args& args, size_t index) {
   if (index >= args.size()) {
-    throw std::invalid_argument("Missing argument " + std::to_string(index));
+    // 1-based, so the number matches the position a caller counts on the request line
+    throw std::invalid_argument("Missing argument " + std::to_string(index + 1));
   }
   return args[index];
 }
@@ -178,11 +170,33 @@ std::string jsonNumber(double value) {
 
 std::string jsonString(const std::string& value) {
   std::string escaped = "\"";
-  for (const char character : value) {
-    if (character == '"' || character == '\\') {
-      escaped += '\\';
+  for (const unsigned char character : value) {
+    switch (character) {
+    case '"':
+      escaped += "\\\"";
+      break;
+    case '\\':
+      escaped += "\\\\";
+      break;
+    case '\n':
+      escaped += "\\n";
+      break;
+    case '\r':
+      escaped += "\\r";
+      break;
+    case '\t':
+      escaped += "\\t";
+      break;
+    default:
+      if (character < 0x20) {
+        char unicode[8];
+        std::snprintf(unicode, sizeof(unicode), "\\u%04x", character);
+        escaped += unicode;
+      } else {
+        escaped += static_cast<char>(character);
+      }
+      break;
     }
-    escaped += character;
   }
   return escaped + "\"";
 }

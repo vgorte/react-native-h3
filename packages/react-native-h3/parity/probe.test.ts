@@ -89,7 +89,8 @@ describe.skipIf(!built)('parity probe', () => {
     try {
       expect(() => probe.call('bogus', 'x')).toThrow('Unknown operation: bogus')
       expect(() => probe.call('gridDisk', 'zzz', '1')).toThrow('Not a cell: zzz')
-      expect(() => probe.call('gridDisk', '89283082803ffff')).toThrow('Missing argument 1')
+      expect(() => probe.call('gridDisk', '89283082803ffff')).toThrow('Missing argument 2')
+      expect(() => probe.call('gridDisk')).toThrow('Missing argument 1')
       expect(probe.cell('cellToParent', '89283082803ffff', '8')).toBe('8828308281fffff')
     } finally {
       probe.close()

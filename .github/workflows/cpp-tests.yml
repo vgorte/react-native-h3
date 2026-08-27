@@ -18,12 +18,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [tests, tests_asan]
+        target: [tests, tests_asan, parity_probe]
     steps:
       - uses: actions/checkout@v4
       - name: Configure
         run: cmake -S packages/react-native-h3/cpp/test -B build/host -DCMAKE_BUILD_TYPE=Debug
       - name: Build
         run: cmake --build build/host --target ${{ matrix.target }} -j
+      # `__ops` is a smoke request for `parity_probe`; the gtest targets ignore stdin
       - name: Run
-        run: ./build/host/${{ matrix.target }}
+        run: printf '__ops\n' | ./build/host/${{ matrix.target }}
