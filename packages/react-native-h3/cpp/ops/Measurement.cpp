@@ -29,9 +29,9 @@ namespace {
 } // namespace
 
 double cellAreaKm2(uint64_t cell) {
-  // all three areas run through `cellAreaRads2`, which only reaches `_h3ToFaceIjk` and its base
-  // cell range check (`h3Index.c:1120`); the area follows the index's own resolution bits through
-  // `cellToBoundary` (`h3Index.c:1215`), so a bad base cell or digits is what the guard catches.
+  // all three areas run through `cellAreaRads2`, where H3 checks only the base cell range
+  // (`_h3ToFaceIjk`, `h3Index.c:1120`); invalid digits are absorbed silently and measured as a
+  // real cell at the index's own resolution, so the guard has to reject them first
   internal::requireValidCell(cell);
   return h3shapes::callWithOutParam<double>(::cellAreaKm2, cell);
 }
