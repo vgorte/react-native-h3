@@ -17,10 +17,13 @@
 
 namespace {
 
-// San Francisco at resolution 9, from h3-js: `"89283082803ffff"`
+// San Francisco at resolution `9`, from h3-js: `"89283082803ffff"`
 constexpr uint64_t kSanFrancisco = 0x89283082803ffffULL;
-// a resolution 1 pentagon; h3-js `isPentagon("81083ffffffffff")` is `true`
+// a resolution `1` pentagon; h3-js `isPentagon("81083ffffffffff")` is `true`
 constexpr uint64_t kPentagonRes1 = 0x81083ffffffffffULL;
+// a resolution `1` hexagon straddling an icosahedron edge, so both of its two slots are real;
+// h3-js `isPentagon("81017ffffffffff")` is `false`
+constexpr uint64_t kTwoFacedHexagon = 0x81017ffffffffffULL;
 // h3-js `isValidCell("1")` is `false`, yet base cell `0` carries it past `_h3ToFaceIjk`
 // (`h3Index.c:1120`) and h3-js `getIcosahedronFaces("1")` answers `[1]`.
 constexpr uint64_t kNotACell = 1ULL;
@@ -71,11 +74,20 @@ TEST(MiscListsOps, NarrowsThePentagonResolutionAndLeavesItsRangeToH3) {
 }
 
 TEST(MiscListsOps, IcosahedronFacesFiltersTheMinusOnePadding) {
-  // `maxFaceCount` is `2` for a hexagon (`h3Index.c:1232`), so H3 writes `[7, -1]` here and the
+  // `maxFaceCount` is `2` for a hexagon (`h3Index.c:1233`), so H3 writes `[7, -1]` here and the
   // `-1` must not surface. h3-js `getIcosahedronFaces("89283082803ffff")` is `[7]`.
   const std::vector<int> hexFaces = h3ops::getIcosahedronFaces(kSanFrancisco);
   ASSERT_EQ(hexFaces.size(), 1u);
   EXPECT_EQ(hexFaces[0], 7);
+}
+
+TEST(MiscListsOps, IcosahedronFacesReturnsTwoForAHexagonOnAFaceSeam) {
+  // both slots are real here, so nothing is filtered and the count is the full `maxFaceCount`;
+  // h3-js `getIcosahedronFaces("81017ffffffffff")` is `[1, 2]`, in that order.
+  const std::vector<int> hexFaces = h3ops::getIcosahedronFaces(kTwoFacedHexagon);
+  ASSERT_EQ(hexFaces.size(), 2u);
+  EXPECT_EQ(hexFaces[0], 1);
+  EXPECT_EQ(hexFaces[1], 2);
 }
 
 TEST(MiscListsOps, IcosahedronFacesReturnsFiveForAPentagon) {

@@ -60,10 +60,10 @@ h3core::CellBuffer getPentagons(double res) {
 
 std::vector<int> getIcosahedronFaces(uint64_t cell) {
   // `getIcosahedronFaces` reaches `_h3ToFaceIjk`, which checks only the base cell range
-  // (`h3Index.c:1120`), so `1` otherwise answers with face `1`
+  // (`h3Index.c:1120`), so `1` otherwise answers with face `1`.
   internal::requireValidCell(cell);
   // the one cell set whose elements are `int` with a `-1` sentinel rather than `H3Index` with
-  // `H3_NULL`, so it is written out rather than pushed through `CellBuffer`
+  // `H3_NULL`, so it is written out rather than pushed through `CellBuffer`.
   const int maxFaces = h3shapes::callWithOutParam<int>(::maxFaceCount, cell);
   std::vector<int> slots(static_cast<size_t>(maxFaces), -1);
   h3core::throwOnError(static_cast<uint32_t>(::getIcosahedronFaces(cell, slots.data())));
@@ -71,7 +71,7 @@ std::vector<int> getIcosahedronFaces(uint64_t cell) {
   std::vector<int> faces;
   faces.reserve(slots.size());
   for (const int face : slots) {
-    // the sentinel is `-1`, never `0`: face `0` is a real face (`faceijk.h:60`)
+    // the sentinel is `-1`, never `0`: face `0` is a real face (`faceijk.h:60`).
     if (face != -1) {
       faces.push_back(face);
     }
