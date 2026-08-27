@@ -24,6 +24,9 @@ constexpr uint64_t kNeighbor = 0x8928308281bffffULL;
 constexpr uint64_t kFarCell = 0x892830828d7ffffULL;
 // h3-js `cellsToDirectedEdge("89283082803ffff", "8928308281bffff")` is `"169283082803ffff"`
 constexpr uint64_t kEdge = 0x169283082803ffffULL;
+// h3-js `originToDirectedEdges("81017ffffffffff")` holds `"111017ffffffffff"`, an edge that crosses
+// an icosahedron face, so its boundary carries a third point on the face seam
+constexpr uint64_t kFaceCrossingEdge = 0x111017ffffffffffULL;
 // a resolution 1 pentagon; h3-js `isPentagon("81083ffffffffff")` is `true`
 constexpr uint64_t kPentagonRes1 = 0x81083ffffffffffULL;
 
@@ -110,12 +113,22 @@ TEST(EdgesOps, DirectedEdgeToBoundaryIsTwoPointsInDegrees) {
   EXPECT_NEAR(boundary[1].lng, -122.4159401398489, 1e-11);
 }
 
+TEST(EdgesOps, DirectedEdgeToBoundaryIsThreePointsAcrossAFace) {
+  // h3-js `directedEdgeToBoundary("111017ffffffffff")`
+  const h3core::Ring boundary = h3ops::directedEdgeToBoundary(kFaceCrossingEdge);
+  ASSERT_EQ(boundary.size(), 3u);
+  EXPECT_NEAR(boundary[0].lat, 79.62054525867504, 1e-11);
+  EXPECT_NEAR(boundary[0].lng, -10.416534576215874, 1e-11);
+  EXPECT_NEAR(boundary[1].lat, 77.68777876614907, 1e-11);
+  EXPECT_NEAR(boundary[1].lng, -11.182749502569406, 1e-11);
+  EXPECT_NEAR(boundary[2].lat, 75.55801829625116, 1e-11);
+  EXPECT_NEAR(boundary[2].lng, -10.985283977307262, 1e-11);
+}
+
 TEST(EdgesOps, EdgeLengthSplitsByUnit) {
-  // h3-js `edgeLength("169283082803ffff", unit)`. The tolerances are three parts in `1e12` rather
-  // than a few `ulp`, because h3-js runs the same haversine (`latLng.c:171`) through emscripten's
-  // `sin`, `cos` and `atan2`; over an edge this short its `A` term differs enough to move the
-  // twelfth significant digit. Feeding h3-js's own boundary coordinates into this platform's libm
-  // reproduces the values below exactly, so the vertexes agree and only the transcendentals differ.
+  // h3-js `edgeLength("169283082803ffff", unit)`. The tolerances are three parts in `1e12` because
+  // h3-js runs the same haversine (`latLng.c:171`) through emscripten's `sin`, `cos` and `atan2`,
+  // which over an edge this short moves the twelfth significant digit.
   EXPECT_NEAR(h3ops::edgeLengthKm(kEdge), 0.20946576896709992, 1e-11);
   EXPECT_NEAR(h3ops::edgeLengthM(kEdge), 209.46576896709993, 1e-8);
   EXPECT_NEAR(h3ops::edgeLengthRads(kEdge), 0.000032877967803028334, 1e-15);
@@ -154,7 +167,7 @@ TEST(VertexesOps, ReadsASingleVertex) {
 }
 
 TEST(VertexesOps, NarrowsTheVertexNumberAndLeavesItsRangeToH3) {
-  // `cellToVertex` answers `E_DOMAIN` outside `0` to five (`vertex.c:217`), so the narrowing here
+  // `cellToVertex` answers `E_DOMAIN` outside `0` to `5` (`vertex.c:217`), so the narrowing here
   // imposes no domain of its own.
   expectMessage("six", "Argument was outside of acceptable range", [] { h3ops::cellToVertex(kSanFrancisco, 6); });
   expectMessage("minus one", "Argument was outside of acceptable range",

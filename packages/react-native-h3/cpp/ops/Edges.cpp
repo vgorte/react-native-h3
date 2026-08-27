@@ -52,8 +52,8 @@ uint64_t reverseDirectedEdge(uint64_t edge) {
 h3core::CellBuffer directedEdgeToCells(uint64_t edge) {
   internal::requireValidDirectedEdge(edge);
   // no size function exists for this one; the constant and its provenance live in `BufferSizes.hpp`
-  return h3shapes::fillCompactedCells([] { return h3core::kDirectedEdgeToCellsSize; },
-                                      [&](uint64_t* out) { return ::directedEdgeToCells(edge, out); });
+  return h3shapes::fillExactCells([] { return h3core::kDirectedEdgeToCellsSize; },
+                                  [&](uint64_t* out) { return ::directedEdgeToCells(edge, out); });
 }
 
 h3core::CellBuffer originToDirectedEdges(uint64_t origin) {

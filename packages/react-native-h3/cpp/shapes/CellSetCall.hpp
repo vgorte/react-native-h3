@@ -66,7 +66,7 @@ template <typename SizeQuery, typename Fill> h3core::CellBuffer fillCompactedCel
 /**
  * Fills as `fillCompactedCells` does but publishes the whole capacity as the count, for the
  * functions whose output size is documented as exact: `getRes0Cells`, `getPentagons`,
- * `cellToChildren`, `gridPathCells` and `uncompactCells`.
+ * `cellToChildren`, `gridPathCells`, `uncompactCells` and `directedEdgeToCells`.
  *
  * Splitting these off is a safety property rather than an optimisation: were H3 ever to write an
  * `H3_NULL` into one of these outputs, compacting it away would silently shorten a result whose

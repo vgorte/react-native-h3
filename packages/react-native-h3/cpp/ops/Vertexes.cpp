@@ -21,7 +21,6 @@ namespace h3ops {
 
 namespace {
 
-// H3 owns the range: `cellToVertex` answers `E_DOMAIN` outside `0` to five (`vertex.c:217`).
 constexpr const char* kIntegerVertexNum = "Vertex number must be an integer";
 
 } // namespace
@@ -29,6 +28,7 @@ constexpr const char* kIntegerVertexNum = "Vertex number must be an integer";
 uint64_t cellToVertex(uint64_t cell, double vertexNum) {
   // `cellToVertex` range-checks the number but never the cell (`vertex.c:212`)
   internal::requireValidCell(cell);
+  // no range check here: H3 owns the range and answers `E_DOMAIN` outside `0` to `5` (`vertex.c:217`)
   return h3shapes::callWithOutParam<uint64_t>(::cellToVertex, cell, h3core::toInteger(vertexNum, kIntegerVertexNum));
 }
 
