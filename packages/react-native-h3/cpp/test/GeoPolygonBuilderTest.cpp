@@ -213,7 +213,7 @@ TEST(RegionsOps, PolygonToCellsExperimentalLeavesTheModeRangeToH3) {
   // the one condition H3 never sees, because the narrowing runs first
   expectMessage("fractional", "Containment mode must be an integer",
                 [] { h3ops::polygonToCellsExperimental(sanFranciscoTriangle(), 7, 1.5); });
-  // an unrecognised h3-js mode name reaches C++ as `NaN`, so this is the wording it earns
+  // the other non-integral value a JavaScript number carries
   expectMessage("not a number", "Containment mode must be an integer", [] {
     h3ops::polygonToCellsExperimental(sanFranciscoTriangle(), 7, std::numeric_limits<double>::quiet_NaN());
   });

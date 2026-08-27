@@ -147,7 +147,7 @@ test('an unknown containment mode name is rejected by the C layer', () => {
     thrown = error
   }
   expect(thrown).toBeInstanceOf(H3Error)
-  // the name resolves to `NaN`, so the narrowing in C++ rejects it before H3 sees a mode.
-  expect((thrown as H3Error).message).toBe('Containment mode must be an integer')
-  expect((thrown as H3Error).code).toBeUndefined()
+  // the name resolves to `CONTAINMENT_INVALID`, so H3 words the rejection and h3-js's code matches.
+  expect((thrown as H3Error).message).toBe('Mode or flags argument was not valid (code: 15)')
+  expect((thrown as H3Error).code).toBe(15)
 })

@@ -4,6 +4,10 @@ import { native } from './native'
 import type { ContainmentModeName, ContainmentModeValue, LatLng, Ring } from './types'
 import { CONTAINMENT_MODE_BY_NAME } from './types'
 
+// H3's `CONTAINMENT_INVALID`, so an unrecognised mode name earns the same `E_OPTION_INVALID` that
+// h3-js reports for one, rather than a wording of ours.
+const CONTAINMENT_INVALID = 4
+
 /**
  * Finds the outline of a set of cells, as GeoJSON-shaped polygons.
  *
@@ -64,8 +68,9 @@ export function polygonToCellsExperimental(
   res: number,
   flags: ContainmentModeValue | ContainmentModeName,
 ): BigUint64Array {
-  // an unknown name becomes `NaN`, so the native layer stays the only judge of the mode.
-  const mode = typeof flags === 'number' ? flags : (CONTAINMENT_MODE_BY_NAME[flags] ?? Number.NaN)
+  // an unknown name falls through to H3, which stays the only judge of the mode.
+  const mode =
+    typeof flags === 'number' ? flags : (CONTAINMENT_MODE_BY_NAME[flags] ?? CONTAINMENT_INVALID)
   try {
     return new BigUint64Array(native.polygonToCellsExperimental(rings, res, mode))
   } catch (error) {
