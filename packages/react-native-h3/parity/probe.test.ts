@@ -23,7 +23,8 @@ describe.skipIf(skipWithoutProbe)('parity probe', () => {
   test('answers a scalar operation', () => {
     const probe = openProbe()
     try {
-      expect(probe.call('cellAreaKm2', '89283082803ffff')).toBeCloseTo(0.10940247351390452, 15)
+      // Linux libm rounds the last digits of the trigonometry differently than Apple's, so they aren't pinned
+      expect(probe.call('cellAreaKm2', '89283082803ffff')).toBeCloseTo(0.10940247351390452, 10)
     } finally {
       probe.close()
     }

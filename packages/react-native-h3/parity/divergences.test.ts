@@ -113,7 +113,10 @@ describe.skipIf(skipWithoutProbe)('divergence: an invalid index is refused, not 
     }
     // h3-js runs the same C code without the guard, so it answers with whatever the bits mean
     expect(h3.cellArea('1', 'km2')).toBe(4106166.3344638464)
-    expect(h3.cellToLatLng('1')).toEqual([79.24239850975904, 38.0234070079698])
+    // h3-js's own arithmetic rounds differently per platform, so only twelve digits are pinned
+    const [lat, lng] = h3.cellToLatLng('1')
+    expect(lat).toBeCloseTo(79.24239850975904, 12)
+    expect(lng).toBeCloseTo(38.0234070079698, 12)
     expect(h3.gridDisk('1', 1)).toEqual([
       '1000000000001',
       '200000000001',

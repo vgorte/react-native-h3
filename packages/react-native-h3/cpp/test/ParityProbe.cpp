@@ -48,8 +48,9 @@ std::vector<std::string> split(const std::string& text, char separator) {
 
 const std::string& rawArg(const Args& args, size_t index) {
   if (index >= args.size()) {
-    // 1-based, so the number matches the position a caller counts on the request line
-    throw std::invalid_argument("Missing argument " + std::to_string(index + 1));
+    // Handlers decode several arguments per call, and C++ leaves their evaluation order
+    // unspecified, so `index` varies by compiler; the first missing position does not.
+    throw std::invalid_argument("Missing argument " + std::to_string(args.size() + 1));
   }
   return args[index];
 }
