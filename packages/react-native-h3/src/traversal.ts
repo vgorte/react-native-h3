@@ -16,7 +16,7 @@ import type { CoordIJ } from './types'
  */
 export function gridDisk(origin: bigint, k: number): BigUint64Array {
   try {
-    return new BigUint64Array(native.gridDisk(origin, k))
+    return new BigUint64Array(native.gridDisk(origin as UInt64, k))
   } catch (error) {
     rethrowAsH3Error(error)
   }
