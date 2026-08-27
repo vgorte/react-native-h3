@@ -232,8 +232,10 @@ describe.skipIf(skipWithoutProbe)('divergence: the cell ceiling', () => {
 })
 
 describe.skipIf(skipWithoutProbe)('divergence: a malformed polygon', () => {
-  test('a point that is not a pair is named, where h3-js reports E_FAILED', () => {
-    expect(refusal('polygonToCells 0,0;0;1,1 3')).toBe('Not a point: 0')
+  test('a point that is not a pair is refused, where h3-js reports E_FAILED', () => {
+    expect(refusal('polygonToCells 0,0;0;1,1 3')).toBe(
+      'Each polygon point must be a [latitude, longitude] pair',
+    )
     const theirs = h3jsRefusal(() =>
       h3.polygonToCells([[[0, 0], [0] as unknown as [number, number], [1, 1]]], 3),
     )

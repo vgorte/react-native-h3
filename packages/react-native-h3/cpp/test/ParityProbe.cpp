@@ -124,11 +124,12 @@ std::vector<std::vector<std::vector<double>>> ringsArg(const Args& args, size_t 
   for (const std::string& ringText : split(token, '|')) {
     std::vector<std::vector<double>> ring;
     for (const std::string& pointText : split(ringText, ';')) {
-      const std::vector<std::string> pair = split(pointText, ',');
-      if (pair.size() != 2) {
-        throw std::invalid_argument("Not a point: " + pointText);
+      // forwards however many components a point has, so `GeoPolygonBuilder` is what rejects it
+      std::vector<double> point;
+      for (const std::string& part : split(pointText, ',')) {
+        point.push_back(parseNumber(part));
       }
-      ring.push_back({parseNumber(pair[0]), parseNumber(pair[1])});
+      ring.push_back(point);
     }
     rings.push_back(ring);
   }
