@@ -1,16 +1,16 @@
 import h3 from 'h3-js'
 
-/** Every resolution the H3 hierarchy has. */
+/** Lists every resolution the H3 hierarchy has. */
 export const RESOLUTIONS = Array.from({ length: 16 }, (_, res) => res)
 
-/** All 122 resolution 0 cells, as h3-js hexadecimal strings. */
+/** Lists all 122 resolution 0 cells, as h3-js hexadecimal strings. */
 export const RES0_CELLS: string[] = h3.getRes0Cells()
 
-/** The twelve pentagons at each resolution, as a flat list of 192 cells. */
+/** Lists the twelve pentagons at each resolution, as a flat list of 192 cells. */
 export const PENTAGONS: string[] = RESOLUTIONS.flatMap((res) => h3.getPentagons(res))
 
 /**
- * Every pentagon at resolutions 0 to 5 together with its immediate neighbourhood.
+ * Lists every pentagon at resolutions 0 to 5 together with its immediate neighbourhood.
  *
  * Pentagons are not an edge case here: they are the reason `H3_NULL` holes exist at all, and
  * therefore the main case for the compaction this package does natively.
@@ -53,10 +53,14 @@ export function randomCoordinates(seed: number, count: number): Coordinate[] {
   }))
 }
 
-/** The seed every random case uses. Change it only to widen coverage, never to make a test pass. */
+/**
+ * Seeds every random case, so a failure reproduces from this number alone.
+ *
+ * Change it only to widen coverage, never to make a test pass.
+ */
 export const SEED = 0x5eed
 
-/** Coordinates that sit exactly on the poles and the antimeridian. */
+/** Lists the coordinates that sit exactly on the poles and the antimeridian. */
 export const EXTREME_COORDINATES: Coordinate[] = [
   { lat: 90, lng: 0 },
   { lat: -90, lng: 0 },
@@ -75,7 +79,7 @@ export interface PolygonCase {
   resolutions: number[]
 }
 
-/** Polygons chosen for the cases that break naive implementations. */
+/** Lists the polygons chosen for the cases that break naive implementations. */
 export const POLYGONS: PolygonCase[] = [
   {
     name: 'San Francisco triangle',
@@ -157,9 +161,9 @@ export const POLYGONS: PolygonCase[] = [
 ]
 
 /**
- * The containment mode numbers this package takes, against the flag names h3-js takes.
+ * Names the h3-js containment flags in the order of the mode numbers this package takes.
  *
- * The two agree on the order, so the index is the mode number the probe is given.
+ * The two agree on that order, so the index is the mode number the probe is given.
  */
 export const CONTAINMENT_MODES = [
   'containmentCenter',

@@ -1,5 +1,5 @@
 [test]
 # `bun test` with no path scans from here. The parity suite is left out on purpose: it drives a
 # compiled probe, and a discovery walk over the whole repository leaves that child's stdio unusable
-# on bun 1.3.14. Run it with `bun --cwd packages/react-native-h3 run parity`.
+# on bun 1.3.14. Run it with `bun run --cwd packages/react-native-h3 parity`.
 root = "packages/react-native-h3/__tests__"

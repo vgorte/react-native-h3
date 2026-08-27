@@ -12,15 +12,19 @@ import {
 } from './corpus'
 import { callMany, skipWithoutProbe } from './probe'
 
-/** The digits two coordinates share, in degrees. The measured spread is `5.7e-14`. */
+/**
+ * Bounds how many degrees a coordinate may sit from h3-js's, away from a pole.
+ *
+ * Measured over this corpus: `5.68e-14`, which `divergences.test.ts` pins at its own bound.
+ */
 const COORDINATE_DIGITS = 11
 
 /**
- * The digits two coordinates share within a degree of a pole, in degrees.
+ * Bounds how many degrees a coordinate may sit from h3-js's within a degree of a pole.
  *
  * The inverse projection is ill-conditioned there, so the fused multiply-add the arm64 build
  * contracts and emscripten does not moves a resolution 15 vertex by up to `1.8e-7` degrees, two
- * centimetres on a cell half a metre across. `docs/h3-js-divergences.md` records the measurement.
+ * centimetres on a cell half a metre across. `divergences.test.ts` pins each resolution separately.
  */
 const POLAR_COORDINATE_DIGITS = 6
 

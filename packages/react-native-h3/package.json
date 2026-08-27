@@ -54,6 +54,7 @@
     "android/gradle.properties",
     "android/CMakeLists.txt",
     "android/src",
+    "docs",
     "README.md",
     "LICENSE"
   ],

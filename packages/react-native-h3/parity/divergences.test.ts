@@ -10,11 +10,26 @@ import { describe, expect, test } from 'bun:test'
 import { spawnSync } from 'node:child_process'
 import { join } from 'node:path'
 import h3 from 'h3-js'
+import type * as api from '../src/index'
+import { PENTAGON_NEIGHBOURHOODS, PENTAGONS, RES0_CELLS, RESOLUTIONS } from './corpus'
 import { callMany, skipWithoutProbe } from './probe'
+
+/** Fails to compile unless its argument is `true`, which is how a type-level row is proved. */
+type Expect<T extends true> = T
+
+/** Answers `true` only when the two types are the same in both directions. */
+type IsExactly<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false
+
+// The probe speaks JSON, so `tsc` is what proves our half of the two shape rows; the h3-js half is
+// asserted at run time in `divergence: the shape of the public surface`.
+export type CellIsABigint = Expect<IsExactly<ReturnType<typeof api.latLngToCell>, bigint>>
+export type CellSetIsATypedArray = Expect<
+  IsExactly<ReturnType<typeof api.gridDisk>, BigUint64Array>
+>
 
 const CELL = '89283082803ffff'
 
-/** An index with directed edge mode bits and direction `0`, which no edge ever has. */
+/** Carries directed edge mode bits and direction `0`, which no real edge ever has. */
 const EDGE_WITH_NO_DIRECTION = '109283082803ffff'
 
 /** Returns the probe's answer, or the `Error` it reported. */
@@ -91,9 +106,16 @@ describe.skipIf(skipWithoutProbe)('divergence: an invalid index is refused, not 
       expect(message, request).toBe('Cell argument was not valid (code: 5)')
     }
     // h3-js runs the same C code without the guard, so it answers with whatever the bits mean
-    expect(h3.cellArea('1', 'km2')).toBeGreaterThan(0)
-    expect(h3.cellToLatLng('1')).toHaveLength(2)
-    expect(h3.gridDisk('1', 1)).toHaveLength(6)
+    expect(h3.cellArea('1', 'km2')).toBe(4106166.3344638464)
+    expect(h3.cellToLatLng('1')).toEqual([79.24239850975904, 38.0234070079698])
+    expect(h3.gridDisk('1', 1)).toEqual([
+      '1000000000001',
+      '200000000001',
+      '400000000001',
+      '600000000001',
+      '800000000001',
+      'a00000000001',
+    ])
   })
 
   test('an invalid directed edge earns E_DIR_EDGE_INVALID where h3-js reads it anyway', () => {
@@ -107,7 +129,7 @@ describe.skipIf(skipWithoutProbe)('divergence: an invalid index is refused, not 
   test('an invalid vertex earns E_VERTEX_INVALID where h3-js reads it anyway', () => {
     expect(h3.isValidVertex(CELL)).toBe(false)
     expect(refusal(`vertexToLatLng ${CELL}`)).toBe('Vertex argument was not valid (code: 8)')
-    expect(h3.vertexToLatLng(CELL)).toHaveLength(2)
+    expect(h3.vertexToLatLng(CELL)).toEqual([37.7720104773324, -122.41701147197293])
   })
 
   test('the nine exemptions answer for any input, and agree with h3-js', () => {
@@ -129,45 +151,67 @@ describe.skipIf(skipWithoutProbe)('divergence: an invalid index is refused, not 
     // `cellToString` is the ninth, and formats any index; h3-js has no counterpart to compare
     for (const index of indexes) {
       expect(answer(`cellToString ${index}`)).toBe(index)
+      // `cellFromString` takes text rather than a cell index, so it converts whatever parses
+      expect(answer(`cellFromString ${index}`)).toBe(index)
     }
   })
 })
 
 describe.skipIf(skipWithoutProbe)('divergence: an argument that is not an integer', () => {
   test('a fractional argument is refused where h3-js truncates it', () => {
-    const cases: [string, string, () => unknown][] = [
-      [`gridDisk ${CELL} 1.5`, 'k must be an integer', () => h3.gridDisk(CELL, 1.5)],
+    // the fourth element is the answer truncation gives h3-js, so a change of h3-js's mind shows up
+    const cases: [string, string, () => unknown, unknown][] = [
+      [
+        `gridDisk ${CELL} 1.5`,
+        'k must be an integer',
+        () => h3.gridDisk(CELL, 1.5),
+        h3.gridDisk(CELL, 1),
+      ],
       [
         `cellToParent ${CELL} 1.5`,
         'Resolution must be an integer between 0 and 15',
         () => h3.cellToParent(CELL, 1.5),
+        '81283ffffffffff',
       ],
       [
         `cellToVertex ${CELL} 0.5`,
         'Vertex number must be an integer',
         () => h3.cellToVertex(CELL, 0.5),
+        '209283082803ffff',
       ],
       [
         'latLngToCell 0 0 1.5',
         'Resolution must be an integer between 0 and 15',
         () => h3.latLngToCell(0, 0, 1.5),
+        '81757ffffffffff',
+      ],
+      [
+        `childPosToCell 1.5 ${CELL} 10`,
+        'Child position must be an integer',
+        () => h3.childPosToCell(1.5, CELL, 10),
+        '8a283082800ffff',
       ],
     ]
-    for (const [request, message, produce] of cases) {
+    for (const [request, message, produce, truncated] of cases) {
       expect(refusal(request), request).toBe(message)
       // our wording carries no `(code: N)`, because H3 never saw the argument
       expect(codeOf(message), request).toBeUndefined()
-      // h3-js hands the fraction to emscripten, which truncates it and answers
-      expect(produce(), request).toBeDefined()
+      expect(produce(), request).toEqual(truncated)
     }
   })
 
   test('a fractional resolution is refused in our wording where h3-js reports E_RES_DOMAIN', () => {
-    expect(refusal('getHexagonAreaAvgKm2 1.5')).toBe(
-      'Resolution must be an integer between 0 and 15',
-    )
-    const theirs = h3jsRefusal(() => h3.getHexagonAreaAvg(1.5, 'km2'))
-    expect(theirs).toBe('Resolution argument was outside of acceptable range (code: 4, value: 1.5)')
+    const cases: [string, () => unknown][] = [
+      ['getHexagonAreaAvgKm2 1.5', () => h3.getHexagonAreaAvg(1.5, 'km2')],
+      ['getHexagonEdgeLengthAvgKm 1.5', () => h3.getHexagonEdgeLengthAvg(1.5, 'km')],
+      ['getNumCells 1.5', () => h3.getNumCells(1.5)],
+    ]
+    for (const [request, produce] of cases) {
+      expect(refusal(request), request).toBe('Resolution must be an integer between 0 and 15')
+      expect(h3jsRefusal(produce), request).toBe(
+        'Resolution argument was outside of acceptable range (code: 4, value: 1.5)',
+      )
+    }
   })
 })
 
@@ -349,14 +393,87 @@ describe.skipIf(skipWithoutProbe)('parity: where a divergence would be easy to a
   })
 })
 
+describe.skipIf(skipWithoutProbe)('parity: arithmetic away from a pole', () => {
+  test('cell centres, boundaries and vertexes agree to 5.7e-14 degrees', () => {
+    // measured `5.68e-14` over this corpus, and the bound is three times that
+    const bound = 2e-13
+    const cells = [...RES0_CELLS, ...PENTAGONS]
+    const centres = callMany(cells.map((cell) => `cellToLatLng ${cell}`))
+    const boundaries = callMany(cells.map((cell) => `cellToBoundary ${cell}`))
+    for (let i = 0; i < cells.length; i++) {
+      const cell = cells[i] as string
+      const centre = centres[i] as [number, number]
+      const theirCentre = h3.cellToLatLng(cell)
+      expect(Math.abs(centre[0] - theirCentre[0]), `cellToLatLng(${cell})`).toBeLessThan(bound)
+      expect(Math.abs(centre[1] - theirCentre[1]), `cellToLatLng(${cell})`).toBeLessThan(bound)
+      const ring = boundaries[i] as number[][]
+      const theirRing = h3.cellToBoundary(cell)
+      for (let v = 0; v < theirRing.length; v++) {
+        const a = ring[v] as number[]
+        const b = theirRing[v] as number[]
+        expect(Math.abs((a[0] as number) - (b[0] as number)), `${cell}[${v}]`).toBeLessThan(bound)
+        expect(Math.abs((a[1] as number) - (b[1] as number)), `${cell}[${v}]`).toBeLessThan(bound)
+      }
+    }
+    const vertexes = PENTAGONS.flatMap((cell) => h3.cellToVertexes(cell))
+    const answers = callMany(vertexes.map((vertex) => `vertexToLatLng ${vertex}`))
+    for (let i = 0; i < vertexes.length; i++) {
+      const ours = answers[i] as [number, number]
+      const theirs = h3.vertexToLatLng(vertexes[i] as string)
+      expect(Math.abs(ours[0] - theirs[0]), `vertexToLatLng(${vertexes[i]})`).toBeLessThan(bound)
+      expect(Math.abs(ours[1] - theirs[1]), `vertexToLatLng(${vertexes[i]})`).toBeLessThan(bound)
+    }
+  })
+
+  test('cell areas agree to 4.6e-13 relative and the resolution averages bit for bit', () => {
+    // measured `4.58e-13` over this corpus, which reaches resolution 6, and the bound is twice that
+    const bound = 1e-12
+    const cells = [...RES0_CELLS, ...PENTAGON_NEIGHBOURHOODS]
+    const answers = callMany(cells.map((cell) => `cellAreaKm2 ${cell}`))
+    for (let i = 0; i < cells.length; i++) {
+      const theirs = h3.cellArea(cells[i] as string, 'km2')
+      expect(Math.abs((answers[i] as number) - theirs) / theirs, `${cells[i]}`).toBeLessThan(bound)
+    }
+    for (const res of RESOLUTIONS) {
+      expect(answer(`getHexagonAreaAvgKm2 ${res}`)).toBe(h3.getHexagonAreaAvg(res, 'km2'))
+      expect(answer(`getHexagonEdgeLengthAvgKm ${res}`)).toBe(h3.getHexagonEdgeLengthAvg(res, 'km'))
+    }
+  })
+
+  test('great circle distances agree to 2.0e-15 relative, and degsToRads bit for bit', () => {
+    // the haversine runs on the arguments themselves, so there is nothing for the contraction to
+    // amplify. Measured `2.02e-15` over the seeded pairs, and the bound is five times that.
+    const pairs: [number, number, number, number][] = [
+      [0, 0, 90, 0],
+      [37.7749, -122.4194, 51.5074, -0.1278],
+      [-89.9999, -179.9999, 89.9999, 179.9999],
+      [10, 179, -10, -179],
+    ]
+    for (const [aLat, aLng, bLat, bLng] of pairs) {
+      const ours = answer(`greatCircleDistanceKm ${aLat} ${aLng} ${bLat} ${bLng}`) as number
+      const theirs = h3.greatCircleDistance([aLat, aLng], [bLat, bLng], 'km')
+      expect(Math.abs(ours - theirs), `${aLat},${aLng}`).toBeLessThan(Math.abs(theirs) * 1e-14)
+    }
+    // `degsToRads` is one multiply and agrees exactly; the reverse constant differs in its last bit
+    for (const degrees of [-180, -1, 0, 1, 90, 180]) {
+      expect(answer(`degsToRads ${degrees}`), `${degrees}`).toBe(h3.degsToRads(degrees))
+      const radians = degrees / 57
+      const ours = answer(`radsToDegs ${radians}`) as number
+      const theirs = h3.radsToDegs(radians)
+      expect(Math.abs(ours - theirs), `${radians}`).toBeLessThanOrEqual(Math.abs(theirs) * 1e-15)
+    }
+  })
+})
+
 describe.skipIf(skipWithoutProbe)('divergence: fused multiply-add near a pole', () => {
-  test('polar geometry agrees to the last bit at low resolutions and to 2 cm at 15', () => {
+  test('polar geometry moves further from h3-js with every resolution', () => {
     // The arm64 build contracts a multiply and an add into one instruction and emscripten does not.
     // The inverse projection is ill-conditioned at a pole, so the last bit grows with resolution.
+    // Each bound is between two and four times the value measured for that cell.
     const bounds: [number, number][] = [
-      [0, 1e-12],
-      [5, 1e-10],
-      [10, 1e-8],
+      [0, 8e-14],
+      [5, 2e-11],
+      [10, 2e-9],
       [15, 5e-7],
     ]
     for (const [res, bound] of bounds) {
@@ -373,23 +490,57 @@ describe.skipIf(skipWithoutProbe)('divergence: fused multiply-add near a pole', 
     }
   })
 
-  test('a resolution 15 edge length agrees to seven digits, not to the last bit', () => {
-    const cell = h3.latLngToCell(37.7749, -122.4194, 15)
-    const edge = h3.originToDirectedEdges(cell)[0] as string
+  test('the worst resolution 15 edge length agrees to eight digits, not to the last bit', () => {
+    // this edge is where the whole pentagon corpus disagrees most, at `1.38e-8` relative
+    const edge = '14f0800000000000'
     const ours = answer(`edgeLengthKm ${edge}`) as number
     const theirs = h3.edgeLength(edge, 'km')
-    expect(Math.abs(ours - theirs)).toBeLessThan(Math.abs(theirs) * 1e-7)
+    expect(Math.abs(ours - theirs)).toBeLessThan(Math.abs(theirs) * 4e-8)
+  })
+
+  test('a resolution 15 pentagon area agrees to nine digits, not to the last bit', () => {
+    // the same cancellation: at half a metre across, the area is a difference of near-equal terms.
+    // Measured `3.01e-9` relative over every pentagon, worst here; the bound is three times that.
+    const cell = '8f0800000000000'
+    const ours = answer(`cellAreaKm2 ${cell}`) as number
+    const theirs = h3.cellArea(cell, 'km2')
+    expect(Math.abs(ours - theirs)).toBeLessThan(Math.abs(theirs) * 1e-8)
   })
 })
 
-describe.skipIf(skipWithoutProbe)(
-  'addition: the two functions h3-js has no counterpart for',
-  () => {
-    test('cellToString and cellFromString round-trip the h3-js form', () => {
-      expect(answer(`cellToString ${CELL}`)).toBe(CELL)
-      expect(answer(`cellFromString ${CELL}`)).toBe(CELL)
-      expect(Object.keys(h3)).not.toContain('cellToString')
-      expect(Object.keys(h3)).not.toContain('cellFromString')
-    })
-  },
-)
+describe.skipIf(skipWithoutProbe)('divergence: the shape of the public surface', () => {
+  test('units are separate functions here and a string argument in h3-js', () => {
+    const ops = answer('__ops') as string[]
+    expect(ops).toContain('cellAreaKm2')
+    expect(ops).not.toContain('cellArea')
+    expect(Object.keys(h3)).toContain('cellArea')
+    expect(Object.keys(h3)).not.toContain('cellAreaKm2')
+    // h3-js can therefore raise an error over the unit itself, and this package has no such channel
+    expect(h3jsRefusal(() => h3.cellArea(CELL, 'furlongs' as 'km2'))).toBe(
+      'Unknown unit (code: 1000, value: furlongs)',
+    )
+  })
+
+  test('the two split-long helpers exist in h3-js and nowhere here', () => {
+    // they work around the lack of 64-bit integers in an emscripten build
+    const ops = answer('__ops') as string[]
+    for (const name of ['h3IndexToSplitLong', 'splitLongToH3Index']) {
+      expect(Object.keys(h3)).toContain(name)
+      expect(ops).not.toContain(name)
+    }
+  })
+
+  test('cellToString and cellFromString exist here and nowhere in h3-js', () => {
+    expect(answer(`cellToString ${CELL}`)).toBe(CELL)
+    expect(answer(`cellFromString ${CELL}`)).toBe(CELL)
+    expect(Object.keys(h3)).not.toContain('cellToString')
+    expect(Object.keys(h3)).not.toContain('cellFromString')
+  })
+
+  test('a cell is a string in h3-js, where the type assertions above make it a bigint', () => {
+    expect(typeof h3.latLngToCell(37.7749, -122.4194, 9)).toBe('string')
+    const disk = h3.gridDisk(CELL, 1)
+    expect(Array.isArray(disk)).toBe(true)
+    expect(typeof (disk[0] as string)).toBe('string')
+  })
+})

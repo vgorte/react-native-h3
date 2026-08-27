@@ -11,12 +11,28 @@ import {
 import { callMany, skipWithoutProbe } from './probe'
 
 /**
- * The relative distance two doubles may sit apart and still count as the same answer.
+ * Bounds how far a cell area may sit from h3-js's, relative.
  *
  * Both sides run the same C source, but the arm64 build contracts a multiply and an add into one
- * instruction and emscripten does not. The measured spread here stays two orders below this.
+ * instruction and emscripten does not. Measured over this corpus: `4.58e-13`.
  */
-const TOLERANCE = 1e-11
+const AREA_TOLERANCE = 1e-12
+
+/**
+ * Bounds how far a great circle distance may sit from h3-js's, relative.
+ *
+ * The haversine runs on the arguments themselves rather than on a projected coordinate, so the
+ * contracted multiply-add barely shows. Measured over this corpus: `2.02e-15`.
+ */
+const DISTANCE_TOLERANCE = 1e-14
+
+/**
+ * Bounds how far a radian to degree conversion may sit from h3-js's, relative.
+ *
+ * One multiply by a compiled-in constant, and the two constants differ in their last bit. Measured
+ * over this corpus: `1.57e-16`, which is one unit in the last place.
+ */
+const CONVERSION_TOLERANCE = 1e-14
 
 /** Compares our answer to h3-js's for every input, reporting every mismatch rather than the first. */
 function compare<T>(
@@ -66,10 +82,13 @@ function compareOutcomes(requests: string[], inputs: string[], expected: string[
 
 const exactly = (ours: unknown, theirs: unknown) => ours === theirs
 
-const closely = (ours: unknown, theirs: unknown) =>
-  typeof ours === 'number' &&
-  typeof theirs === 'number' &&
-  Math.abs(ours - theirs) <= Math.abs(theirs) * TOLERANCE
+/** Builds a comparison that admits a relative distance, and nothing else. */
+function within(tolerance: number) {
+  return (ours: unknown, theirs: unknown) =>
+    typeof ours === 'number' &&
+    typeof theirs === 'number' &&
+    Math.abs(ours - theirs) <= Math.abs(theirs) * tolerance
+}
 
 describe.skipIf(skipWithoutProbe)('parity: indexing', () => {
   test('latLngToCell over 2000 seeded coordinates', () => {
@@ -201,21 +220,22 @@ describe.skipIf(skipWithoutProbe)('parity: measurement', () => {
         cells.map((cell) => `${op} ${cell}`),
         cells.map((cell) => `${op}(${cell})`),
         cells.map((cell) => h3.cellArea(cell, unit)),
-        closely,
+        within(AREA_TOLERANCE),
       )
     })
   }
 
+  // the four resolution averages read a compiled-in table on both sides, so they agree bit for bit
   for (const [op, unit] of [
     ['getHexagonAreaAvgKm2', 'km2'],
     ['getHexagonAreaAvgM2', 'm2'],
   ] as const) {
-    test(`${op} matches getHexagonAreaAvg(res, '${unit}') at every resolution`, () => {
+    test(`${op} matches getHexagonAreaAvg(res, '${unit}') bit for bit`, () => {
       compare(
         RESOLUTIONS.map((res) => `${op} ${res}`),
         RESOLUTIONS.map((res) => `${op}(${res})`),
         RESOLUTIONS.map((res) => h3.getHexagonAreaAvg(res, unit)),
-        closely,
+        exactly,
       )
     })
   }
@@ -224,12 +244,12 @@ describe.skipIf(skipWithoutProbe)('parity: measurement', () => {
     ['getHexagonEdgeLengthAvgKm', 'km'],
     ['getHexagonEdgeLengthAvgM', 'm'],
   ] as const) {
-    test(`${op} matches getHexagonEdgeLengthAvg(res, '${unit}') at every resolution`, () => {
+    test(`${op} matches getHexagonEdgeLengthAvg(res, '${unit}') bit for bit`, () => {
       compare(
         RESOLUTIONS.map((res) => `${op} ${res}`),
         RESOLUTIONS.map((res) => `${op}(${res})`),
         RESOLUTIONS.map((res) => h3.getHexagonEdgeLengthAvg(res, unit)),
-        closely,
+        exactly,
       )
     })
   }
@@ -260,24 +280,25 @@ describe.skipIf(skipWithoutProbe)('parity: measurement', () => {
         inputs.push(`${op}(${a.lat}, ${a.lng}, ${b.lat}, ${b.lng})`)
         expected.push(h3.greatCircleDistance([a.lat, a.lng], [b.lat, b.lng], unit))
       }
-      compare(requests, inputs, expected, closely)
+      compare(requests, inputs, expected, within(DISTANCE_TOLERANCE))
     }
   })
 
   test('degsToRads and radsToDegs over the whole circle', () => {
     const degrees = [-360, -180, -90, -1, -0.5, 0, 0.5, 1, 90, 180, 359.9999, 360]
+    // `degsToRads` agrees bit for bit; only the reverse constant differs in its last bit
     compare(
       degrees.map((value) => `degsToRads ${value}`),
       degrees.map((value) => `degsToRads(${value})`),
       degrees.map((value) => h3.degsToRads(value)),
-      closely,
+      exactly,
     )
     const radians = degrees.map((value) => value / 57)
     compare(
       radians.map((value) => `radsToDegs ${value}`),
       radians.map((value) => `radsToDegs(${value})`),
       radians.map((value) => h3.radsToDegs(value)),
-      closely,
+      within(CONVERSION_TOLERANCE),
     )
   })
 })

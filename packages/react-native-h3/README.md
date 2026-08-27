@@ -50,7 +50,10 @@ constants (`ContainmentMode.center`, `.full`, `.overlapping`, `.overlappingBbox`
 `'containmentOverlappingBbox'`) both work. The constants are what this package recommends: a name
 costs a lookup on a path that exists to be fast.
 
-**Four behaviours differ deliberately.**
+**`constructCell(baseCellNumber, digits, res)` takes h3-js's argument order**, not the C library's
+`(res, baseCellNumber, digits)`, so nothing has to be transposed on the way over.
+
+**Three behaviours differ deliberately.**
 
 1. An invalid cell, directed edge or vertex raises an `H3Error` worded by H3 itself
    (`E_CELL_INVALID`, `E_DIR_EDGE_INVALID`, `E_VERTEX_INVALID`) where h3-js passes it to H3
@@ -65,16 +68,14 @@ costs a lookup on a path that exists to be fast.
    cannot afford to allocate.
 3. Error messages come from H3's own `describeH3Error`, so they match the upstream documentation
    rather than h3-js's separate table. Errors are instances of `H3Error` and carry a `message` and
-   a `code`, with the code repeated in the message as `(code: 5)`. The code always matches h3-js's,
-   and so does the text for seventeen of the nineteen H3 codes. Failures this package reports
-   itself, such as a resolution that is not an integer, have no H3 counterpart and so carry no
-   `code`.
-4. `constructCell(baseCellNumber, digits, res)` keeps h3-js's argument order rather than the C
-   library's `(res, baseCellNumber, digits)`, so nothing has to be transposed.
+   a `code`, with the code repeated in the message as `(code: 5)`. Where both sides report the same
+   H3 failure the code is the same, and so is the text for seventeen of the nineteen H3 codes.
+   Where this package validates first, it reports H3's code for the condition it found, or none at
+   all when H3 has no code for it, and h3-js may reach a different failure further in.
 
 [docs/h3-js-divergences.md](docs/h3-js-divergences.md) lists every case with the h3-js answer beside
 ours, including the two message texts h3-js has let drift from H3's, the wording of a rejected
-containment mode, and how far the arithmetic moves near a pole.
+containment mode, and how far the arithmetic moves near a pole and at the finest resolutions.
 
 **`h3IndexToSplitLong` and `splitLongToH3Index` do not exist.** They work around JavaScript's lack
 of 64-bit integers in an emscripten build and have no counterpart in the C library.

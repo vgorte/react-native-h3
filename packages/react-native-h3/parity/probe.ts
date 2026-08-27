@@ -53,7 +53,7 @@ interface Response {
 }
 
 /**
- * Whether a suite may skip because the probe is not built.
+ * Reports whether a suite may skip because the probe is not built.
  *
  * CI sets `H3_PARITY_REQUIRED`, so a probe missing there fails the build instead of passing quietly.
  */

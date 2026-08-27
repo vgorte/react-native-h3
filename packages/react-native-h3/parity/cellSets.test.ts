@@ -4,13 +4,13 @@ import { encodeCells, PENTAGON_NEIGHBOURHOODS, PENTAGONS, RES0_CELLS, RESOLUTION
 import { callMany, skipWithoutProbe } from './probe'
 
 /**
- * The relative distance two lengths may sit apart and still count as the same answer.
+ * Bounds how far an edge length may sit from h3-js's, relative.
  *
  * A resolution 15 edge is half a metre long, so subtracting its two endpoints cancels about eight
  * digits, and that turns the multiply-add the arm64 build contracts and emscripten does not into
- * the eighth digit of the result. The measured worst case over this corpus is `1.4e-8`.
+ * the eighth digit. Measured over this corpus: `1.38e-8`, at `edgeLengthKm(14f0800000000000)`.
  */
-const LENGTH_TOLERANCE = 1e-7
+const LENGTH_TOLERANCE = 4e-8
 
 /** Renders what h3-js did, answer or refusal alike, so both can be compared as one string. */
 function outcome(produce: () => unknown): string {
