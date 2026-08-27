@@ -476,16 +476,13 @@ describe.skipIf(skipWithoutProbe)('parity: arithmetic away from a pole', () => {
 
 describe.skipIf(skipWithoutProbe)('divergence: fused multiply-add near a pole', () => {
   test('polar geometry moves further from h3-js with every resolution', () => {
-    // The arm64 build contracts a multiply and an add into one instruction and emscripten does not.
-    // The inverse projection is ill-conditioned at a pole, so the last bit grows with resolution.
-    // Each bound is between two and four times the worst case measured over `EXTREME_COORDINATES`,
-    // which is the corpus `docs/h3-js-divergences.md` publishes: `2.84e-14` degrees at resolution 0,
-    // `1.46e-11` at 5, `5.89e-10` at 10 and `1.82e-7` at 15.
+    // arm64 contracts a multiply-add and emscripten does not; a pole amplifies the last bit
+    // each bound is two to four times the worst case measured over `EXTREME_COORDINATES`
     const bounds: [number, number][] = [
-      [0, 8e-14],
-      [5, 5e-11],
-      [10, 2e-9],
-      [15, 5e-7],
+      [0, 8e-14], // measured `2.84e-14` degrees
+      [5, 5e-11], // measured `1.46e-11`
+      [10, 2e-9], // measured `5.89e-10`
+      [15, 5e-7], // measured `1.82e-7`
     ]
     for (const [res, bound] of bounds) {
       const cells = Array.from(

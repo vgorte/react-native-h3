@@ -46,9 +46,7 @@ double cellAreaRads2(uint64_t cell) {
   return h3shapes::callWithOutParam<double>(::cellAreaRads2, cell);
 }
 
-// The three great-circle functions have no error channel at all: they return a double and cannot
-// fail (`latLng.c:171`), so there is nothing for the out-param shape to centralise. NaN in gives NaN
-// out, exactly as in C and in h3-js.
+// no out-param shape below: these cannot fail (`latLng.c:171`) and answer `NaN` for `NaN`
 double greatCircleDistanceKm(double lat1, double lng1, double lat2, double lng2) {
   const ::LatLng a = toRadians(lat1, lng1);
   const ::LatLng b = toRadians(lat2, lng2);

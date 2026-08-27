@@ -56,7 +56,7 @@ int64_t CellBuffer::compact() noexcept {
   uint64_t* end = begin + capacity_;
   uint64_t* newEnd = std::remove(begin, end, static_cast<uint64_t>(H3_NULL));
   count_ = static_cast<int64_t>(newEnd - begin);
-  // keeps a repeated compact() idempotent instead of reporting stale duplicates.
+  // keeps a repeated `compact()` idempotent instead of reporting stale duplicates
   std::fill(newEnd, end, static_cast<uint64_t>(H3_NULL));
   return count_;
 }

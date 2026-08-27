@@ -12,8 +12,8 @@
 /**
  * Describes the geometry the public API exposes, in degrees, for the Nitro-free core.
  *
- * These stay separate types from H3's own `::LatLng` and `::CoordIJ`, which carry radians, so
- * that a unit mix-up is a compile error rather than an answer wrong by a factor of 57.
+ * These stay separate types from H3's own `::LatLng` and `::CoordIJ`. `::LatLng` carries radians,
+ * so that a unit mix-up is a compile error rather than an answer wrong by a factor of 57.
  */
 namespace h3core {
 

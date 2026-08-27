@@ -24,6 +24,7 @@ jobs:
         with:
           bun-version: 1.3.14  # <-- pinned: `latest` turns an upstream release into a red build
       - run: bun install --frozen-lockfile
+      # Release is the configuration the bounds in `divergences.test.ts` were measured on
       - name: Configure
         run: cmake -S packages/react-native-h3/cpp/test -B build/host -DCMAKE_BUILD_TYPE=Release
       - name: Build the probe

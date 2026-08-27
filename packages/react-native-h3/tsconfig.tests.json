@@ -7,5 +7,8 @@
     "declaration": false,
     "declarationMap": false
   },
+  // `parity` must stay listed: the type-surface rows of `docs/h3-js-divergences.md` are proved
+  // by the `Expect<IsExactly<...>>` aliases in `parity/divergences.test.ts`, which only `tsc`
+  // checks.
   "include": ["__tests__", "parity", "src"]
 }

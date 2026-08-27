@@ -12,9 +12,9 @@
 namespace margelo::nitro::h3 {
 
 /**
- * Implements the `H3` HybridObject by validating arguments, calling the vendored C and
- * converting the result. All memory discipline lives in `cpp/core`, which knows nothing
- * about Nitro.
+ * Implements the `H3` HybridObject as an adapter: it converts Nitro's types to the plain ones
+ * `cpp/ops` takes and back again. Validation and memory discipline live in `cpp/ops` and
+ * `cpp/core`, which know nothing about Nitro.
  */
 class HybridH3 final : public HybridH3Spec {
 public:
