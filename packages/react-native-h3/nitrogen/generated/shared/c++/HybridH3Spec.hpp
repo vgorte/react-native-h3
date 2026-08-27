@@ -13,9 +13,16 @@
 #error NitroModules cannot be found! Are you sure you installed NitroModules properly?
 #endif
 
+// Forward declaration of `LatLng` to properly resolve imports.
+namespace margelo::nitro::h3 { struct LatLng; }
+// Forward declaration of `CoordIJ` to properly resolve imports.
+namespace margelo::nitro::h3 { struct CoordIJ; }
 
-
+#include "LatLng.hpp"
+#include <vector>
 #include <NitroModules/ArrayBuffer.hpp>
+#include "CoordIJ.hpp"
+#include <string>
 
 namespace margelo::nitro::h3 {
 
@@ -49,7 +56,69 @@ namespace margelo::nitro::h3 {
     public:
       // Methods
       virtual uint64_t latLngToCell(double lat, double lng, double res) = 0;
+      virtual LatLng cellToLatLng(uint64_t cell) = 0;
+      virtual std::vector<LatLng> cellToBoundary(uint64_t cell) = 0;
+      virtual std::vector<std::vector<std::vector<LatLng>>> cellsToMultiPolygon(const std::shared_ptr<ArrayBuffer>& cells) = 0;
+      virtual std::shared_ptr<ArrayBuffer> polygonToCells(const std::vector<std::vector<std::vector<double>>>& rings, double res) = 0;
+      virtual std::shared_ptr<ArrayBuffer> polygonToCellsExperimental(const std::vector<std::vector<std::vector<double>>>& rings, double res, double flags) = 0;
       virtual std::shared_ptr<ArrayBuffer> gridDisk(uint64_t origin, double k) = 0;
+      virtual std::shared_ptr<ArrayBuffer> gridRing(uint64_t origin, double k) = 0;
+      virtual std::shared_ptr<ArrayBuffer> gridRingUnsafe(uint64_t origin, double k) = 0;
+      virtual std::vector<std::shared_ptr<ArrayBuffer>> gridDiskDistances(uint64_t origin, double k) = 0;
+      virtual std::shared_ptr<ArrayBuffer> gridPathCells(uint64_t start, uint64_t end) = 0;
+      virtual double gridDistance(uint64_t origin, uint64_t destination) = 0;
+      virtual CoordIJ cellToLocalIj(uint64_t origin, uint64_t cell) = 0;
+      virtual uint64_t localIjToCell(uint64_t origin, double i, double j) = 0;
+      virtual bool areNeighborCells(uint64_t origin, uint64_t destination) = 0;
+      virtual uint64_t cellsToDirectedEdge(uint64_t origin, uint64_t destination) = 0;
+      virtual uint64_t getDirectedEdgeOrigin(uint64_t edge) = 0;
+      virtual uint64_t getDirectedEdgeDestination(uint64_t edge) = 0;
+      virtual uint64_t reverseDirectedEdge(uint64_t edge) = 0;
+      virtual std::shared_ptr<ArrayBuffer> directedEdgeToCells(uint64_t edge) = 0;
+      virtual std::shared_ptr<ArrayBuffer> originToDirectedEdges(uint64_t origin) = 0;
+      virtual std::vector<LatLng> directedEdgeToBoundary(uint64_t edge) = 0;
+      virtual double edgeLengthKm(uint64_t edge) = 0;
+      virtual double edgeLengthM(uint64_t edge) = 0;
+      virtual double edgeLengthRads(uint64_t edge) = 0;
+      virtual uint64_t cellToVertex(uint64_t cell, double vertexNum) = 0;
+      virtual std::shared_ptr<ArrayBuffer> cellToVertexes(uint64_t cell) = 0;
+      virtual LatLng vertexToLatLng(uint64_t vertex) = 0;
+      virtual double degsToRads(double degrees) = 0;
+      virtual double radsToDegs(double radians) = 0;
+      virtual bool isValidCell(uint64_t cell) = 0;
+      virtual bool isValidIndex(uint64_t index) = 0;
+      virtual bool isValidDirectedEdge(uint64_t edge) = 0;
+      virtual bool isValidVertex(uint64_t vertex) = 0;
+      virtual bool isPentagon(uint64_t cell) = 0;
+      virtual bool isResClassIII(uint64_t cell) = 0;
+      virtual double getResolution(uint64_t index) = 0;
+      virtual double getBaseCellNumber(uint64_t cell) = 0;
+      virtual double getIndexDigit(uint64_t cell, double digit) = 0;
+      virtual uint64_t constructCell(double baseCellNumber, const std::vector<double>& digits, double res) = 0;
+      virtual std::string cellToString(uint64_t cell) = 0;
+      virtual uint64_t cellFromString(const std::string& text) = 0;
+      virtual double cellAreaKm2(uint64_t cell) = 0;
+      virtual double cellAreaM2(uint64_t cell) = 0;
+      virtual double cellAreaRads2(uint64_t cell) = 0;
+      virtual double greatCircleDistanceKm(double lat1, double lng1, double lat2, double lng2) = 0;
+      virtual double greatCircleDistanceM(double lat1, double lng1, double lat2, double lng2) = 0;
+      virtual double greatCircleDistanceRads(double lat1, double lng1, double lat2, double lng2) = 0;
+      virtual uint64_t cellToParent(uint64_t cell, double res) = 0;
+      virtual uint64_t cellToCenterChild(uint64_t cell, double res) = 0;
+      virtual double cellToChildrenSize(uint64_t cell, double res) = 0;
+      virtual double cellToChildPos(uint64_t cell, double parentRes) = 0;
+      virtual uint64_t childPosToCell(double childPos, uint64_t parent, double childRes) = 0;
+      virtual std::shared_ptr<ArrayBuffer> cellToChildren(uint64_t cell, double res) = 0;
+      virtual std::shared_ptr<ArrayBuffer> compactCells(const std::shared_ptr<ArrayBuffer>& cells) = 0;
+      virtual std::shared_ptr<ArrayBuffer> uncompactCells(const std::shared_ptr<ArrayBuffer>& cells, double res) = 0;
+      virtual double getHexagonAreaAvgKm2(double res) = 0;
+      virtual double getHexagonAreaAvgM2(double res) = 0;
+      virtual double getHexagonEdgeLengthAvgKm(double res) = 0;
+      virtual double getHexagonEdgeLengthAvgM(double res) = 0;
+      virtual double getNumCells(double res) = 0;
+      virtual std::shared_ptr<ArrayBuffer> getRes0Cells() = 0;
+      virtual std::shared_ptr<ArrayBuffer> getPentagons(double res) = 0;
+      virtual std::vector<double> getIcosahedronFaces(uint64_t cell) = 0;
 
     protected:
       // Hybrid Setup

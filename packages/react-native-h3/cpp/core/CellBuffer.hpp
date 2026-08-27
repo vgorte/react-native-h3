@@ -29,8 +29,15 @@ public:
 
   CellBuffer(const CellBuffer&) = delete;
   CellBuffer& operator=(const CellBuffer&) = delete;
-  CellBuffer(CellBuffer&&) = delete;
-  CellBuffer& operator=(CellBuffer&&) = delete;
+
+  /**
+   * Takes the block over and leaves `other` empty, so a moved-from buffer reports `nullptr` data
+   * with a capacity and a count of `0`. Written out by hand because a defaulted move would leave
+   * the plain integers behind and report a stale capacity for a block that has gone.
+   */
+  CellBuffer(CellBuffer&& other) noexcept;
+  CellBuffer& operator=(CellBuffer&& other) noexcept;
+
   ~CellBuffer() = default;
 
   /** Returns the writable slots for H3 to fill. `nullptr` after `release()`. */
@@ -49,6 +56,13 @@ public:
    * package exists for.
    */
   int64_t compact() noexcept;
+
+  /**
+   * Publishes a count without scanning, for the functions whose output size is documented as exact
+   * and therefore cannot contain `H3_NULL`. Throws `std::invalid_argument` when `count` is negative
+   * or above the capacity, because that would hand out memory this buffer does not own.
+   */
+  void setCount(int64_t count);
 
   /**
    * Hands the raw block to the caller, who takes ownership and must `delete[]` it. `capacity()`

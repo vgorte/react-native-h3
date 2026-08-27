@@ -23,7 +23,7 @@ endforeach()
 
 add_library(h3_vendored STATIC ${H3_SOURCES})
 target_include_directories(h3_vendored PUBLIC ${H3_ROOT}/include)
-# upstream builds with these warnings off; we do not own this code.
+# upstream builds with these warnings off; this package does not own this code.
 target_compile_options(h3_vendored PRIVATE -w)
 
 # Nitro-free core
@@ -32,6 +32,19 @@ target_compile_options(h3_vendored PRIVATE -w)
 add_library(nitro_free_core STATIC
   ${PACKAGE_ROOT}/cpp/core/CellBuffer.cpp
   ${PACKAGE_ROOT}/cpp/core/H3ErrorMapping.cpp
+  ${PACKAGE_ROOT}/cpp/core/Validation.cpp
+  ${PACKAGE_ROOT}/cpp/core/LinkedGeoPolygonReader.cpp
+  ${PACKAGE_ROOT}/cpp/core/GeoPolygonBuilder.cpp
+  ${PACKAGE_ROOT}/cpp/ops/Edges.cpp
+  ${PACKAGE_ROOT}/cpp/ops/Hierarchy.cpp
+  ${PACKAGE_ROOT}/cpp/ops/Indexing.cpp
+  ${PACKAGE_ROOT}/cpp/ops/Inspection.cpp
+  ${PACKAGE_ROOT}/cpp/ops/Measurement.cpp
+  ${PACKAGE_ROOT}/cpp/ops/Misc.cpp
+  ${PACKAGE_ROOT}/cpp/ops/Regions.cpp
+  ${PACKAGE_ROOT}/cpp/ops/Traversal.cpp
+  ${PACKAGE_ROOT}/cpp/ops/Units.cpp
+  ${PACKAGE_ROOT}/cpp/ops/Vertexes.cpp
 )
 target_include_directories(nitro_free_core PUBLIC ${PACKAGE_ROOT}/cpp)
 target_link_libraries(nitro_free_core PUBLIC h3_vendored)
@@ -60,6 +73,19 @@ set(TEST_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/VendoredH3Test.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/CellBufferTest.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/H3ErrorMappingTest.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/BufferSizesTest.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/ValidationTest.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/OutParamCallTest.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/CellSetCallTest.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/LinkedGeoPolygonReaderTest.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/GeoPolygonBuilderTest.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/IndexingOpsTest.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/InspectionOpsTest.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/MeasurementOpsTest.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/HierarchyOpsTest.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/TraversalOpsTest.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/EdgesOpsTest.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/MiscListsOpsTest.cpp
 )
 
 add_executable(tests ${TEST_SOURCES})
@@ -72,3 +98,10 @@ add_executable(tests_asan ${TEST_SOURCES})
 target_link_libraries(tests_asan PRIVATE nitro_free_core GTest::gtest_main)
 target_compile_options(tests_asan PRIVATE -fsanitize=address,undefined -fno-omit-frame-pointer -g -O1)
 target_link_options(tests_asan PRIVATE -fsanitize=address,undefined)
+
+# Parity probe
+# A host driver over the Nitro-free operations layer, so the h3-js comparison runs under `bun test`
+# against the code that ships.
+add_executable(parity_probe ${CMAKE_CURRENT_SOURCE_DIR}/ParityProbe.cpp)
+target_link_libraries(parity_probe PRIVATE nitro_free_core)
+target_compile_options(parity_probe PRIVATE -Wall -Wextra -Wpedantic -Werror)

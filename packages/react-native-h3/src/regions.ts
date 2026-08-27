@@ -1,0 +1,79 @@
+import { toBuffer } from './buffers'
+import { rethrowAsH3Error } from './H3Error'
+import { native } from './native'
+import type { ContainmentModeName, ContainmentModeValue, LatLng, Ring } from './types'
+import { CONTAINMENT_MODE_BY_NAME } from './types'
+
+// H3's `CONTAINMENT_INVALID`, so an unrecognised mode name earns the same `E_OPTION_INVALID` that
+// h3-js reports for one, rather than this package's own wording.
+const CONTAINMENT_INVALID = 4
+
+/**
+ * Finds the outline of a set of cells, as GeoJSON-shaped polygons.
+ *
+ * The result nests polygons, then loops, then points. The first loop of each polygon is its outer
+ * ring and any further loops are holes; no loop repeats its first point at the end.
+ *
+ * @param cells The cells to outline. They must all be valid, unique and of the same resolution.
+ * @returns One entry per disjoint outline.
+ * @throws {@linkcode H3Error} if the set is invalid, mixes resolutions or contains duplicates.
+ */
+export function cellsToMultiPolygon(cells: BigUint64Array): LatLng[][][] {
+  try {
+    return native.cellsToMultiPolygon(toBuffer(cells))
+  } catch (error) {
+    rethrowAsH3Error(error)
+  }
+}
+
+/**
+ * Finds every cell whose centre falls inside a polygon.
+ *
+ * The polygon is GeoJSON-shaped: the first ring is the outer boundary, any further rings are holes,
+ * and each point is a `[latitude, longitude]` pair in degrees. Note the order, which GeoJSON itself
+ * reverses; a ring is not closed, so its first point is not repeated at the end.
+ *
+ * @param rings The outer ring first, then holes. An empty polygon yields no cells.
+ * @param res The resolution, `0` to `15`.
+ * @returns The cells covering the polygon, as a view onto the native buffer.
+ * @throws {@linkcode H3Error} if a point is not a finite `[latitude, longitude]` pair, the
+ * resolution is out of range, or the result would exceed this binding's limit of `4,000,000` cells.
+ */
+export function polygonToCells(rings: Ring[], res: number): BigUint64Array {
+  try {
+    return new BigUint64Array(native.polygonToCells(rings, res))
+  } catch (error) {
+    rethrowAsH3Error(error)
+  }
+}
+
+/**
+ * Finds the cells covering a polygon as {@linkcode polygonToCells} does, with a choice of
+ * containment rule.
+ *
+ * The mode is either a {@linkcode ContainmentMode} constant or the h3-js name for it; the constants
+ * are cheaper and are what this package recommends. This is an experimental H3 API and may change
+ * behaviour in a minor version of the underlying C library.
+ *
+ * @param rings The outer ring first, then holes, as `[latitude, longitude]` degrees.
+ * @param res The resolution, `0` to `15`.
+ * @param flags One of `ContainmentMode.center`, `.full`, `.overlapping` or `.overlappingBbox`, or
+ * the matching h3-js name such as `'containmentCenter'`.
+ * @returns The cells covering the polygon, as a view onto the native buffer.
+ * @throws {@linkcode H3Error} if the polygon, the resolution or the mode is invalid, or the result
+ * would exceed this binding's limit of `4,000,000` cells.
+ */
+export function polygonToCellsExperimental(
+  rings: Ring[],
+  res: number,
+  flags: ContainmentModeValue | ContainmentModeName,
+): BigUint64Array {
+  // an unknown name falls through to H3, which stays the only judge of the mode.
+  const mode =
+    typeof flags === 'number' ? flags : (CONTAINMENT_MODE_BY_NAME[flags] ?? CONTAINMENT_INVALID)
+  try {
+    return new BigUint64Array(native.polygonToCellsExperimental(rings, res, mode))
+  } catch (error) {
+    rethrowAsH3Error(error)
+  }
+}

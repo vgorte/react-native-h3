@@ -7,87 +7,319 @@
 
 #include "HybridH3.hpp"
 
-#include <cmath>
 #include <cstdint>
 #include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
+#include "HybridH3Conversions.hpp"
 #include "core/CellBuffer.hpp"
-#include "core/H3ErrorMapping.hpp"
+#include "ops/Edges.hpp"
+#include "ops/Hierarchy.hpp"
+#include "ops/Indexing.hpp"
+#include "ops/Inspection.hpp"
+#include "ops/Measurement.hpp"
+#include "ops/Misc.hpp"
+#include "ops/Regions.hpp"
+#include "ops/Traversal.hpp"
+#include "ops/Units.hpp"
+#include "ops/Vertexes.hpp"
 
-extern "C" {
-#include "h3api.h"
-}
+using namespace margelo::nitro::h3::detail;
 
 namespace margelo::nitro::h3 {
 
-namespace {
-
-/**
- * Narrows a JS number to `int`, throwing `what` when it is not an exact integer that fits.
- *
- * Only the narrowing belongs here. Every domain rule (a resolution of `0` to `15`, a
- * non-negative `k`) is H3's, so that upstream's `describeH3Error` wording is what reaches
- * JavaScript.
- */
-int toInteger(double value, const char* what) {
-  if (std::isnan(value) || std::isinf(value) || value != std::floor(value)) {
-    h3core::throwInvalidArgument(what);
-  }
-  if (value < static_cast<double>(INT32_MIN) || value > static_cast<double>(INT32_MAX)) {
-    h3core::throwInvalidArgument(what);
-  }
-  return static_cast<int>(value);
-}
-
-int toResolution(double res) {
-  return toInteger(res, "Resolution must be an integer between 0 and 15");
-}
-
-} // namespace
-
 uint64_t HybridH3::latLngToCell(double lat, double lng, double res) {
-  LatLng coordinate{};
-  // H3 takes radians; the public API takes degrees, matching h3-js
-  coordinate.lat = ::degsToRads(lat);
-  coordinate.lng = ::degsToRads(lng);
+  return h3ops::latLngToCell(lat, lng, res);
+}
 
-  H3Index cell = H3_NULL;
-  // the leading `::` picks the C function; unqualified recurses into this member
-  h3core::throwOnError(::latLngToCell(&coordinate, toResolution(res), &cell));
-  return cell;
+LatLng HybridH3::cellToLatLng(uint64_t cell) {
+  const h3core::Point centre = h3ops::cellToLatLng(cell);
+  return LatLng(centre.lat, centre.lng);
+}
+
+std::vector<LatLng> HybridH3::cellToBoundary(uint64_t cell) {
+  return toLatLngs(h3ops::cellToBoundary(cell));
 }
 
 std::shared_ptr<ArrayBuffer> HybridH3::gridDisk(uint64_t origin, double k) {
-  // H3's `gridDisk` does not validate its origin (`algos.c:200`)
-  if (!::isValidCell(origin)) {
-    h3core::throwOnError(E_CELL_INVALID);
+  return toArrayBuffer(h3ops::gridDisk(origin, k));
+}
+
+std::shared_ptr<ArrayBuffer> HybridH3::gridRing(uint64_t origin, double k) {
+  return toArrayBuffer(h3ops::gridRing(origin, k));
+}
+
+std::shared_ptr<ArrayBuffer> HybridH3::gridRingUnsafe(uint64_t origin, double k) {
+  return toArrayBuffer(h3ops::gridRingUnsafe(origin, k));
+}
+
+std::vector<std::shared_ptr<ArrayBuffer>> HybridH3::gridDiskDistances(uint64_t origin, double k) {
+  std::vector<h3core::CellBuffer> rings = h3ops::gridDiskDistances(origin, k);
+  std::vector<std::shared_ptr<ArrayBuffer>> buffers;
+  buffers.reserve(rings.size());
+  for (h3core::CellBuffer& ring : rings) {
+    buffers.push_back(toArrayBuffer(std::move(ring)));
   }
+  return buffers;
+}
 
-  const int distance = toInteger(k, "k must be a non-negative integer");
+std::shared_ptr<ArrayBuffer> HybridH3::gridPathCells(uint64_t start, uint64_t end) {
+  return toArrayBuffer(h3ops::gridPathCells(start, end));
+}
 
-  int64_t maxSize = 0;
-  // rejects a negative `k` with `E_DOMAIN` (`algos.c:169`)
-  h3core::throwOnError(::maxGridDiskSize(distance, &maxSize));
+double HybridH3::gridDistance(uint64_t origin, uint64_t destination) {
+  // a grid distance is bounded by the number of cells at resolution 15, so the widening is exact
+  return static_cast<double>(h3ops::gridDistance(origin, destination));
+}
 
-  h3core::CellBuffer buffer(maxSize);
-  // the leading `::` picks the C function; unqualified recurses into this member
-  h3core::throwOnError(::gridDisk(origin, distance, buffer.data()));
+CoordIJ HybridH3::cellToLocalIj(uint64_t origin, uint64_t cell) {
+  const h3core::IJ ij = h3ops::cellToLocalIj(origin, cell);
+  return CoordIJ(static_cast<double>(ij.i), static_cast<double>(ij.j));
+}
 
-  const int64_t count = buffer.compact();
-  // holds the block until `wrap` has taken it, so a throw in between does not leak
-  std::unique_ptr<uint64_t[]> owned(buffer.release());
-  if (owned == nullptr) {
-    // unreachable for a valid k, since `maxGridDiskSize` is at least 1
-    // `new uint64_t[0]` is unique, freeable and non-null, which `wrap` requires
-    owned.reset(new uint64_t[0]);
+uint64_t HybridH3::localIjToCell(uint64_t origin, double i, double j) {
+  return h3ops::localIjToCell(origin, i, j);
+}
+
+bool HybridH3::areNeighborCells(uint64_t origin, uint64_t destination) {
+  return h3ops::areNeighborCells(origin, destination);
+}
+
+uint64_t HybridH3::cellsToDirectedEdge(uint64_t origin, uint64_t destination) {
+  return h3ops::cellsToDirectedEdge(origin, destination);
+}
+
+uint64_t HybridH3::getDirectedEdgeOrigin(uint64_t edge) {
+  return h3ops::getDirectedEdgeOrigin(edge);
+}
+
+uint64_t HybridH3::getDirectedEdgeDestination(uint64_t edge) {
+  return h3ops::getDirectedEdgeDestination(edge);
+}
+
+uint64_t HybridH3::reverseDirectedEdge(uint64_t edge) {
+  return h3ops::reverseDirectedEdge(edge);
+}
+
+std::shared_ptr<ArrayBuffer> HybridH3::directedEdgeToCells(uint64_t edge) {
+  return toArrayBuffer(h3ops::directedEdgeToCells(edge));
+}
+
+std::shared_ptr<ArrayBuffer> HybridH3::originToDirectedEdges(uint64_t origin) {
+  return toArrayBuffer(h3ops::originToDirectedEdges(origin));
+}
+
+std::vector<LatLng> HybridH3::directedEdgeToBoundary(uint64_t edge) {
+  return toLatLngs(h3ops::directedEdgeToBoundary(edge));
+}
+
+double HybridH3::edgeLengthKm(uint64_t edge) {
+  return h3ops::edgeLengthKm(edge);
+}
+
+double HybridH3::edgeLengthM(uint64_t edge) {
+  return h3ops::edgeLengthM(edge);
+}
+
+double HybridH3::edgeLengthRads(uint64_t edge) {
+  return h3ops::edgeLengthRads(edge);
+}
+
+uint64_t HybridH3::cellToVertex(uint64_t cell, double vertexNum) {
+  return h3ops::cellToVertex(cell, vertexNum);
+}
+
+std::shared_ptr<ArrayBuffer> HybridH3::cellToVertexes(uint64_t cell) {
+  return toArrayBuffer(h3ops::cellToVertexes(cell));
+}
+
+LatLng HybridH3::vertexToLatLng(uint64_t vertex) {
+  const h3core::Point point = h3ops::vertexToLatLng(vertex);
+  return LatLng(point.lat, point.lng);
+}
+
+std::vector<std::vector<std::vector<LatLng>>> HybridH3::cellsToMultiPolygon(const std::shared_ptr<ArrayBuffer>& cells) {
+  const CellSpan span = toCellSpan(cells);
+  const h3core::MultiPolygon polygons = h3ops::cellsToMultiPolygon(span.data, span.count);
+
+  std::vector<std::vector<std::vector<LatLng>>> result;
+  result.reserve(polygons.size());
+  for (const h3core::Polygon& polygon : polygons) {
+    std::vector<std::vector<LatLng>> loops;
+    loops.reserve(polygon.size());
+    for (const h3core::Ring& ring : polygon) {
+      loops.push_back(toLatLngs(ring));
+    }
+    result.push_back(std::move(loops));
   }
+  return result;
+}
 
-  uint64_t* cells = owned.get();
-  // the deleter frees the `uint64_t*` allocated here, never the `uint8_t*` wrapped below
-  auto wrapped = ArrayBuffer::wrap(reinterpret_cast<uint8_t*>(cells), static_cast<size_t>(count) * sizeof(uint64_t),
-                                   [cells]() { delete[] cells; });
-  owned.release();
-  return wrapped;
+std::shared_ptr<ArrayBuffer> HybridH3::polygonToCells(const std::vector<std::vector<std::vector<double>>>& rings,
+                                                      double res) {
+  return toArrayBuffer(h3ops::polygonToCells(rings, res));
+}
+
+std::shared_ptr<ArrayBuffer>
+HybridH3::polygonToCellsExperimental(const std::vector<std::vector<std::vector<double>>>& rings, double res,
+                                     double flags) {
+  return toArrayBuffer(h3ops::polygonToCellsExperimental(rings, res, flags));
+}
+
+double HybridH3::degsToRads(double degrees) {
+  return h3ops::degsToRads(degrees);
+}
+
+double HybridH3::radsToDegs(double radians) {
+  return h3ops::radsToDegs(radians);
+}
+
+bool HybridH3::isValidCell(uint64_t cell) {
+  return h3ops::isValidCell(cell);
+}
+
+bool HybridH3::isValidIndex(uint64_t index) {
+  return h3ops::isValidIndex(index);
+}
+
+bool HybridH3::isValidDirectedEdge(uint64_t edge) {
+  return h3ops::isValidDirectedEdge(edge);
+}
+
+bool HybridH3::isValidVertex(uint64_t vertex) {
+  return h3ops::isValidVertex(vertex);
+}
+
+bool HybridH3::isPentagon(uint64_t cell) {
+  return h3ops::isPentagon(cell);
+}
+
+bool HybridH3::isResClassIII(uint64_t cell) {
+  return h3ops::isResClassIII(cell);
+}
+
+double HybridH3::getResolution(uint64_t index) {
+  return static_cast<double>(h3ops::getResolution(index));
+}
+
+double HybridH3::getBaseCellNumber(uint64_t cell) {
+  return static_cast<double>(h3ops::getBaseCellNumber(cell));
+}
+
+double HybridH3::getIndexDigit(uint64_t cell, double digit) {
+  return static_cast<double>(h3ops::getIndexDigit(cell, digit));
+}
+
+uint64_t HybridH3::constructCell(double baseCellNumber, const std::vector<double>& digits, double res) {
+  return h3ops::constructCell(baseCellNumber, digits, res);
+}
+
+std::string HybridH3::cellToString(uint64_t cell) {
+  return h3ops::cellToString(cell);
+}
+
+uint64_t HybridH3::cellFromString(const std::string& text) {
+  return h3ops::cellFromString(text);
+}
+
+double HybridH3::cellAreaKm2(uint64_t cell) {
+  return h3ops::cellAreaKm2(cell);
+}
+
+double HybridH3::cellAreaM2(uint64_t cell) {
+  return h3ops::cellAreaM2(cell);
+}
+
+double HybridH3::cellAreaRads2(uint64_t cell) {
+  return h3ops::cellAreaRads2(cell);
+}
+
+double HybridH3::greatCircleDistanceKm(double lat1, double lng1, double lat2, double lng2) {
+  return h3ops::greatCircleDistanceKm(lat1, lng1, lat2, lng2);
+}
+
+double HybridH3::greatCircleDistanceM(double lat1, double lng1, double lat2, double lng2) {
+  return h3ops::greatCircleDistanceM(lat1, lng1, lat2, lng2);
+}
+
+double HybridH3::greatCircleDistanceRads(double lat1, double lng1, double lat2, double lng2) {
+  return h3ops::greatCircleDistanceRads(lat1, lng1, lat2, lng2);
+}
+
+uint64_t HybridH3::cellToParent(uint64_t cell, double res) {
+  return h3ops::cellToParent(cell, res);
+}
+
+uint64_t HybridH3::cellToCenterChild(uint64_t cell, double res) {
+  return h3ops::cellToCenterChild(cell, res);
+}
+
+double HybridH3::cellToChildrenSize(uint64_t cell, double res) {
+  // at most `getNumCells(15)`, well inside `2^53 - 1`, so the widening is exact
+  return static_cast<double>(h3ops::cellToChildrenSize(cell, res));
+}
+
+double HybridH3::cellToChildPos(uint64_t cell, double parentRes) {
+  return static_cast<double>(h3ops::cellToChildPos(cell, parentRes));
+}
+
+uint64_t HybridH3::childPosToCell(double childPos, uint64_t parent, double childRes) {
+  return h3ops::childPosToCell(childPos, parent, childRes);
+}
+
+std::shared_ptr<ArrayBuffer> HybridH3::cellToChildren(uint64_t cell, double res) {
+  return toArrayBuffer(h3ops::cellToChildren(cell, res));
+}
+
+std::shared_ptr<ArrayBuffer> HybridH3::compactCells(const std::shared_ptr<ArrayBuffer>& cells) {
+  const CellSpan span = toCellSpan(cells);
+  return toArrayBuffer(h3ops::compactCells(span.data, span.count));
+}
+
+std::shared_ptr<ArrayBuffer> HybridH3::uncompactCells(const std::shared_ptr<ArrayBuffer>& cells, double res) {
+  const CellSpan span = toCellSpan(cells);
+  return toArrayBuffer(h3ops::uncompactCells(span.data, span.count, res));
+}
+
+double HybridH3::getHexagonAreaAvgKm2(double res) {
+  return h3ops::getHexagonAreaAvgKm2(res);
+}
+
+double HybridH3::getHexagonAreaAvgM2(double res) {
+  return h3ops::getHexagonAreaAvgM2(res);
+}
+
+double HybridH3::getHexagonEdgeLengthAvgKm(double res) {
+  return h3ops::getHexagonEdgeLengthAvgKm(res);
+}
+
+double HybridH3::getHexagonEdgeLengthAvgM(double res) {
+  return h3ops::getHexagonEdgeLengthAvgM(res);
+}
+
+double HybridH3::getNumCells(double res) {
+  // `569707381193162` at resolution `15` is well inside `2^53 - 1`, so the widening is exact
+  return static_cast<double>(h3ops::getNumCells(res));
+}
+
+std::shared_ptr<ArrayBuffer> HybridH3::getRes0Cells() {
+  return toArrayBuffer(h3ops::getRes0Cells());
+}
+
+std::shared_ptr<ArrayBuffer> HybridH3::getPentagons(double res) {
+  return toArrayBuffer(h3ops::getPentagons(res));
+}
+
+std::vector<double> HybridH3::getIcosahedronFaces(uint64_t cell) {
+  const std::vector<int> faces = h3ops::getIcosahedronFaces(cell);
+  std::vector<double> widened;
+  widened.reserve(faces.size());
+  for (const int face : faces) {
+    widened.push_back(static_cast<double>(face));
+  }
+  return widened;
 }
 
 } // namespace margelo::nitro::h3

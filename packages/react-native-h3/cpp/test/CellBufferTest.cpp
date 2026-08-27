@@ -10,6 +10,7 @@
 #include <limits>
 #include <memory>
 #include <stdexcept>
+#include <utility>
 
 #include "core/CellBuffer.hpp"
 
@@ -115,6 +116,77 @@ TEST(CellBuffer, ReleaseTransfersOwnership) {
   EXPECT_EQ(buffer.capacity(), 0);
   // the caller now owns it; under ASan this line is what proves the contract.
   delete[] raw;
+}
+
+TEST(CellBuffer, SetCountPublishesAnExactLength) {
+  CellBuffer buffer(4);
+  buffer.setCount(4);
+  EXPECT_EQ(buffer.count(), 4);
+  buffer.setCount(0);
+  EXPECT_EQ(buffer.count(), 0);
+  EXPECT_THROW(buffer.setCount(5), std::invalid_argument);
+  EXPECT_THROW(buffer.setCount(-1), std::invalid_argument);
+}
+
+TEST(CellBuffer, MoveConstructionEmptiesTheSource) {
+  CellBuffer source(3);
+  source.data()[0] = 7;
+  source.compact();
+  uint64_t* block = source.data();
+
+  CellBuffer moved(std::move(source));
+  EXPECT_EQ(moved.data(), block);
+  EXPECT_EQ(moved.capacity(), 3);
+  EXPECT_EQ(moved.count(), 1);
+  EXPECT_EQ(moved.data()[0], 7u);
+
+  EXPECT_EQ(source.data(), nullptr);
+  EXPECT_EQ(source.capacity(), 0);
+  EXPECT_EQ(source.count(), 0);
+}
+
+TEST(CellBuffer, MoveAssignmentTransfersTheBlockAndEmptiesTheSource) {
+  CellBuffer source(2);
+  source.data()[0] = 5;
+  source.compact();
+  uint64_t* block = source.data();
+
+  CellBuffer target(4);
+  target = std::move(source);
+
+  EXPECT_EQ(target.data(), block);
+  EXPECT_EQ(target.capacity(), 2);
+  EXPECT_EQ(target.count(), 1);
+
+  EXPECT_EQ(source.data(), nullptr);
+  EXPECT_EQ(source.capacity(), 0);
+  EXPECT_EQ(source.count(), 0);
+}
+
+TEST(CellBuffer, ReleaseAfterAMoveReturnsTheOriginalBlock) {
+  CellBuffer source(2);
+  source.data()[0] = 7;
+  uint64_t* block = source.data();
+
+  CellBuffer moved(std::move(source));
+  uint64_t* raw = moved.release();
+  EXPECT_EQ(raw, block);
+  EXPECT_EQ(raw[0], 7u);
+  // the moved-to buffer owned it; under ASan this line is what proves the transfer.
+  delete[] raw;
+}
+
+TEST(CellBuffer, MoveAssignmentToItselfKeepsTheBlock) {
+  CellBuffer buffer(2);
+  buffer.data()[0] = 9;
+  uint64_t* block = buffer.data();
+
+  CellBuffer& alias = buffer;
+  buffer = std::move(alias);
+
+  EXPECT_EQ(buffer.data(), block);
+  EXPECT_EQ(buffer.capacity(), 2);
+  EXPECT_EQ(buffer.data()[0], 9u);
 }
 
 TEST(CellBuffer, RejectsANegativeCapacity) {
