@@ -106,7 +106,7 @@ TEST(InspectionOps, RejectsADigitArrayOfTheWrongLength) {
 }
 
 TEST(InspectionOps, RejectsAnOutOfRangeResolutionBeforeCountingDigits) {
-  // the resolution is H3's rule, so `describeH3Error` words it even though the length check is ours
+  // the resolution is H3's rule, so `describeH3Error` words it even though the length check is this package's
   try {
     h3ops::constructCell(20, {}, 99);
     FAIL() << "expected an exception";

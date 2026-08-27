@@ -135,7 +135,8 @@ export function compactCells(cells: BigUint64Array): BigUint64Array {
  * @param cells The compacted cells, all at `res` or coarser; a `0n` entry is skipped, as H3 skips it.
  * @param res The target resolution.
  * @returns Every cell of the expanded set, in input order.
- * @throws {@linkcode H3Error} if a cell is not valid or finer than `res`, or `res` is out of range.
+ * @throws {@linkcode H3Error} if a cell is not valid or finer than `res`, or `res` is fractional
+ * or out of range.
  */
 export function uncompactCells(cells: BigUint64Array, res: number): BigUint64Array {
   try {

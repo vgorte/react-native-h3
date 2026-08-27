@@ -9,7 +9,8 @@ import type { LatLng } from './types'
  * @param lat Latitude in degrees.
  * @param lng Longitude in degrees.
  * @param res Resolution, `0` to `15`.
- * @throws {@linkcode H3Error} if the coordinate or the resolution is out of range.
+ * @throws {@linkcode H3Error} if the coordinate is out of range, or the resolution is
+ * fractional or out of range.
  */
 export function latLngToCell(lat: number, lng: number, res: number): bigint {
   try {

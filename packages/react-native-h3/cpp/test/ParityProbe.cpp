@@ -5,25 +5,6 @@
 //  Created by Viktor Gorte on 26.08.26.
 //
 
-// drives the Nitro-free operations layer from a line protocol, so the h3-js comparison can run
-// under `bun test` on a machine with no JavaScript runtime bridge.
-//
-// it links `nitro_free_core` and includes no Nitro header, so every answer comes from the code
-// that ships. The podspec's `exclude_files` keeps `cpp/test` out of the published pod.
-//
-// each line of stdin is one request, `<op> <arg>...` with whitespace-free arguments, and each
-// line of stdout is one response, `{"ok":<value>}` or `{"err":"<message>"}`. `__ops` answers the
-// name of every operation, and a blank line earns no response.
-//
-// an argument is a cell (lowercase hexadecimal without `0x`), a number (decimal, `stod` syntax),
-// a comma-separated list of either with `-` for empty, or a polygon, whose rings are separated by
-// `|`, points by `;` and `lat,lng` by `,`.
-//
-// a result is a cell or an array of cells as hexadecimal strings, a point as `[lat, lng]`, a ring
-// as an array of points, a multi polygon as an array of arrays of rings, local coordinates as
-// `{"i":<number>,"j":<number>}`, or a number written `%.17g` so that every double round-trips.
-// `int64` results are numbers too: the largest reachable value, `getNumCells(15)`, is below `2^53`.
-
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
@@ -417,6 +398,14 @@ std::string listOps() {
 
 } // namespace
 
+/**
+ * Drives the Nitro-free operations layer from a line protocol, so the h3-js comparison can run
+ * under `bun test` on a machine with no JavaScript runtime bridge.
+ *
+ * It links `nitro_free_core` and includes no Nitro header, so every answer comes from the code
+ * that ships. Each line of stdin is one request, `<op> <arg>...`, and each line of stdout is one
+ * response, `{"ok":<value>}` or `{"err":"<message>"}`.
+ */
 int main() {
   std::ios::sync_with_stdio(false);
   std::string line;

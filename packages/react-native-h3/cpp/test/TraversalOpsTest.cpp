@@ -71,7 +71,7 @@ TEST(TraversalOps, NarrowsKAndLeavesItsRangeToH3) {
 
 TEST(TraversalOps, GridRingUsesMaxGridRingSizeRatherThanAFormula) {
   // `maxGridRingSize` returns 1 for `k` of 0 and `6 * k` otherwise (`algos.c:344`), matching h3-js
-  // `gridRing(sf, 1).length` of 6 and `gridRing(pentagon, 1).length` of 5
+  // `gridRing(sf, 1).length` of 6 and `gridRing(pentagon, 1).length` of 5.
   EXPECT_EQ(h3ops::gridRing(kSanFrancisco, 0).count(), 1);
   EXPECT_EQ(h3ops::gridRing(kSanFrancisco, 1).count(), 6);
   EXPECT_EQ(h3ops::gridRing(kPentagonRes1, 1).count(), 5);

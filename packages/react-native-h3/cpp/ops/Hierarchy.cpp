@@ -95,15 +95,14 @@ h3core::CellBuffer uncompactCells(const uint64_t* cells, int64_t count, double r
   // both callers of `_hasChildAtRes` answer `E_RES_MISMATCH` for a resolution above 15
   // (`h3Index.c:786`, `h3Index.c:819`), and an empty set reaches neither.
   internal::requireResolution(resolution);
-  // `uncompactCellsSize` is exact (`h3Index.c:807`), and `uncompactCells` answers `E_MEMORY_BOUNDS`
-  // if the buffer is short of it anyway.
+  // `uncompactCellsSize` is exact (`h3Index.c:807`), so `count` and `size` below are trustworthy
+  // lengths; `uncompactCells` answers `E_MEMORY_BOUNDS` if the buffer is short of it anyway.
   int64_t size = 0;
   return h3shapes::fillExactCells(
       [&] {
         size = h3shapes::callWithOutParam<int64_t>(::uncompactCellsSize, cells, count, resolution);
         return size;
       },
-      // five arguments carrying two lengths: `count` and `size`
       [&](uint64_t* out) { return ::uncompactCells(cells, count, out, size, resolution); });
 }
 

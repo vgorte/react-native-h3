@@ -8,7 +8,7 @@ mock.module('react-native-nitro-modules', () => ({
   },
 }))
 
-/** Every public function this package exports, as listed in `docs/h3-function-table.md`. */
+/** Lists every public function this package exports, as listed in `docs/h3-function-table.md`. */
 const EXPECTED_FUNCTIONS = [
   'areNeighborCells',
   'cellAreaKm2',

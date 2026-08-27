@@ -21,6 +21,7 @@ double degsToRads(double degrees) {
 }
 
 double radsToDegs(double radians) {
+  // the leading `::` is load-bearing, resolving to the H3 function rather than this one.
   return ::radsToDegs(radians);
 }
 
