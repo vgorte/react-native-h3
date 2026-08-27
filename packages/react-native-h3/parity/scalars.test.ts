@@ -30,9 +30,9 @@ const DISTANCE_TOLERANCE = 1e-14
  * Bounds how far a radian to degree conversion may sit from h3-js's, relative.
  *
  * One multiply by a compiled-in constant, and the two constants differ in their last bit. Measured
- * over this corpus: `1.57e-16`, which is one unit in the last place.
+ * `1.57e-16` here, one unit in the last place, and `divergences.test.ts` holds the same bound.
  */
-const CONVERSION_TOLERANCE = 1e-14
+const CONVERSION_TOLERANCE = 1e-15
 
 /** Compares our answer to h3-js's for every input, reporting every mismatch rather than the first. */
 function compare<T>(

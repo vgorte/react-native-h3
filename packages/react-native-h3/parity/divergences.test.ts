@@ -11,7 +11,13 @@ import { spawnSync } from 'node:child_process'
 import { join } from 'node:path'
 import h3 from 'h3-js'
 import type * as api from '../src/index'
-import { PENTAGON_NEIGHBOURHOODS, PENTAGONS, RES0_CELLS, RESOLUTIONS } from './corpus'
+import {
+  EXTREME_COORDINATES,
+  PENTAGON_NEIGHBOURHOODS,
+  PENTAGONS,
+  RES0_CELLS,
+  RESOLUTIONS,
+} from './corpus'
 import { callMany, skipWithoutProbe } from './probe'
 
 /** Fails to compile unless its argument is `true`, which is how a type-level row is proved. */
@@ -454,7 +460,8 @@ describe.skipIf(skipWithoutProbe)('parity: arithmetic away from a pole', () => {
       const theirs = h3.greatCircleDistance([aLat, aLng], [bLat, bLng], 'km')
       expect(Math.abs(ours - theirs), `${aLat},${aLng}`).toBeLessThan(Math.abs(theirs) * 1e-14)
     }
-    // `degsToRads` is one multiply and agrees exactly; the reverse constant differs in its last bit
+    // `degsToRads` is one multiply and agrees exactly; the reverse constant differs in its last
+    // bit, so `radsToDegs` carries the `1e-15` of `scalars.test.ts`, six times its `1.57e-16`
     for (const degrees of [-180, -1, 0, 1, 90, 180]) {
       expect(answer(`degsToRads ${degrees}`), `${degrees}`).toBe(h3.degsToRads(degrees))
       const radians = degrees / 57
@@ -469,23 +476,31 @@ describe.skipIf(skipWithoutProbe)('divergence: fused multiply-add near a pole', 
   test('polar geometry moves further from h3-js with every resolution', () => {
     // The arm64 build contracts a multiply and an add into one instruction and emscripten does not.
     // The inverse projection is ill-conditioned at a pole, so the last bit grows with resolution.
-    // Each bound is between two and four times the value measured for that cell.
+    // Each bound is between two and four times the worst case measured over `EXTREME_COORDINATES`,
+    // which is the corpus `docs/h3-js-divergences.md` publishes: `2.84e-14` degrees at resolution 0,
+    // `1.46e-11` at 5, `5.89e-10` at 10 and `1.82e-7` at 15.
     const bounds: [number, number][] = [
       [0, 8e-14],
-      [5, 2e-11],
+      [5, 5e-11],
       [10, 2e-9],
       [15, 5e-7],
     ]
     for (const [res, bound] of bounds) {
-      const cell = h3.latLngToCell(90, 0, res)
-      const ours = answer(`cellToBoundary ${cell}`) as number[][]
-      const theirs = h3.cellToBoundary(cell)
-      expect(ours.length, `res ${res}`).toBe(theirs.length)
-      for (let i = 0; i < theirs.length; i++) {
-        const a = ours[i] as number[]
-        const b = theirs[i] as number[]
-        expect(Math.abs((a[0] as number) - (b[0] as number)), `res ${res} lat`).toBeLessThan(bound)
-        expect(Math.abs((a[1] as number) - (b[1] as number)), `res ${res} lng`).toBeLessThan(bound)
+      const cells = Array.from(
+        new Set(EXTREME_COORDINATES.map(({ lat, lng }) => h3.latLngToCell(lat, lng, res))),
+      )
+      const answers = callMany(cells.map((cell) => `cellToBoundary ${cell}`))
+      for (let c = 0; c < cells.length; c++) {
+        const label = `res ${res} ${cells[c]}`
+        const ours = answers[c] as number[][]
+        const theirs = h3.cellToBoundary(cells[c] as string)
+        expect(ours.length, label).toBe(theirs.length)
+        for (let i = 0; i < theirs.length; i++) {
+          const a = ours[i] as number[]
+          const b = theirs[i] as number[]
+          expect(Math.abs((a[0] as number) - (b[0] as number)), `${label} lat`).toBeLessThan(bound)
+          expect(Math.abs((a[1] as number) - (b[1] as number)), `${label} lng`).toBeLessThan(bound)
+        }
       }
     }
   })

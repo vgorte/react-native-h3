@@ -57,7 +57,7 @@ worst case measured over the corpus, and each is asserted at two to four times i
 | Cell areas up to resolution 6 | `4.6e-13` relative | the last bit of a double |
 | Cell areas at resolution 15 | `3.0e-9` relative, worst at the pentagon `8f0800000000000` | at half a metre across the area is a difference of near-equal terms, so the contraction reaches the ninth digit |
 | `edgeLengthKm`, `edgeLengthM`, `edgeLengthRads` | `3.4e-15` relative at resolution 0, `1.4e-8` at resolution 15, worst at `14f0800000000000` | an edge half a metre long is the difference of two coordinates that agree to fourteen digits, so the contraction reaches the eighth digit |
-| Cell boundaries within a degree of a pole | `2.8e-14` degrees at resolution 0, `1.5e-11` at 5, `5.9e-10` at 10, `1.8e-7` at 15, two centimetres on a cell half a metre across | the inverse projection is ill-conditioned at a pole, so the contracted multiply-add moves the result by more than a bit. Building with `-ffp-contract=off` brings the whole corpus back to `2.8e-14`. |
+| Cell boundaries within a degree of a pole | `2.84e-14` degrees at resolution 0, `1.46e-11` at 5, `5.89e-10` at 10, `1.82e-7` at 15, two centimetres on a cell half a metre across | the inverse projection is ill-conditioned at a pole, so the contracted multiply-add moves the result by more than a bit. Building with `-ffp-contract=off` brings the whole corpus back to `2.84e-14`. |
 
 ## Shape and surface
 
