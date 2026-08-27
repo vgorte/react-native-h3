@@ -97,6 +97,22 @@ describe.skipIf(!built)('parity probe', () => {
     }
   })
 
+  test('escapes a control character and decodes it back', () => {
+    const probe = openProbe()
+    try {
+      // the byte crosses the wire as `\u0001`, so it returns intact only if the escaping is right
+      let reported = ''
+      try {
+        probe.call('bo\u0001gus')
+      } catch (error) {
+        reported = (error as Error).message
+      }
+      expect(reported).toBe('Unknown operation: bo\u0001gus')
+    } finally {
+      probe.close()
+    }
+  })
+
   test('answers a batch in one run, a failure in place', () => {
     const answers = callMany(['gridDisk 89283082803ffff 1', 'bogus x', 'cellAreaKm2 1'])
     expect(answers[0]).toHaveLength(7)
