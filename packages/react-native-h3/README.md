@@ -48,7 +48,7 @@ and `getHexagonEdgeLengthAvg`. h3-js's `E_UNKNOWN_UNIT` therefore has no counter
 constants (`ContainmentMode.center`, `.full`, `.overlapping`, `.overlappingBbox`) and h3-js's names
 (`'containmentCenter'`, `'containmentFull'`, `'containmentOverlapping'`,
 `'containmentOverlappingBbox'`) both work. The constants are what this package recommends: a name
-costs a lookup and a string conversion on a path that exists to be fast.
+costs a lookup on a path that exists to be fast.
 
 **Three behaviours differ deliberately.**
 

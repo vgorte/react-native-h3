@@ -17,8 +17,8 @@ export type Ring = [lat: number, lng: number][]
  * Names the containment modes of `polygonToCellsExperimental`, matching H3's `ContainmentMode`
  * values.
  *
- * These numbers cross the bridge as they are; h3-js's names work too, at the cost of a lookup and a
- * string conversion on a path this package exists to make fast.
+ * These numbers cross the bridge as they are; h3-js's names work too, at the cost of a lookup on a
+ * path this package exists to make fast.
  */
 export const ContainmentMode = Object.freeze({
   /** Requires the cell centre to be contained in the shape. */

@@ -7,7 +7,6 @@ import {
   gridDisk,
   H3Error,
   latLngToCell,
-  polygonToCells,
   polygonToCellsExperimental,
 } from 'react-native-h3'
 import { expect, test } from 'react-native-harness'
@@ -134,8 +133,10 @@ test('getResolution answers -1 for anything that is not a cell', () => {
 test('a containment mode may be named the way h3-js names it', () => {
   const byName = polygonToCellsExperimental([SAN_FRANCISCO_RECTANGLE], 7, 'containmentCenter')
   const byNumber = polygonToCellsExperimental([SAN_FRANCISCO_RECTANGLE], 7, ContainmentMode.center)
+  // h3-js `polygonToCellsExperimental(rect, 7, 'containmentCenter')` has 41 cells
+  expect(byName.length).toBe(41)
+  // the name resolves before the call, so both arguments must reach H3 as the same mode.
   expect(Array.from(byName)).toEqual(Array.from(byNumber))
-  expect(Array.from(byName)).toEqual(Array.from(polygonToCells([SAN_FRANCISCO_RECTANGLE], 7)))
 })
 
 test('an unknown containment mode name is rejected by the C layer', () => {

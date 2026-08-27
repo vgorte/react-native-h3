@@ -15,10 +15,9 @@
  * Reads what an index already carries: whether it is valid, what it is made of, and how it is
  * written down.
  *
- * The predicates and getters answer without an error channel, because each is a handful of bit
- * operations and a sentinel or a plausible number is more useful than a throw. Nothing here
- * includes a Nitro header, which is what lets the host tests drive the production code path rather
- * than a copy of it.
+ * The predicates and getters answer without an error channel, because for a question this cheap a
+ * sentinel or a plausible number is more useful than a throw. Nothing here includes a Nitro header,
+ * which is what lets the host tests drive the production code path rather than a copy of it.
  */
 namespace h3ops {
 
