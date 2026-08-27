@@ -16,8 +16,9 @@
  * written down.
  *
  * The predicates and getters answer without an error channel, because each is a handful of bit
- * operations and a validity check would cost more than the answer. Nothing here includes a Nitro
- * header, which is what lets the host tests drive the production code path rather than a copy of it.
+ * operations and a sentinel or a plausible number is more useful than a throw. Nothing here
+ * includes a Nitro header, which is what lets the host tests drive the production code path rather
+ * than a copy of it.
  */
 namespace h3ops {
 
@@ -40,10 +41,10 @@ bool isPentagon(uint64_t cell);
 bool isResClassIII(uint64_t cell);
 
 /**
- * Returns the resolution of a cell or directed edge.
+ * Returns the resolution of a cell, or `-1` for anything that is not a valid cell.
  *
- * No validity check: this is a bit shift, and H3 does not check either. An invalid index yields an
- * arbitrary number between `0` and `15` rather than an error or a sentinel.
+ * The guard is `isValidCell` alone, which is what h3-js checks, so a valid directed edge and a
+ * valid vertex answer `-1` as well.
  */
 int getResolution(uint64_t index);
 

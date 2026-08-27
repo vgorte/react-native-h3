@@ -87,16 +87,13 @@ export function isResClassIII(cell: bigint): boolean {
 }
 
 /**
- * Reads the resolution of a cell or directed edge, `0` to `15`.
+ * Reads the resolution of a cell, `0` to `15`.
  *
- * **This function does not validate its argument.** It matches the C library, which reads four bits
- * and returns them, so an invalid index yields an arbitrary number between `0` and `15`, not an
- * error and not `-1`. h3-js returns `-1` for invalid input; this package deliberately does not,
- * because a validity check would multiply the cost of one of the cheapest functions in the library.
- * Call {@linkcode isValidCell} first if the input is not already trusted.
+ * Answers `-1` for anything that is not a valid cell, as h3-js does. That guard is
+ * {@linkcode isValidCell} alone, so a valid directed edge and a valid vertex answer `-1` as well.
  *
- * @param index A cell or a directed edge.
- * @returns The resolution.
+ * @param index The index to read.
+ * @returns The resolution, or `-1` if `index` is not a valid cell.
  */
 export function getResolution(index: bigint): number {
   try {
@@ -109,8 +106,9 @@ export function getResolution(index: bigint): number {
 /**
  * Reads the base cell number, `0` to `121`.
  *
- * Works on directed edges too, where it answers the base cell of the origin. Like
- * {@linkcode getResolution}, it does not validate its argument.
+ * Works on directed edges too, where it answers the base cell of the origin. Unlike
+ * {@linkcode getResolution}, it does not validate its argument, so an invalid index yields an
+ * arbitrary number rather than a sentinel.
  *
  * @param cell A cell or a directed edge.
  * @returns The base cell number.

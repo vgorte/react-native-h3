@@ -162,20 +162,20 @@ TEST(RegionsOps, PolygonToCellsAnswersNothingForAnEmptyPolygon) {
 TEST(RegionsOps, PolygonToCellsNarrowsTheResolutionAndLeavesItsRangeToH3) {
   // `maxPolygonToCellsSize` reaches `getPentagons` through `bboxHexEstimate` (`algos.c:885`,
   // `bbox.c:181`), and the experimental iterator checks the range itself (`polyfill.c:337`).
-  expectMessage("sixteen", "Resolution argument was outside of acceptable range",
+  expectMessage("sixteen", "Resolution argument was outside of acceptable range (code: 4)",
                 [] { h3ops::polygonToCells(sanFranciscoTriangle(), 16); });
-  expectMessage("minus one", "Resolution argument was outside of acceptable range",
+  expectMessage("minus one", "Resolution argument was outside of acceptable range (code: 4)",
                 [] { h3ops::polygonToCells(sanFranciscoTriangle(), -1); });
-  expectMessage("sixteen, experimental", "Resolution argument was outside of acceptable range",
+  expectMessage("sixteen, experimental", "Resolution argument was outside of acceptable range (code: 4)",
                 [] { h3ops::polygonToCellsExperimental(sanFranciscoTriangle(), 16, 0); });
-  expectMessage("sixteen, experimental and empty", "Resolution argument was outside of acceptable range",
+  expectMessage("sixteen, experimental and empty", "Resolution argument was outside of acceptable range (code: 4)",
                 [] { h3ops::polygonToCellsExperimental({}, 16, 0); });
   // the empty polygon short circuit skips H3, so the range is checked before it, as h3-js does
-  expectMessage("sixteen and empty", "Resolution argument was outside of acceptable range",
+  expectMessage("sixteen and empty", "Resolution argument was outside of acceptable range (code: 4)",
                 [] { h3ops::polygonToCells({}, 16); });
-  expectMessage("minus one and empty", "Resolution argument was outside of acceptable range",
+  expectMessage("minus one and empty", "Resolution argument was outside of acceptable range (code: 4)",
                 [] { h3ops::polygonToCells({}, -1); });
-  expectMessage("sixteen and an empty outer ring", "Resolution argument was outside of acceptable range",
+  expectMessage("sixteen and an empty outer ring", "Resolution argument was outside of acceptable range (code: 4)",
                 [] { h3ops::polygonToCells({{}}, 16); });
   // the one condition H3 never sees, because the narrowing runs first
   expectMessage("fractional", "Resolution must be an integer between 0 and 15",
@@ -206,13 +206,17 @@ TEST(RegionsOps, PolygonToCellsExperimentalHonoursHoles) {
 TEST(RegionsOps, PolygonToCellsExperimentalLeavesTheModeRangeToH3) {
   // `CONTAINMENT_INVALID` is `4` and is a sentinel, and `validatePolygonFlags` (`polygon.c:51`)
   // rejects it and everything above; a negative mode arrives as a very large `uint32_t`.
-  expectMessage("four", "Mode or flags argument was not valid",
+  expectMessage("four", "Mode or flags argument was not valid (code: 15)",
                 [] { h3ops::polygonToCellsExperimental(sanFranciscoTriangle(), 7, 4); });
-  expectMessage("minus one", "Mode or flags argument was not valid",
+  expectMessage("minus one", "Mode or flags argument was not valid (code: 15)",
                 [] { h3ops::polygonToCellsExperimental(sanFranciscoTriangle(), 7, -1); });
   // the one condition H3 never sees, because the narrowing runs first
   expectMessage("fractional", "Containment mode must be an integer",
                 [] { h3ops::polygonToCellsExperimental(sanFranciscoTriangle(), 7, 1.5); });
+  // an unrecognised h3-js mode name reaches C++ as `NaN`, so this is the wording it earns
+  expectMessage("not a number", "Containment mode must be an integer", [] {
+    h3ops::polygonToCellsExperimental(sanFranciscoTriangle(), 7, std::numeric_limits<double>::quiet_NaN());
+  });
 }
 
 TEST(RegionsOps, PolygonToCellsRefusesAnUnaffordableRequest) {

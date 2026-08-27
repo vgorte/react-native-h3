@@ -28,7 +28,7 @@ function useResults(): string[] {
       const isH3Error = error instanceof H3Error
       lines.push(`error path: ${isH3Error ? 'H3Error' : 'wrong type'}`)
       lines.push(`  message:  ${(error as Error).message}`)
-      lines.push('  expected: Resolution argument was outside of acceptable range')
+      lines.push('  expected: Resolution argument was outside of acceptable range (code: 4)')
     }
     return lines
   }, [])

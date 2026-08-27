@@ -38,7 +38,7 @@ TEST(HierarchyOps, RejectsAParentResolutionFinerThanTheCell) {
     h3ops::cellToParent(kSanFrancisco, 12);
     FAIL() << "expected an exception";
   } catch (const std::runtime_error& error) {
-    EXPECT_EQ(std::string(error.what()), "Cell arguments had incompatible resolutions");
+    EXPECT_EQ(std::string(error.what()), "Cell arguments had incompatible resolutions (code: 12)");
   }
 }
 
@@ -60,7 +60,7 @@ TEST(HierarchyOps, ChildPosToCellRejectsAPositionOutOfRange) {
     h3ops::childPosToCell(2401, kParentRes5, 9);
     FAIL() << "expected an exception";
   } catch (const std::runtime_error& error) {
-    EXPECT_EQ(std::string(error.what()), "Argument was outside of acceptable range");
+    EXPECT_EQ(std::string(error.what()), "Argument was outside of acceptable range (code: 2)");
   }
 }
 
@@ -71,7 +71,7 @@ TEST(HierarchyOps, ChildPosToCellLeavesANegativePositionToH3) {
     h3ops::childPosToCell(-1, kParentRes5, 9);
     FAIL() << "expected an exception";
   } catch (const std::runtime_error& error) {
-    EXPECT_EQ(std::string(error.what()), "Argument was outside of acceptable range");
+    EXPECT_EQ(std::string(error.what()), "Argument was outside of acceptable range (code: 2)");
   }
 }
 
@@ -147,7 +147,7 @@ TEST(HierarchyOps, UncompactRejectsACoarserTargetResolution) {
     h3ops::uncompactCells(cells, 1, 3);
     FAIL() << "expected an exception";
   } catch (const std::runtime_error& error) {
-    EXPECT_EQ(std::string(error.what()), "Cell arguments had incompatible resolutions");
+    EXPECT_EQ(std::string(error.what()), "Cell arguments had incompatible resolutions (code: 12)");
   }
 }
 
@@ -160,7 +160,7 @@ TEST(HierarchyOps, UncompactRejectsAResolutionOutOfRange) {
     h3ops::uncompactCells(cells, 1, 99);
     FAIL() << "expected an exception";
   } catch (const std::runtime_error& error) {
-    EXPECT_EQ(std::string(error.what()), "Resolution argument was outside of acceptable range");
+    EXPECT_EQ(std::string(error.what()), "Resolution argument was outside of acceptable range (code: 4)");
   }
   EXPECT_THROW(h3ops::uncompactCells(nullptr, 0, 99), std::runtime_error);
 }
@@ -172,7 +172,7 @@ TEST(HierarchyOps, RejectsAnInvalidCell) {
     h3ops::cellToParent(1, 0);
     FAIL() << "expected an exception";
   } catch (const std::runtime_error& error) {
-    EXPECT_EQ(std::string(error.what()), "Cell argument was not valid");
+    EXPECT_EQ(std::string(error.what()), "Cell argument was not valid (code: 5)");
   }
   EXPECT_THROW(h3ops::cellToCenterChild(1, 1), std::runtime_error);
   EXPECT_THROW(h3ops::cellToChildrenSize(1, 1), std::runtime_error);
@@ -210,7 +210,7 @@ TEST(HierarchyOps, RejectsAnInvalidCellInASet) {
     h3ops::compactCells(cells, 2);
     FAIL() << "expected an exception";
   } catch (const std::runtime_error& error) {
-    EXPECT_EQ(std::string(error.what()), "Cell argument was not valid");
+    EXPECT_EQ(std::string(error.what()), "Cell argument was not valid (code: 5)");
   }
   EXPECT_THROW(h3ops::uncompactCells(cells, 2, 9), std::runtime_error);
 }

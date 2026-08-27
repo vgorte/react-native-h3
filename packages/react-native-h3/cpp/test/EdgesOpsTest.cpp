@@ -51,11 +51,11 @@ template <typename Call> void expectMessage(const char* label, const char* messa
 }
 
 template <typename Call> void expectInvalidCell(const char* label, Call&& call) {
-  expectMessage(label, "Cell argument was not valid", call);
+  expectMessage(label, "Cell argument was not valid (code: 5)", call);
 }
 
 template <typename Call> void expectInvalidDirectedEdge(const char* label, Call&& call) {
-  expectMessage(label, "Directed edge argument was not valid", call);
+  expectMessage(label, "Directed edge argument was not valid (code: 6)", call);
 }
 
 TEST(EdgesOps, BuildsAndReadsADirectedEdge) {
@@ -75,7 +75,7 @@ TEST(EdgesOps, ReversesADirectedEdge) {
 
 TEST(EdgesOps, RejectsCellsThatAreNotNeighbors) {
   EXPECT_FALSE(h3ops::areNeighborCells(kSanFrancisco, kFarCell));
-  expectMessage("cellsToDirectedEdge", "Cell arguments were not neighbors",
+  expectMessage("cellsToDirectedEdge", "Cell arguments were not neighbors (code: 11)",
                 [] { h3ops::cellsToDirectedEdge(kSanFrancisco, kFarCell); });
 }
 
@@ -169,11 +169,12 @@ TEST(VertexesOps, ReadsASingleVertex) {
 TEST(VertexesOps, NarrowsTheVertexNumberAndLeavesItsRangeToH3) {
   // `cellToVertex` answers `E_DOMAIN` outside `0` to `5` (`vertex.c:217`), so the narrowing here
   // imposes no domain of its own.
-  expectMessage("six", "Argument was outside of acceptable range", [] { h3ops::cellToVertex(kSanFrancisco, 6); });
-  expectMessage("minus one", "Argument was outside of acceptable range",
+  expectMessage("six", "Argument was outside of acceptable range (code: 2)",
+                [] { h3ops::cellToVertex(kSanFrancisco, 6); });
+  expectMessage("minus one", "Argument was outside of acceptable range (code: 2)",
                 [] { h3ops::cellToVertex(kSanFrancisco, -1); });
   // a pentagon has five vertexes, so five is out of range there but not on a hexagon
-  expectMessage("five on a pentagon", "Argument was outside of acceptable range",
+  expectMessage("five on a pentagon", "Argument was outside of acceptable range (code: 2)",
                 [] { h3ops::cellToVertex(kPentagonRes1, 5); });
   EXPECT_NO_THROW(h3ops::cellToVertex(kSanFrancisco, 5));
   // the one condition H3 never sees, because the narrowing runs first
@@ -203,10 +204,11 @@ TEST(VertexesOps, ReadsAVertexAsDegrees) {
 TEST(VertexesOps, RejectsAnInvalidCellOrVertex) {
   expectInvalidCell("cellToVertex", [] { h3ops::cellToVertex(kInvalidCell, 0); });
   expectInvalidCell("cellToVertexes", [] { h3ops::cellToVertexes(kInvalidCell); });
-  expectMessage("vertexToLatLng", "Vertex argument was not valid", [] { h3ops::vertexToLatLng(kInvalidVertex); });
+  expectMessage("vertexToLatLng", "Vertex argument was not valid (code: 8)",
+                [] { h3ops::vertexToLatLng(kInvalidVertex); });
   // a cell read as a vertex otherwise measures as a coordinate, because `vertexToLatLng` only
   // clears the mode bits it is handed (`vertex.c:326`)
-  expectMessage("vertexToLatLng on a cell", "Vertex argument was not valid",
+  expectMessage("vertexToLatLng on a cell", "Vertex argument was not valid (code: 8)",
                 [] { h3ops::vertexToLatLng(kSanFrancisco); });
 }
 

@@ -66,7 +66,7 @@ export {
   gridRingUnsafe,
   localIjToCell,
 } from './traversal'
-export type { ContainmentModeValue, CoordIJ, LatLng, Ring } from './types'
+export type { ContainmentModeName, ContainmentModeValue, CoordIJ, LatLng, Ring } from './types'
 export { ContainmentMode } from './types'
 export { degsToRads, radsToDegs } from './units'
 export { cellToVertex, cellToVertexes, vertexToLatLng } from './vertexes'

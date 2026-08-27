@@ -31,7 +31,7 @@ TEST(IndexingOps, LatLngToCellRejectsAnImpossibleResolution) {
     FAIL() << "expected an exception";
   } catch (const std::runtime_error& error) {
     // the range is H3's rule, so `describeH3Error` words it
-    EXPECT_EQ(std::string(error.what()), "Resolution argument was outside of acceptable range");
+    EXPECT_EQ(std::string(error.what()), "Resolution argument was outside of acceptable range (code: 4)");
   }
 }
 
@@ -51,7 +51,7 @@ TEST(IndexingOps, CellToLatLngRejectsAnInvalidCell) {
     h3ops::cellToLatLng(1);
     FAIL() << "expected an exception";
   } catch (const std::runtime_error& error) {
-    EXPECT_EQ(std::string(error.what()), "Cell argument was not valid");
+    EXPECT_EQ(std::string(error.what()), "Cell argument was not valid (code: 5)");
   }
 }
 
@@ -60,7 +60,7 @@ TEST(IndexingOps, CellToBoundaryRejectsAnInvalidCell) {
     h3ops::cellToBoundary(1);
     FAIL() << "expected an exception";
   } catch (const std::runtime_error& error) {
-    EXPECT_EQ(std::string(error.what()), "Cell argument was not valid");
+    EXPECT_EQ(std::string(error.what()), "Cell argument was not valid (code: 5)");
   }
 }
 

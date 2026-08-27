@@ -33,7 +33,7 @@ template <typename Call> void expectInvalidCell(const char* label, Call&& call) 
     call();
     FAIL() << "expected an exception";
   } catch (const std::runtime_error& error) {
-    EXPECT_EQ(std::string(error.what()), "Cell argument was not valid");
+    EXPECT_EQ(std::string(error.what()), "Cell argument was not valid (code: 5)");
   }
 }
 
@@ -53,7 +53,7 @@ TEST(TraversalOps, NarrowsKAndLeavesItsRangeToH3) {
     h3ops::gridDisk(kSanFrancisco, -1);
     FAIL() << "expected an exception";
   } catch (const std::runtime_error& error) {
-    EXPECT_EQ(std::string(error.what()), "Argument was outside of acceptable range");
+    EXPECT_EQ(std::string(error.what()), "Argument was outside of acceptable range (code: 2)");
   }
   // `maxGridRingSize` rejects it the same way (`algos.c:345`)
   EXPECT_THROW(h3ops::gridRing(kSanFrancisco, -1), std::runtime_error);
@@ -85,7 +85,7 @@ TEST(TraversalOps, GridRingUnsafeThrowsOnAPentagonAndPublishesNothing) {
     h3ops::gridRingUnsafe(kPentagonRes1, 1);
     FAIL() << "expected an exception";
   } catch (const std::runtime_error& error) {
-    EXPECT_EQ(std::string(error.what()), "Pentagon distortion was encountered");
+    EXPECT_EQ(std::string(error.what()), "Pentagon distortion was encountered (code: 9)");
   }
   // a ring that runs into a pentagon instead fails with four of its six slots already written
   // (`algos.c:846`); those contents are meaningless, and the buffer is destroyed while the
@@ -94,7 +94,7 @@ TEST(TraversalOps, GridRingUnsafeThrowsOnAPentagonAndPublishesNothing) {
     h3ops::gridRingUnsafe(kBesidePentagonRes1, 1);
     FAIL() << "expected an exception";
   } catch (const std::runtime_error& error) {
-    EXPECT_EQ(std::string(error.what()), "Pentagon distortion was encountered");
+    EXPECT_EQ(std::string(error.what()), "Pentagon distortion was encountered (code: 9)");
   }
 }
 
@@ -142,7 +142,7 @@ TEST(TraversalOps, RejectsMixedResolutions) {
     h3ops::gridDistance(kSanFrancisco, 0x85283083fffffffULL);
     FAIL() << "expected an exception";
   } catch (const std::runtime_error& error) {
-    EXPECT_EQ(std::string(error.what()), "Cell arguments had incompatible resolutions");
+    EXPECT_EQ(std::string(error.what()), "Cell arguments had incompatible resolutions (code: 12)");
   }
   EXPECT_THROW(h3ops::gridPathCells(kSanFrancisco, 0x85283083fffffffULL), std::runtime_error);
   EXPECT_THROW(h3ops::cellToLocalIj(kSanFrancisco, 0x85283083fffffffULL), std::runtime_error);

@@ -1,7 +1,8 @@
 import { toBuffer } from './buffers'
 import { rethrowAsH3Error } from './H3Error'
 import { native } from './native'
-import type { ContainmentModeValue, LatLng, Ring } from './types'
+import type { ContainmentModeName, ContainmentModeValue, LatLng, Ring } from './types'
+import { CONTAINMENT_MODE_BY_NAME } from './types'
 
 /**
  * Finds the outline of a set of cells, as GeoJSON-shaped polygons.
@@ -46,13 +47,14 @@ export function polygonToCells(rings: Ring[], res: number): BigUint64Array {
  * Finds the cells covering a polygon as {@linkcode polygonToCells} does, with a choice of
  * containment rule.
  *
- * `h3-js` names the mode with a string; here it is a number, so use the {@linkcode ContainmentMode}
- * constants rather than writing the literal. This is an experimental H3 API and may change
+ * The mode is either a {@linkcode ContainmentMode} constant or the h3-js name for it; the constants
+ * are cheaper and are what this package recommends. This is an experimental H3 API and may change
  * behaviour in a minor version of the underlying C library.
  *
  * @param rings The outer ring first, then holes, as `[latitude, longitude]` degrees.
  * @param res The resolution, `0` to `15`.
- * @param flags One of `ContainmentMode.center`, `.full`, `.overlapping` or `.overlappingBbox`.
+ * @param flags One of `ContainmentMode.center`, `.full`, `.overlapping` or `.overlappingBbox`, or
+ * the matching h3-js name such as `'containmentCenter'`.
  * @returns The cells covering the polygon, as a view onto the native buffer.
  * @throws {@linkcode H3Error} if the polygon, the resolution or the mode is invalid, or the result
  * would exceed this binding's limit of `4,000,000` cells.
@@ -60,10 +62,12 @@ export function polygonToCells(rings: Ring[], res: number): BigUint64Array {
 export function polygonToCellsExperimental(
   rings: Ring[],
   res: number,
-  flags: ContainmentModeValue,
+  flags: ContainmentModeValue | ContainmentModeName,
 ): BigUint64Array {
+  // an unknown name becomes `NaN`, so the native layer stays the only judge of the mode.
+  const mode = typeof flags === 'number' ? flags : (CONTAINMENT_MODE_BY_NAME[flags] ?? Number.NaN)
   try {
-    return new BigUint64Array(native.polygonToCellsExperimental(rings, res, flags))
+    return new BigUint64Array(native.polygonToCellsExperimental(rings, res, mode))
   } catch (error) {
     rethrowAsH3Error(error)
   }

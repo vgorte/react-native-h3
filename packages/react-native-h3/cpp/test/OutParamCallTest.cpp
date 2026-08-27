@@ -70,7 +70,7 @@ TEST(OutParamCall, ThrowsUpstreamWordingOnAnH3Error) {
     h3shapes::callWithOutParam<double>(cellAreaKm2, kInvalidCell);
     FAIL() << "expected an exception";
   } catch (const std::runtime_error& error) {
-    EXPECT_EQ(std::string(error.what()), "Cell argument was not valid");
+    EXPECT_EQ(std::string(error.what()), "Cell argument was not valid (code: 5)");
   }
 }
 

@@ -44,22 +44,22 @@ as usual; call `Array.from` only if you genuinely need an array.
 `cellAreaKm2(cell)`. The same applies to `edgeLength`, `greatCircleDistance`, `getHexagonAreaAvg`
 and `getHexagonEdgeLengthAvg`. h3-js's `E_UNKNOWN_UNIT` therefore has no counterpart here.
 
-**Five behaviours differ deliberately.**
+**`polygonToCellsExperimental` takes either form of `flags`.** The exported `ContainmentMode`
+constants (`ContainmentMode.center`, `.full`, `.overlapping`, `.overlappingBbox`) and h3-js's names
+(`'containmentCenter'`, `'containmentFull'`, `'containmentOverlapping'`,
+`'containmentOverlappingBbox'`) both work. The constants are what this package recommends: a name
+costs a lookup and a string conversion on a path that exists to be fast.
 
-1. `getResolution` does **not** return `-1` for an invalid index. h3-js wraps the call with a
-   validity check; this package matches the C library, which reads four bits and returns them, so
-   an invalid index yields an arbitrary number between 0 and 15. A validity check would multiply
-   the cost of one of the cheapest functions in the library. Call `isValidCell` first if you need
-   the guarantee.
-2. `constructCell(baseCellNumber, digits, res)` keeps h3-js's argument order rather than the C
+**Three behaviours differ deliberately.**
+
+1. `constructCell(baseCellNumber, digits, res)` keeps h3-js's argument order rather than the C
    library's `(res, baseCellNumber, digits)`.
-3. `polygonToCellsExperimental` takes a numeric `flags` argument. Use the exported
-   `ContainmentMode` constants (`ContainmentMode.center`, `.full`, `.overlapping`,
-   `.overlappingBbox`) instead of h3-js's strings.
-4. Error messages come from H3's own `describeH3Error`, so they match the upstream documentation
-   rather than h3-js's separate table. Errors are instances of `H3Error` and carry a message and
-   nothing else.
-5. An invalid cell, directed edge or vertex raises an `H3Error` worded by H3 itself
+2. Error messages come from H3's own `describeH3Error`, so they match the upstream documentation
+   rather than h3-js's separate table. Errors are instances of `H3Error` and carry a `message` and
+   a `code` exactly as h3-js does, with the code repeated in the message as `(code: 5)`. Failures
+   this package reports itself, such as a resolution that is not an integer, have no H3 counterpart
+   and so carry no `code`.
+3. An invalid cell, directed edge or vertex raises an `H3Error` worded by H3 itself
    (`E_CELL_INVALID`, `E_DIR_EDGE_INVALID`, `E_VERTEX_INVALID`) where h3-js returns an undefined
    value. Validation happens once, at the boundary, in C++.
    `getResolution`, `getBaseCellNumber` and the `is*` predicates are the exception: they have no

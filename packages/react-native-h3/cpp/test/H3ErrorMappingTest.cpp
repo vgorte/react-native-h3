@@ -22,13 +22,13 @@ TEST(H3ErrorMapping, SuccessDoesNotThrow) {
   EXPECT_NO_THROW(h3core::throwOnError(E_SUCCESS));
 }
 
-TEST(H3ErrorMapping, UsesUpstreamWordingVerbatim) {
+TEST(H3ErrorMapping, UsesUpstreamWordingWithTheCodeSuffix) {
   try {
     h3core::throwOnError(E_CELL_INVALID);
     FAIL() << "expected an exception";
   } catch (const std::runtime_error& error) {
-    // exactly what describeH3Error returns; no prefix, no reformatting, no error code.
-    EXPECT_EQ(std::string(error.what()), "Cell argument was not valid");
+    // what describeH3Error returns, plus the suffix h3-js appends; no prefix, no reformatting.
+    EXPECT_EQ(std::string(error.what()), "Cell argument was not valid (code: 5)");
   }
 }
 
@@ -38,8 +38,11 @@ TEST(H3ErrorMapping, CoversEveryDefinedErrorCode) {
       h3core::throwOnError(code);
       FAIL() << "code " << code << " did not throw";
     } catch (const std::runtime_error& error) {
-      EXPECT_FALSE(std::string(error.what()).empty()) << "code " << code;
-      EXPECT_NE(std::string(error.what()), "Invalid error code") << "code " << code;
+      const std::string suffix = " (code: " + std::to_string(code) + ")";
+      const std::string message(error.what());
+      EXPECT_GT(message.size(), suffix.size()) << "code " << code;
+      EXPECT_EQ(message.substr(message.size() - suffix.size()), suffix) << "code " << code;
+      EXPECT_EQ(message.find("Invalid error code"), std::string::npos) << "code " << code;
     }
   }
 }
@@ -50,11 +53,11 @@ TEST(H3ErrorMapping, HandlesAnUnknownCodeWithoutReadingOutOfBounds) {
     h3core::throwOnError(9999);
     FAIL() << "expected an exception";
   } catch (const std::runtime_error& error) {
-    EXPECT_EQ(std::string(error.what()), "Invalid error code");
+    EXPECT_EQ(std::string(error.what()), "Invalid error code (code: 9999)");
   }
 }
 
-TEST(H3ErrorMapping, InvalidArgumentUsesOurOwnWording) {
+TEST(H3ErrorMapping, InvalidArgumentUsesOurOwnWordingWithoutACode) {
   try {
     h3core::throwInvalidArgument("Resolution must be an integer between 0 and 15");
     FAIL() << "expected an exception";

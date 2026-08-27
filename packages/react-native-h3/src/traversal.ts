@@ -47,8 +47,9 @@ export function gridRing(origin: bigint, k: number): BigUint64Array {
  * @param origin The centre cell.
  * @param k The grid distance, `0` or more.
  * @returns The cells at that distance, as a view onto the native buffer.
- * @throws {@linkcode H3Error} with the message `"Pentagon distortion was encountered"` if the ring
- * touches a pentagon, and for an invalid origin or a negative `k`.
+ * @throws {@linkcode H3Error} with `code` `9` and the message
+ * `"Pentagon distortion was encountered (code: 9)"` if the ring touches a pentagon, and for an
+ * invalid origin or a negative `k`.
  */
 export function gridRingUnsafe(origin: bigint, k: number): BigUint64Array {
   try {

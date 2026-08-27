@@ -33,7 +33,7 @@ TEST(MeasurementOps, CellAreaRejectsAnInvalidCell) {
     h3ops::cellAreaKm2(1);
     FAIL() << "expected an exception";
   } catch (const std::runtime_error& error) {
-    EXPECT_EQ(std::string(error.what()), "Cell argument was not valid");
+    EXPECT_EQ(std::string(error.what()), "Cell argument was not valid (code: 5)");
   }
   EXPECT_THROW(h3ops::cellAreaM2(1), std::runtime_error);
   EXPECT_THROW(h3ops::cellAreaRads2(1), std::runtime_error);
@@ -64,7 +64,7 @@ TEST(MiscOps, HexagonAveragesRejectAnImpossibleResolution) {
     h3ops::getHexagonAreaAvgKm2(16);
     FAIL() << "expected an exception";
   } catch (const std::runtime_error& error) {
-    EXPECT_EQ(std::string(error.what()), "Resolution argument was outside of acceptable range");
+    EXPECT_EQ(std::string(error.what()), "Resolution argument was outside of acceptable range (code: 4)");
   }
 }
 
@@ -91,7 +91,7 @@ TEST(MiscOps, GetNumCellsRejectsAnImpossibleResolution) {
     h3ops::getNumCells(-1);
     FAIL() << "expected an exception";
   } catch (const std::runtime_error& error) {
-    EXPECT_EQ(std::string(error.what()), "Resolution argument was outside of acceptable range");
+    EXPECT_EQ(std::string(error.what()), "Resolution argument was outside of acceptable range (code: 4)");
   }
 }
 

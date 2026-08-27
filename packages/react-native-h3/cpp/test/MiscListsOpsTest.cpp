@@ -67,8 +67,10 @@ TEST(MiscListsOps, ListsTwelvePentagonsAtEveryResolution) {
 }
 
 TEST(MiscListsOps, NarrowsThePentagonResolutionAndLeavesItsRangeToH3) {
-  expectMessage("sixteen", "Resolution argument was outside of acceptable range", [] { h3ops::getPentagons(16); });
-  expectMessage("minus one", "Resolution argument was outside of acceptable range", [] { h3ops::getPentagons(-1); });
+  expectMessage("sixteen", "Resolution argument was outside of acceptable range (code: 4)",
+                [] { h3ops::getPentagons(16); });
+  expectMessage("minus one", "Resolution argument was outside of acceptable range (code: 4)",
+                [] { h3ops::getPentagons(-1); });
   // the one condition H3 never sees, because the narrowing runs first
   expectMessage("fractional", "Resolution must be an integer between 0 and 15", [] { h3ops::getPentagons(1.5); });
 }
@@ -110,7 +112,8 @@ TEST(MiscListsOps, IcosahedronFacesKeepsFaceZero) {
 }
 
 TEST(MiscListsOps, IcosahedronFacesRejectsAnInvalidCell) {
-  expectMessage("getIcosahedronFaces", "Cell argument was not valid", [] { h3ops::getIcosahedronFaces(kNotACell); });
+  expectMessage("getIcosahedronFaces", "Cell argument was not valid (code: 5)",
+                [] { h3ops::getIcosahedronFaces(kNotACell); });
 }
 
 } // namespace

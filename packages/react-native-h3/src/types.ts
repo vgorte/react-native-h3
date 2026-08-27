@@ -17,8 +17,8 @@ export type Ring = [lat: number, lng: number][]
  * Names the containment modes of `polygonToCellsExperimental`, matching H3's `ContainmentMode`
  * values.
  *
- * `h3-js` passes these as strings. This package uses the numbers, because a string argument across
- * the bridge costs a conversion on exactly the paths this package exists to make fast.
+ * These numbers cross the bridge as they are; h3-js's names work too, at the cost of a lookup and a
+ * string conversion on a path this package exists to make fast.
  */
 export const ContainmentMode = Object.freeze({
   /** Requires the cell centre to be contained in the shape. */
@@ -32,3 +32,24 @@ export const ContainmentMode = Object.freeze({
 } as const)
 
 export type ContainmentModeValue = (typeof ContainmentMode)[keyof typeof ContainmentMode]
+
+/** Names a containment mode the way h3-js's `POLYGON_TO_CELLS_FLAGS` does. */
+export type ContainmentModeName =
+  | 'containmentCenter'
+  | 'containmentFull'
+  | 'containmentOverlapping'
+  | 'containmentOverlappingBbox'
+
+/**
+ * Maps each h3-js containment mode name to its {@linkcode ContainmentMode} value.
+ *
+ * Not part of the public surface: it exists so `polygonToCellsExperimental` accepts h3-js's
+ * strings. An unknown name is left to the native layer, which rejects it.
+ */
+export const CONTAINMENT_MODE_BY_NAME: Readonly<Record<ContainmentModeName, ContainmentModeValue>> =
+  Object.freeze({
+    containmentCenter: ContainmentMode.center,
+    containmentFull: ContainmentMode.full,
+    containmentOverlapping: ContainmentMode.overlapping,
+    containmentOverlappingBbox: ContainmentMode.overlappingBbox,
+  })

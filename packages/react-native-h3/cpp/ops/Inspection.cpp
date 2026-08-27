@@ -47,7 +47,8 @@ bool isResClassIII(uint64_t cell) {
 }
 
 int getResolution(uint64_t index) {
-  return ::getResolution(index);
+  // h3-js guards this with `isValidCell` alone, so a directed edge and a vertex answer `-1` too.
+  return ::isValidCell(index) != 0 ? ::getResolution(index) : -1;
 }
 
 int getBaseCellNumber(uint64_t cell) {

@@ -47,13 +47,15 @@ TEST(InspectionOps, ReadsResolutionAndBaseCell) {
   EXPECT_EQ(h3ops::getBaseCellNumber(kSanFrancisco), 20);
 }
 
-TEST(InspectionOps, GetResolutionDoesNotGuardAnInvalidIndex) {
-  // h3-js wraps this with `if (!isValidCell(h)) return -1;`. This binding matches C, which is a bit
-  // shift with no validity check, because a check here would multiply the cost of one of the
-  // cheapest functions in the library. `0xffffffffffffffff` has all four resolution bits set.
-  EXPECT_EQ(h3ops::getResolution(0xffffffffffffffffULL), 15);
-  EXPECT_EQ(h3ops::getResolution(0), 0);
-  EXPECT_FALSE(h3ops::isValidCell(0xffffffffffffffffULL));
+TEST(InspectionOps, GetResolutionAnswersMinusOneForAnythingButACell) {
+  // h3-js wraps this with `if (!isValidCell(h)) return -1;`, so an edge and a vertex answer `-1`
+  // even though C would read their resolution bits. `0xffffffffffffffff` has all four set.
+  EXPECT_EQ(h3ops::getResolution(0xffffffffffffffffULL), -1);
+  EXPECT_EQ(h3ops::getResolution(0), -1);
+  EXPECT_EQ(h3ops::getResolution(kEdge), -1);
+  EXPECT_EQ(h3ops::getResolution(kVertex), -1);
+  EXPECT_TRUE(h3ops::isValidDirectedEdge(kEdge));
+  EXPECT_TRUE(h3ops::isValidVertex(kVertex));
 }
 
 TEST(InspectionOps, ReadsIndexDigits) {
@@ -75,7 +77,7 @@ TEST(InspectionOps, GetIndexDigitRejectsAnInvalidCell) {
     h3ops::getIndexDigit(1, 1);
     FAIL() << "expected an exception";
   } catch (const std::runtime_error& error) {
-    EXPECT_EQ(std::string(error.what()), "Cell argument was not valid");
+    EXPECT_EQ(std::string(error.what()), "Cell argument was not valid (code: 5)");
   }
 }
 
@@ -109,7 +111,7 @@ TEST(InspectionOps, RejectsAnOutOfRangeResolutionBeforeCountingDigits) {
     h3ops::constructCell(20, {}, 99);
     FAIL() << "expected an exception";
   } catch (const std::runtime_error& error) {
-    EXPECT_EQ(std::string(error.what()), "Resolution argument was outside of acceptable range");
+    EXPECT_EQ(std::string(error.what()), "Resolution argument was outside of acceptable range (code: 4)");
   }
 }
 
@@ -134,7 +136,7 @@ TEST(InspectionOps, RejectsAStringThatIsNotHexadecimal) {
     h3ops::cellFromString("not a cell");
     FAIL() << "expected an exception";
   } catch (const std::runtime_error& error) {
-    EXPECT_EQ(std::string(error.what()), "The operation failed but a more specific error is not available");
+    EXPECT_EQ(std::string(error.what()), "The operation failed but a more specific error is not available (code: 1)");
   }
 }
 

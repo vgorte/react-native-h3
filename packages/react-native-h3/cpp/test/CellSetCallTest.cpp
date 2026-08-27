@@ -80,7 +80,7 @@ TEST(CellSetCall, ThrowsAndDiscardsAPartialWrite) {
                                  [](uint64_t* out) { return gridRingUnsafe(kPentagon, 1, out); });
     FAIL() << "expected an exception";
   } catch (const std::runtime_error& error) {
-    EXPECT_EQ(std::string(error.what()), "Pentagon distortion was encountered");
+    EXPECT_EQ(std::string(error.what()), "Pentagon distortion was encountered (code: 9)");
   }
 }
 
@@ -90,7 +90,7 @@ TEST(CellSetCall, PropagatesAFailingSizeQuery) {
                                  [](uint64_t*) { return E_SUCCESS; });
     FAIL() << "expected an exception";
   } catch (const std::runtime_error& error) {
-    EXPECT_EQ(std::string(error.what()), "Argument was outside of acceptable range");
+    EXPECT_EQ(std::string(error.what()), "Argument was outside of acceptable range (code: 2)");
   }
 }
 
