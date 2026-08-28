@@ -118,8 +118,8 @@ interface Timed<T> {
   stats: Stats
 }
 
-// the warm-up pass is untimed; its result is what the equivalence check and the detail read.
-// A pause outside every `now()` window keeps the longest freeze at one run instead of all of them.
+// warm-up untimed; its value feeds the equivalence check
+// a pause outside every `now()` window caps the longest freeze at one run
 async function timeRuns<T>(
   signal: RunSignal,
   runs: number,
@@ -711,7 +711,7 @@ export function BenchmarkScreen(): React.JSX.Element {
       <Text style={styles.note}>
         Run this in a Release build. Numbers from a Debug build must not go in the README. The run
         takes several minutes and the app only answers between measurements: one h3-js W3 pass alone
-        needs roughly 23 seconds. Leaving this tab abandons the run.
+        needs about 20 seconds. Leaving this tab abandons the run.
       </Text>
       <Pressable style={styles.button} onPress={run} disabled={running}>
         <Text style={styles.buttonLabel}>{running ? 'Running' : 'Run benchmark'}</Text>

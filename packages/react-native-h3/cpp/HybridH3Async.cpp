@@ -21,8 +21,6 @@
 
 namespace margelo::nitro::h3 {
 
-// a borrowed resource is touched only in the synchronous prologue, never in the dispatched lambda
-
 std::shared_ptr<Promise<std::shared_ptr<ArrayBuffer>>>
 HybridH3::polygonToCellsAsync(const std::vector<std::vector<std::vector<double>>>& rings, double res) {
   // no inbound `ArrayBuffer`: nitrogen converted the nested arrays eagerly, so the vector is owned here

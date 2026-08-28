@@ -107,7 +107,8 @@ public:
   std::vector<double> getIcosahedronFaces(uint64_t cell) override;
 
   // Async
-  // each is a synchronous prologue plus a `Promise<T>::async` dispatch
+  // each is a synchronous prologue plus a `Promise<T>::async` dispatch; a borrowed resource is
+  // touched only in the prologue, never in the dispatched lambda
   std::shared_ptr<Promise<std::shared_ptr<ArrayBuffer>>>
   polygonToCellsAsync(const std::vector<std::vector<std::vector<double>>>& rings, double res) override;
   std::shared_ptr<Promise<std::shared_ptr<ArrayBuffer>>>
