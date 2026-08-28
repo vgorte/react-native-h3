@@ -443,6 +443,30 @@ function formatMillis(millis: number): string {
   return millis < 1 ? millis.toFixed(3) : millis.toFixed(1)
 }
 
+function factorOf(row: Row): number | undefined {
+  return row.referenceMillis == null ? undefined : row.referenceMillis / row.millis
+}
+
+function formatFactor(factor: number): string {
+  return factor >= 10 ? factor.toFixed(0) : factor.toFixed(1)
+}
+
+// the rule `scripts/benchmark-svg.mjs` applies to the chart: a row that spends under a millisecond
+// of its own time measures h3-js marshalling rather than this package, so the headline skips it,
+// takes the widest remaining factor and rounds down to a ten
+const HEADLINE_MIN_MILLIS = 1
+
+function headlineFactor(rows: Row[]): number | undefined {
+  const factors = rows
+    .filter((row) => row.millis >= HEADLINE_MIN_MILLIS)
+    .map(factorOf)
+    .filter((factor): factor is number => factor != null)
+  if (factors.length === 0) {
+    return undefined
+  }
+  return Math.floor(Math.max(...factors) / 10) * 10
+}
+
 function caption(rows: Row[], seconds: number): string {
   const build = isDebugBuild() ? 'Debug, not usable' : 'Release'
   const differing = rows.filter((row) => !row.equivalent).map((row) => row.workload)
@@ -507,6 +531,61 @@ function logPayload(payload: Payload): void {
   }
 }
 
+function Measure({ label, value }: { label: string; value: string }): React.JSX.Element {
+  return (
+    <View style={styles.measure}>
+      <Text style={styles.measureLabel}>{label}</Text>
+      <Text style={styles.measureValue}>{value}</Text>
+    </View>
+  )
+}
+
+function WorkloadCard({ row }: { row: Row }): React.JSX.Element {
+  const factor = factorOf(row)
+  return (
+    <View style={styles.card}>
+      <View style={styles.cardHeader}>
+        <Text style={styles.workload}>{row.workload}</Text>
+        <Text style={row.equivalent ? styles.equivalent : styles.differs}>
+          {row.equivalent ? '✓' : 'no'}
+        </Text>
+      </View>
+      <View style={styles.measures}>
+        <Measure label="react-native-h3" value={`${formatMillis(row.millis)} ms`} />
+        <Measure
+          label="h3-js"
+          value={row.referenceMillis == null ? 'n/a' : `${formatMillis(row.referenceMillis)} ms`}
+        />
+        <View style={styles.measure}>
+          <Text style={styles.measureLabel}>factor</Text>
+          <Text style={styles.factor}>{factor == null ? 'n/a' : `${formatFactor(factor)}×`}</Text>
+        </View>
+      </View>
+      <Text style={styles.detail}>{row.detail}</Text>
+    </View>
+  )
+}
+
+function Results({ rows, seconds }: { rows: Row[]; seconds: number }): React.JSX.Element {
+  const headline = headlineFactor(rows)
+  return (
+    <View style={styles.results}>
+      <View style={styles.summary}>
+        <Text style={styles.summaryFactor}>
+          {headline == null ? 'no factor measured' : `up to ${headline}× faster than h3-js`}
+        </Text>
+        <Text
+          style={styles.summaryMeta}
+        >{`${rows.length} workloads, ${seconds.toFixed(0)} s`}</Text>
+      </View>
+      {rows.map((row) => (
+        <WorkloadCard key={row.workload} row={row} />
+      ))}
+      <Text style={styles.caption}>{caption(rows, seconds)}</Text>
+    </View>
+  )
+}
+
 /**
  * Renders the benchmark behind the README's table, timing each workload against `h3-js` in the same
  * engine and the same run.
@@ -565,19 +644,13 @@ export function BenchmarkScreen(): React.JSX.Element {
         <Text style={styles.buttonLabel}>{running ? 'Running' : 'Run benchmark'}</Text>
       </Pressable>
       {running ? <ActivityIndicator style={styles.spinner} /> : undefined}
-      {result == null ? undefined : (
-        <View style={styles.results}>
-          {result.rows.map((row) => (
-            <Text key={row.workload} style={styles.line}>
-              {`${row.workload}: ${formatMillis(row.millis)} ms (${row.detail})`}
-            </Text>
-          ))}
-          <Text style={styles.markdown}>{toMarkdown(result.rows, result.seconds)}</Text>
-        </View>
-      )}
+      {result == null ? undefined : <Results rows={result.rows} seconds={result.seconds} />}
     </ScrollView>
   )
 }
+
+const HIGHLIGHT = '#1a7f37'
+const MUTED = '#6b6b6b'
 
 const styles = StyleSheet.create({
   content: { padding: 20 },
@@ -591,7 +664,26 @@ const styles = StyleSheet.create({
   },
   buttonLabel: { color: 'white', fontSize: 16, textAlign: 'center' },
   spinner: { marginTop: 16 },
-  results: { marginTop: 20, gap: 4 },
-  line: { fontFamily: 'Courier', fontSize: 13 },
-  markdown: { fontFamily: 'Courier', fontSize: 11, marginTop: 16 },
+  results: { marginTop: 20, gap: 10 },
+  summary: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  summaryFactor: { fontSize: 17, fontWeight: '700', color: HIGHLIGHT },
+  summaryMeta: { fontSize: 13, color: MUTED },
+  card: { borderWidth: 1, borderColor: '#e4e4e4', borderRadius: 10, padding: 12, gap: 10 },
+  cardHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+  workload: { flex: 1, fontSize: 14, fontWeight: '600' },
+  equivalent: { fontSize: 15, fontWeight: '700', color: HIGHLIGHT },
+  differs: { fontSize: 13, fontWeight: '700', color: '#b3261e' },
+  measures: { flexDirection: 'row', gap: 12 },
+  measure: { flex: 1, gap: 2 },
+  measureLabel: { fontSize: 11, color: MUTED },
+  measureValue: { fontSize: 15, fontVariant: ['tabular-nums'] },
+  factor: { fontSize: 15, fontWeight: '700', color: HIGHLIGHT, fontVariant: ['tabular-nums'] },
+  detail: { fontSize: 12, color: MUTED },
+  caption: { fontSize: 11, lineHeight: 16, color: MUTED, marginTop: 6 },
 })
