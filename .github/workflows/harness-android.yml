@@ -1,6 +1,7 @@
 name: Harness Android
 
 on:
+  workflow_dispatch:
   pull_request:
     paths:
       - 'packages/react-native-h3/cpp/**'
@@ -92,6 +93,7 @@ jobs:
       - name: Read the device log
         if: failure()
         run: |
+          [ -f "${RUNNER_TEMP}/logcat.txt" ] || exit 0
           grep -a -i -E 'sanitizer|SUMMARY:|beginning of crash|Fatal signal|libNitroH3|H3Example|lowmemorykiller|Out of memory' \
             "${RUNNER_TEMP}/logcat.txt" | tail -n 300 || true
           echo '--- last 200 lines ---'
