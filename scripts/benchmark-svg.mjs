@@ -1,9 +1,11 @@
 /**
- * Renders `apps/example/benchmark.json` as a horizontal bar chart of the speedup over `h3-js`.
+ * Renders `apps/example/benchmark.json` as a horizontal bar chart of the speedup over `h3-js`, on a
+ * logarithmic axis: the fastest workload is over a hundred times the factor of the slowest, and a
+ * linear axis flattens everything below it into a stub.
  *
  * The JSON is the `BENCHMARK_JSON` line the example app's benchmark screen logs on a Release build,
- * pretty-printed and committed. Rows without an `h3-js` reference carry no factor and are left out
- * of the bars.
+ * reassembled from its chunks, pretty-printed and committed. Rows without an `h3-js` reference carry
+ * no factor and are left out of the bars.
  *
  * Usage:
  *   bun run benchmark:svg
@@ -41,7 +43,10 @@ const VALUE_WIDTH = 64
 const BAR_HEIGHT = 22
 const ROW_STEP = 34
 const CHART_TOP = 62
-const FOOTER_GAP = 34
+const TICK_BASELINE = 6
+const FOOTER_FIRST = 30
+const FOOTER_SECOND = 46
+const FOOTER_GAP = 58
 
 const BAR_LEFT = MARGIN + LABEL_WIDTH
 const BAR_MAX = WIDTH - MARGIN - VALUE_WIDTH - BAR_LEFT
@@ -82,6 +87,9 @@ function validate(payload) {
     }
     requireString(row.workload, `${at}.workload`)
     requireString(row.detail, `${at}.detail`)
+    if (!Number.isInteger(row.runs) || row.runs <= 0) {
+      fail(`${at}.runs`, 'must be an integer greater than 0')
+    }
     if (typeof row.millis !== 'number' || !Number.isFinite(row.millis) || row.millis <= 0) {
       fail(`${at}.millis`, 'must be a finite number greater than 0')
     }
@@ -94,8 +102,11 @@ function validate(payload) {
   if (measuredOn == null || typeof measuredOn !== 'object') {
     fail('measuredOn', 'must be an object')
   }
-  for (const field of ['platform', 'osVersion', 'build', 'h3js', 'date']) {
+  for (const field of ['platform', 'osVersion', 'build', 'reactNative', 'h3js', 'date']) {
     requireString(measuredOn[field], `measuredOn.${field}`)
+  }
+  if (!Number.isInteger(measuredOn.warmupRuns) || measuredOn.warmupRuns < 0) {
+    fail('measuredOn.warmupRuns', 'must be an integer of 0 or more')
   }
   return payload
 }
@@ -123,9 +134,56 @@ function toBars(rows) {
   return bars
 }
 
-function footer(measuredOn) {
-  const { platform, osVersion, build, h3js, date } = measuredOn
-  return `Measured on ${platform} ${osVersion}, ${build} build, against h3-js ${h3js}, ${date}.`
+// the axis reaches the decade above the widest factor, so the longest bar always stops short of the
+// value labels and the decade ticks land at even fractions of the width
+function axisMax(bars) {
+  const widest = Math.max(...bars.map((bar) => bar.factor))
+  return 10 ** (Math.floor(Math.log10(widest)) + 1)
+}
+
+function decades(max) {
+  const ticks = []
+  for (let power = 1; 10 ** power < max; power++) {
+    ticks.push(10 ** power)
+  }
+  return ticks
+}
+
+// the axis starts at 1x, where a factor means no gain at all and the bar has no length
+function barLength(factor, max) {
+  return Math.max(2, Math.round((Math.log10(factor) / Math.log10(max)) * BAR_MAX))
+}
+
+// the run count is not assumed: it is read back off the rows, naming whichever ones differ
+function runCounts(rows) {
+  const tally = new Map()
+  for (const row of rows) {
+    tally.set(row.runs, (tally.get(row.runs) ?? 0) + 1)
+  }
+  const [common] = [...tally.entries()].sort((a, b) => b[1] - a[1])[0]
+  const exceptions = [
+    ...new Set(
+      rows
+        .filter((row) => row.runs !== common)
+        .map((row) => `${row.runs} for ${row.workload.split(' ')[0]}`),
+    ),
+  ]
+  return exceptions.length === 0 ? `${common} runs` : `${common} runs (${exceptions.join(', ')})`
+}
+
+function warmUps(count) {
+  return count === 1 ? 'one warm-up' : `${count} warm-ups`
+}
+
+// two lines, split on the sentence: all three would run past the canvas at this font size
+function footer(payload) {
+  const { platform, osVersion, build, reactNative, h3js, date, warmupRuns } = payload.measuredOn
+  return [
+    `Measured on ${platform} ${osVersion}, ${build} build, react-native ${reactNative}, ` +
+      `against h3-js ${h3js}, ${date}.`,
+    `Median of ${runCounts(payload.rows)} after ${warmUps(warmupRuns)}. ` +
+      'Bar length is logarithmic.',
+  ]
 }
 
 function styleBlock() {
@@ -150,8 +208,9 @@ function styleBlock() {
 
 function render(payload) {
   const bars = toBars(payload.rows)
-  const scale = BAR_MAX / Math.max(...bars.map((bar) => bar.factor))
-  const height = CHART_TOP + bars.length * ROW_STEP + FOOTER_GAP
+  const max = axisMax(bars)
+  const chartBottom = CHART_TOP + bars.length * ROW_STEP
+  const height = chartBottom + FOOTER_GAP
 
   const lines = [
     '<?xml version="1.0" encoding="UTF-8"?>',
@@ -162,13 +221,23 @@ function render(payload) {
     styleBlock(),
     `<text x="${MARGIN}" y="34" font-size="17" font-weight="600">${escapeXml(TITLE)}</text>`,
     `<line class="axis" x1="${BAR_LEFT}" y1="${CHART_TOP - 8}" x2="${BAR_LEFT}" ` +
-      `y2="${CHART_TOP + bars.length * ROW_STEP - 4}" stroke-width="1" opacity="0.35"/>`,
+      `y2="${chartBottom - 4}" stroke-width="1" opacity="0.35"/>`,
   ]
+
+  for (const tick of decades(max)) {
+    const x = BAR_LEFT + barLength(tick, max)
+    lines.push(
+      `<line class="axis" x1="${x}" y1="${CHART_TOP - 8}" x2="${x}" y2="${chartBottom - 4}" ` +
+        'stroke-width="1" opacity="0.15"/>',
+      `<text x="${x}" y="${chartBottom + TICK_BASELINE}" font-size="11" text-anchor="middle">` +
+        `${formatFactor(tick)}×</text>`,
+    )
+  }
 
   bars.forEach((bar, index) => {
     const top = CHART_TOP + index * ROW_STEP
     const baseline = top + BAR_HEIGHT - 6
-    const length = Math.max(2, Math.round(bar.factor * scale))
+    const length = barLength(bar.factor, max)
     lines.push(
       `<text x="${BAR_LEFT - 12}" y="${baseline}" font-size="13" text-anchor="end">` +
         `${escapeXml(bar.workload)}</text>`,
@@ -179,9 +248,12 @@ function render(payload) {
     )
   })
 
+  const [first, second] = footer(payload)
   lines.push(
-    `<text x="${MARGIN}" y="${height - 12}" font-size="12">` +
-      `${escapeXml(footer(payload.measuredOn))}</text>`,
+    `<text x="${MARGIN}" y="${chartBottom + FOOTER_FIRST}" font-size="12">` +
+      `${escapeXml(first)}</text>`,
+    `<text x="${MARGIN}" y="${chartBottom + FOOTER_SECOND}" font-size="12">` +
+      `${escapeXml(second)}</text>`,
     '</svg>',
   )
   return `${lines.join('\n')}\n`
