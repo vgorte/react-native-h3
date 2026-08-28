@@ -1,5 +1,12 @@
 import { describe, expect, test } from 'bun:test'
-import { inBounds, padBoundsByCell, zoomToResolution } from './zoom'
+import {
+  inBounds,
+  MAX_ZOOM,
+  MIN_ZOOM,
+  padBoundsByCell,
+  steppedZoom,
+  zoomToResolution,
+} from './zoom'
 
 describe('zoomToResolution', () => {
   test('holds the country resolution below zoom 8', () => {
@@ -19,6 +26,18 @@ describe('zoomToResolution', () => {
   test('caps at resolution 11', () => {
     expect(zoomToResolution(14)).toBe(11)
     expect(zoomToResolution(22)).toBe(11)
+  })
+})
+
+describe('steppedZoom', () => {
+  test('adds and subtracts one whole level', () => {
+    expect(steppedZoom(10, 1)).toBe(11)
+    expect(steppedZoom(10.4, -1)).toBe(9.4)
+  })
+
+  test('holds at either end of the range', () => {
+    expect(steppedZoom(MAX_ZOOM, 1)).toBe(MAX_ZOOM)
+    expect(steppedZoom(MIN_ZOOM, -1)).toBe(MIN_ZOOM)
   })
 })
 

@@ -1,5 +1,11 @@
 import type { LngLatBounds } from '@maplibre/maplibre-react-native'
 
+/** Lowest zoom MapLibre holds, the whole world across one screen. */
+export const MIN_ZOOM = 0
+
+/** Highest zoom MapLibre holds, past the last tile any style ships. */
+export const MAX_ZOOM = 22
+
 /** Lowest resolution the automatic mode picks, one cell per few hundred square kilometres. */
 export const AUTO_RESOLUTION_MIN = 5
 
@@ -35,6 +41,15 @@ export function zoomToResolution(zoom: number): number {
   if (zoom < LADDER_ZOOM) return AUTO_RESOLUTION_MIN + 1
   const stepped = LADDER_RESOLUTION + Math.floor(zoom) - LADDER_ZOOM
   return Math.min(stepped, AUTO_RESOLUTION_MAX)
+}
+
+/**
+ * Steps a zoom level by whole levels and holds it inside the range MapLibre draws.
+ *
+ * @param step The levels to add, negative to zoom out.
+ */
+export function steppedZoom(zoom: number, step: number): number {
+  return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom + step))
 }
 
 /** Reports whether a coordinate lies inside a `[west, south, east, north]` box. */

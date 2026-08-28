@@ -1,37 +1,47 @@
-import { Camera, Map as MapLibreMap } from '@maplibre/maplibre-react-native'
-import type React from 'react'
-import { StatusBar, StyleSheet, Text, View } from 'react-native'
+import React from 'react'
+import { StatusBar, StyleSheet, View } from 'react-native'
+import { configure } from 'react-native-h3'
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
+import { CELL_CEILING } from './lib/ceiling'
+import { CoverageScreen } from './screens/CoverageScreen'
+import { GeofenceScreen } from './screens/GeofenceScreen'
+import { HeatmapScreen } from './screens/HeatmapScreen'
+import { AboutSheet } from './ui/AboutSheet'
+import { IntroProvider } from './ui/IntroStrip'
+import { TabBar, type TabId } from './ui/TabBar'
+import { ToastProvider } from './ui/Toast'
+import { colors } from './ui/theme'
 
-const BASEMAP_STYLE = 'https://sgx.geodatenzentrum.de/gdz_basemapde_vektor/styles/bm_web_col.json'
-const GERMANY: [number, number] = [10.45, 51.16]
+// the app owns the guard, and it precedes any call
+configure({ maxCellCount: CELL_CEILING })
 
 export default function App(): React.JSX.Element {
+  const [tab, setTab] = React.useState<TabId>('geofence')
+  const [about, setAbout] = React.useState(false)
+  const openAbout = React.useCallback(() => setAbout(true), [])
+
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.container}>
         {/* the app is dark on every device, so the status bar cannot follow the system */}
         <StatusBar barStyle="light-content" />
-        <View style={styles.titleBar}>
-          <Text style={styles.title}>H3 Showcase</Text>
-        </View>
-        <MapLibreMap
-          style={styles.map}
-          mapStyle={BASEMAP_STYLE}
-          attribution
-          attributionPosition={{ bottom: 8, right: 8 }}
-          logo={false}
-        >
-          <Camera initialViewState={{ center: GERMANY, zoom: 5.2 }} />
-        </MapLibreMap>
+        <ToastProvider>
+          <IntroProvider>
+            <View style={styles.body}>
+              {tab === 'geofence' ? <GeofenceScreen onPressMark={openAbout} /> : null}
+              {tab === 'heatmap' ? <HeatmapScreen onPressMark={openAbout} /> : null}
+              {tab === 'coverage' ? <CoverageScreen onPressMark={openAbout} /> : null}
+            </View>
+            <TabBar active={tab} onChange={setTab} />
+          </IntroProvider>
+          <AboutSheet visible={about} onClose={() => setAbout(false)} />
+        </ToastProvider>
       </SafeAreaView>
     </SafeAreaProvider>
   )
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#101418' },
-  titleBar: { paddingHorizontal: 16, paddingVertical: 12 },
-  title: { color: '#f2f5f7', fontSize: 17, fontWeight: '600' },
-  map: { flex: 1 },
+  container: { flex: 1, backgroundColor: colors.paper },
+  body: { flex: 1 },
 })
