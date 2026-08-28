@@ -24,8 +24,9 @@ machine-code execution on iOS and Android for maximum performance.
 
 ## ✨ Features
 
-- 🔄 **Full API Parity:** Mirrors `h3-js` 4.5.0 with all 69 functions using the exact same names.
-  Backed by a rigorous parity test suite covering every resolution, pentagons, and poles.
+- 🔄 **Full API Parity:** Mirrors the 64 functions of `h3-js` 4.5.0 under the same names, plus four
+  `Async` variants and `configure`. Backed by a rigorous parity test suite covering every
+  resolution, pentagons, and poles.
 - ⚡ **Zero Conversion Overhead:** Cell indexes are returned as `bigint` rather than hexadecimal
   strings, completely eliminating string-conversion bottlenecks on the hot path.
 - 🚀 **Zero-Copy Architecture:** Cell sets are returned as `BigUint64Array`, a direct view onto the
@@ -56,10 +57,11 @@ copy.
 | `polygonToCells`, San Francisco, res 12 | 76.1 ms | 20,444.3 ms | 269× |
 | `cellToBoundary` x 100,000 | 110.3 ms | 1,138.6 ms | 10× |
 
-> **Methodology:** Measured on iOS 26.5 in a Release build, React Native 0.87.0 with Hermes
-> 250829098.0.16, against `h3-js` 4.5.0, on 2026-08-28: both libraries in the same app and the same
-> Hermes instance, medians of 20 runs, three for `polygonToCells`, after one warm-up, every result
-> compared for equivalence. Full data and method:
+> **Methodology:** Measured on an `iPhone 17 Pro` simulator (iOS 26.5) hosted on an Apple M5 Pro, in
+> a Release build, React Native 0.87.0 with Hermes 250829098.0.16, against `h3-js` 4.5.0, on
+> 2026-08-28: both libraries in the same app and the same Hermes instance, medians of 20 runs, three
+> for `polygonToCells`, after one warm-up, every result compared for equivalence. Full data and
+> method:
 > [docs/benchmark.md](https://github.com/vgorte/react-native-h3/blob/main/docs/benchmark.md).
 
 ## 📦 Installation
@@ -228,15 +230,16 @@ try {
 
 - **Native Codes:** Standard H3 errors append `(code: N)` to the message and expose the `.code`
   property.
-- **Binding Exceptions:** Errors caught before crossing into C++ (argument validation, such as a
-  non-integer resolution, or exceeding the Cell Ceiling) also throw `H3Error`, but leave the `.code`
-  property `undefined`.
+- **Binding Exceptions:** Errors this package raises itself, before the call reaches the H3 C
+  library (argument validation such as a non-integer resolution, or a breach of the Cell Ceiling),
+  also throw `H3Error`, but leave the `.code` property `undefined`.
 - **Async Parity:** Async variants throw the exact same errors and messages as their synchronous
   siblings.
 
 ## 📚 API Reference
 
-The exported surface mirrors `h3-js` 4.5.0 function for function, complete with rich JSDoc comments.
+The exported surface mirrors the 64 functions of `h3-js` 4.5.0 under the same names, complete with
+rich JSDoc comments.
 
 - 📖 **[Full API Documentation](https://github.com/vgorte/react-native-h3/blob/main/packages/react-native-h3/docs/api.md):**
   Generated directly from the TypeScript sources and grouped by domain. What your editor shows is

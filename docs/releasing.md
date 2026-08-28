@@ -121,8 +121,8 @@ bun release --dry-run --ci
 ### 1. The Verification Gate
 
 Before simulating the publish, the script strictly enforces the verification gate. It runs:
-install, lint, typecheck, build, specs, and the host test suite. Finally, it compiles the parity
-probe and executes the parity suite against it.
+install, lint, typecheck, build, specs, and the TypeScript test suite. Finally, it compiles the
+parity probe and executes the parity suite against it.
 
 ### 2. Simulated Outputs
 
@@ -151,8 +151,8 @@ Do not be alarmed by these three omissions in the dry-run output:
   Checklist for the pack list).
 - Hooks are listed but not executed. Consequently, the root hook's `pod install` will not touch
   `apps/example/ios`.
-- `Writing changelog to undefined` is expected behavior. We do not keep a `CHANGELOG.md` file in
-  the repository; the changelog goes directly into the GitHub Release body.
+- `Writing changelog to undefined` is expected behavior. The repository keeps no `CHANGELOG.md`
+  file; the changelog goes directly into the GitHub Release body.
 
 ### 4. Post-Rehearsal Verification
 
@@ -168,9 +168,9 @@ git tag --list
 Underneath, `bun release` maps directly to `scripts/release.sh`. It executes the release in three
 strict phases:
 
-1. **The Verification Gate (Enforced Parity):** The gate runs before anything is published. (If we
-   relied on the root release-it's `before:release` hook, it would fire too late, after the tarball
-   was already on npm.) The gate explicitly compiles the parity probe and exports
+1. **The Verification Gate (Enforced Parity):** The gate runs before anything is published. (Relying
+   on the root release-it's `before:release` hook would fire too late, after the tarball was already
+   on npm.) The gate explicitly compiles the parity probe and exports
    `H3_PARITY_REQUIRED`. This guarantees the parity suite runs in strict mode and cannot silently
    skip itself if the probe is missing.
 2. **Package Publishing (`packages/react-native-h3`):** Executes a pure `npm publish` for the

@@ -32,6 +32,16 @@ The README is the package page on GitHub and on npm at once. `README.md` in the 
 10. Nothing references internal planning, roadmaps or unreleased work.
 11. The file is under roughly 250 lines.
 
+## Decided deviations (2026-08-28)
+
+Settled over the published README and binding for this repository wherever they contradict the rules above.
+
+- Every `##` section heading starts with an emoji, and a `###` heading may.
+- The section set is the one the README carries today, including `Error Handling` and a standalone `Versioning Strategy` section.
+- A length of about 320 lines is accepted; the roughly 250 line target is a direction, not a limit.
+- The install block leads with bun and names npm and yarn only in a parenthesis.
+- The closing of `Contributing` may address the reader warmly and in the first person plural.
+
 ## Scope
 
 Applies to `packages/react-native-h3/README.md` and its root symlink, to the pages under `docs/` that a package user reads, and to any release notes published with the package. Vendored documents under `third_party/` and generated output under `nitrogen/generated/` are never edited for style.

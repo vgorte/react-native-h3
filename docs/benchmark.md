@@ -46,8 +46,8 @@ Each workload is timed using the following sequence:
 
 ### 3. Strict Equivalence Validation
 
-Speed means nothing if the answer is wrong. Result equivalence is checked outside the timed loop
-using the value from the warm-up pass:
+Speed means nothing if the answer is wrong. Result equivalence is checked outside the timed loop,
+from the warm-up value or a fresh untimed pass:
 
 - **Cells:** Compared as sorted, lowercase hexadecimal strings (the only representation both
   libraries can be brought to without timing the conversion).
@@ -99,7 +99,7 @@ All timing figures represent the median execution time in milliseconds. The spee
 These benchmarks are hand-run on a Release build before a release. CI does not produce these
 figures: an emulator on a shared runner says nothing about a phone.
 
-- **Platform:** iOS 26.5
+- **Platform:** `iPhone 17 Pro` simulator, iOS 26.5, hosted on an Apple M5 Pro
 - **Build Type:** Release
 - **React Native:** 0.87.0
 - **JS Engine:** Hermes 250829098.0.16
@@ -114,9 +114,9 @@ The Cell Ceiling this package applies has no counterpart in `h3-js`. `h3-js` bou
 WebAssembly allocation at 2 GB, building JavaScript arrays of hexadecimal strings on top of it
 without a bound.
 
-To show what an unbounded request costs, we ran the following on hardware far larger than a phone
-(Apple M5 Pro, 24 GB RAM, macOS 26.5.2, bun 1.3.14, from `latLngToCell(37.7749, -122.4194, 9)`,
-measured 2026-08-28):
+To show what an unbounded request costs, the numbers below come from hardware far larger than a
+phone (Apple M5 Pro, 24 GB RAM, macOS 26.5.2, bun 1.3.14, from
+`latLngToCell(37.7749, -122.4194, 9)`, measured 2026-08-28):
 
 | Call | Cells | Packed Size | Wall Clock |
 |---|---:|---:|---:|
