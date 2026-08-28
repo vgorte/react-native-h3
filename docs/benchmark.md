@@ -18,6 +18,8 @@ Each workload is timed like this:
 - One untimed warm-up pass, so neither side pays for its first call.
 - `N` timed passes: 20 for every workload except `W3`, which gets three, because a single
   `polygonToCells` over San Francisco costs h3-js roughly 20 seconds.
+- A yield to the event loop between samples, outside every timed window, so a run of several
+  minutes does not freeze the app. The pause never enters a measurement.
 - The median of those passes is the published figure. The p95, the minimum and the maximum are
   recorded beside it. The median takes the upper of the two middle samples on an even count, and the
   p95 is by nearest rank, so on 20 samples it is the nineteenth, not the maximum.
