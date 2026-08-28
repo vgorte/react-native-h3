@@ -39,37 +39,19 @@ explicit argument guarantees that the tarball on npm and the tag on GitHub carry
 3. Regenerate the benchmark if any of the numbers could have moved. CI does not produce these
    figures and cannot.
 
-   1. Build `apps/example` in **Release** on the `iPhone 17 Pro` simulator (iOS 26.5) or on the
-      `afterglow_pixel` emulator, never on a physical device. A Debug build is several times slower
-      on the native side and its numbers are not comparable with the `h3-js` column measured beside
-      them.
-   2. Open the Benchmark tab and press `Run benchmark`. The run takes about 171 seconds and the app
-      is unresponsive throughout, because `h3-js` alone needs roughly 20 seconds for each of its
-      `W3` passes.
-   3. Check the caption before going further. A run marked `Debug`, or carrying a
-      `RESULTS DIFFER FROM h3-js` warning, is not publishable.
-   4. Collect the payload from the log. It arrives as lines of the form
-      `BENCHMARK_JSON <i>/<total> |<chunk>|`, 700 characters per chunk, because the iOS unified log
-      truncates a long message. On iOS in Release the lines are only visible at debug level:
+   The steps live in
+   [Regenerating the Benchmarks](https://github.com/vgorte/react-native-h3/blob/main/docs/benchmark.md#-regenerating-the-benchmarks)
+   and are not repeated here. Two things are specific to a release run: build `apps/example` in
+   **Release** on the `iPhone 17 Pro` simulator (iOS 26.5) or on the `afterglow_pixel` emulator,
+   never on a physical device, and read the chunked payload off the log. On iOS in Release those
+   lines are only visible at debug level:
 
-      ```sh
-      xcrun simctl spawn booted log stream --level debug \
-        --predicate 'eventMessage CONTAINS "BENCHMARK_JSON"'
-      ```
+   ```sh
+   xcrun simctl spawn booted log stream --level debug \
+     --predicate 'eventMessage CONTAINS "BENCHMARK_JSON"'
+   ```
 
-      On the emulator the same lines come out of `adb logcat`. Take the text between the bars, in
-      the order the numbering gives, and concatenate it with nothing in between. The bars pin both
-      edges because the log trims outer whitespace.
-   5. Save the result as `apps/example/benchmark.json`, pretty-printed with two spaces.
-   6. Run `bun run benchmark:svg`. It validates the JSON, rewrites `img/benchmark.svg` and prints
-      one line beginning `HEADLINE`.
-   7. Paste that headline figure into the Benchmark section of `packages/react-native-h3/README.md`,
-      update the three published rows and the sentence naming the platform, the OS version and the
-      build type, then update the table and the conditions in `docs/benchmark.md` from the same
-      file.
-
-   [docs/benchmark.md](https://github.com/vgorte/react-native-h3/blob/main/docs/benchmark.md) holds
-   the method behind those numbers.
+   On the emulator the same lines come out of `adb logcat`.
 
 4. The generated documents match their sources:
 

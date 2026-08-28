@@ -1,43 +1,51 @@
 <div align="center">
   <img src="https://raw.githubusercontent.com/vgorte/react-native-h3/main/img/logo.svg" alt="react-native-h3" width="132" height="132" />
   <h1>react-native-h3</h1>
-  <p><b>Uber's H3 geospatial grid for React Native, bound to the C library through Nitro Modules instead of a JavaScript port.</b></p>
+  <p><b>Uber's H3 geospatial grid for React Native, powered by Nitro Modules for blazing fast performance.</b></p>
   <p>
     <a href="https://www.npmjs.com/package/react-native-h3"><img src="https://img.shields.io/npm/v/react-native-h3.svg" alt="npm version" /></a>
-    <a href="https://github.com/vgorte/react-native-h3/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT" /></a>
+    <a href="https://www.npmjs.com/package/react-native-h3"><img src="https://img.shields.io/npm/dm/react-native-h3.svg" alt="npm downloads" /></a>
     <a href="https://github.com/vgorte/react-native-h3/actions/workflows/ci.yml"><img src="https://github.com/vgorte/react-native-h3/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
+    <a href="https://github.com/vgorte/react-native-h3/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT" /></a>
     <img src="https://img.shields.io/badge/platforms-iOS%20%7C%20Android-lightgrey.svg" alt="Platforms: iOS and Android" />
   </p>
 </div>
 
-H3 indexes the globe as a hexagonal grid, addressing every cell with a 64-bit integer. This package
-vendors the H3 C library at v4.5.0 and calls it through
-[Nitro Modules](https://nitro.margelo.com), so the work happens in machine code on iOS and Android
-rather than on an Emscripten heap. There is no web implementation; on web, use
-[h3-js](https://github.com/uber/h3-js).
+`react-native-h3` brings the official H3 geospatial indexing system to React Native. It addresses
+the globe as a hexagonal grid, assigning every cell a 64-bit integer.
 
-## Features
+Instead of relying on a JavaScript port or an Emscripten heap, this package vendors the **H3 C
+library (v4.5.0)** and binds to it directly using **Nitro Modules**. The result? True
+machine-code execution on iOS and Android for maximum performance.
 
-- **Full API parity with `h3-js` 4.5.0**, all 69 functions, under the same names where `h3-js` has
-  one, checked by a parity suite over every resolution 0 cell, all sixteen resolutions, all 192
-  pentagons and the poles.
-- **Cell indexes are `bigint`**, not hexadecimal strings, so nothing converts on the hot path.
-- **Cell sets are `BigUint64Array`**, a view onto the buffer C++ produced, handed over without a copy.
-- **Synchronous by default**, with async variants for the four calls that can drop frames.
-- **A cell ceiling**, so a result too large for the device raises `H3Error` instead of killing the
-  process.
-- **Errors worded by H3 itself**, from `describeH3Error`, carrying the same numeric code `h3-js`
-  reports.
-- **iOS and Android**, and the New Architecture is not required.
-- **MIT licensed**, with the vendored H3 sources under their own Apache-2.0 license.
+> **Note:** *This library is heavily optimized for native mobile apps. There is no web
+> implementation; if you are targeting the web, please use
+> [h3-js](https://github.com/uber/h3-js).*
 
-## Benchmark
+## ✨ Features
 
-`h3-js` is the same C library compiled to JavaScript by Emscripten, running on an emulated heap and
-representing every cell as a hexadecimal string. It works, and on a phone it is slow enough to
-change what you can build.
+- 🔄 **Full API Parity:** Mirrors `h3-js` 4.5.0 with all 69 functions using the exact same names.
+  Backed by a rigorous parity test suite covering every resolution, pentagons, and poles.
+- ⚡ **Zero Conversion Overhead:** Cell indexes are returned as `bigint` rather than hexadecimal
+  strings, completely eliminating string-conversion bottlenecks on the hot path.
+- 🚀 **Zero-Copy Architecture:** Cell sets are returned as `BigUint64Array`, a direct view onto the
+  C++ buffer handed over to JavaScript without a single memory copy.
+- ⏱️ **Sync by Default:** Designed for speed with synchronous calls, alongside async variants for
+  the four specific operations heavy enough to drop frames.
+- 🛡️ **Memory Safe (Cell Ceiling):** Unlike a WASM heap, oversized results won't silently kill your
+  app. Exceeding the Cell Ceiling safely throws a catchable `H3Error`.
+- 🐛 **Native Error Handling:** Error messages are forwarded directly from the H3 C library
+  (`describeH3Error`) and include the exact same numeric codes as `h3-js`.
+- 🏗️ **Architecture Agnostic:** Full support for iOS and Android; the New Architecture is not
+  required.
 
-![react-native-h3 against h3-js, speedup per workload](https://raw.githubusercontent.com/vgorte/react-native-h3/main/img/benchmark.svg)
+## 🚀 Benchmarks
+
+While `h3-js` compiles the C library to JavaScript via Emscripten and relies on hexadecimal string
+allocation, `react-native-h3` executes in pure machine code and hands over memory without a single
+copy.
+
+![react-native-h3 against h3-js, median milliseconds per workload](https://raw.githubusercontent.com/vgorte/react-native-h3/main/img/benchmark.svg)
 
 **Up to 260× faster than `h3-js`**, on `polygonToCells` over San Francisco at resolution 12,
 412,377 cells, with the result verified identical to `h3-js`'s.
@@ -48,52 +56,82 @@ change what you can build.
 | `polygonToCells`, San Francisco, res 12 | 76.1 ms | 20,444.3 ms | 269× |
 | `cellToBoundary` x 100,000 | 110.3 ms | 1,138.6 ms | 10× |
 
-Measured on iOS 26.5 in a Release build, React Native 0.87.0 with Hermes 250829098.0.16, against
-`h3-js` 4.5.0, on 2026-08-28: both libraries in the same app and the same Hermes instance, medians
-of 20 runs, three for `polygonToCells`, after one warm-up, every result compared for equivalence.
-Full data and method:
-[docs/benchmark.md](https://github.com/vgorte/react-native-h3/blob/main/docs/benchmark.md).
+> **Methodology:** Measured on iOS 26.5 in a Release build, React Native 0.87.0 with Hermes
+> 250829098.0.16, against `h3-js` 4.5.0, on 2026-08-28: both libraries in the same app and the same
+> Hermes instance, medians of 20 runs, three for `polygonToCells`, after one warm-up, every result
+> compared for equivalence. Full data and method:
+> [docs/benchmark.md](https://github.com/vgorte/react-native-h3/blob/main/docs/benchmark.md).
 
-## Installation
+## 📦 Installation
 
+`react-native-h3` requires `react-native-nitro-modules` (`^0.37.0`) as a peer dependency. You must
+install it in your app so the build holds exactly one copy of the Nitro runtime.
+
+### 1. Install packages
+
+Choose your preferred package manager or framework:
+
+**Using Bun**
 ```sh
 bun add react-native-h3 react-native-nitro-modules
-cd ios && pod install
 ```
-
+**Using Expo**
 ```sh
 npx expo install react-native-h3 react-native-nitro-modules
+```
+*(You can also use `npm install` or `yarn add`.)*
+
+### 2. Native setup
+
+Depending on your project type, link the native code:
+
+**Bare React Native (iOS only):**
+```sh
+cd ios && pod install
+```
+**Expo:**
+```sh
 npx expo prebuild
 ```
+Expo Go cannot load native modules; `prebuild` produces the development build you run with
+`npx expo run:ios` or `npx expo run:android`.
 
-`react-native-nitro-modules` is a peer dependency at `^0.37.0`: install it in your app so the build
-holds exactly one copy of the Nitro runtime. The package needs React Native 0.75 or newer and builds
-on the old architecture as well as the New Architecture. Platform floors are under
-[Requirements](#requirements).
+> **Compatibility:** Requires React Native 0.75+. The New Architecture is not required (React Native
+> 0.75 to 0.81 may still run the Legacy Architecture). For minimum OS versions, see
+> [Requirements](#-requirements).
 
-## Usage
+## 📖 Usage
 
 ```ts
-import { cellToString, gridDisk, latLngToCell } from 'react-native-h3'
+import { latLngToCell, gridDisk, cellToString } from 'react-native-h3'
 
+// 1. Get the H3 cell index for San Francisco at resolution 9
 const cell = latLngToCell(37.7749, -122.4194, 9)
+
+// 2. Get the immediate neighbours (k = 1)
 const neighbours = gridDisk(cell, 1)
 
-console.log(cellToString(cell)) // '89283082803ffff'
 console.log(neighbours.length) // 7
+console.log(cellToString(cell)) // '89283082803ffff'
 ```
 
-Cells are `bigint`, so they compare, sort and serialise as numbers; use `cellToString` and
-`cellFromString` at the edges where the hexadecimal form is wanted. A cell set holds only real
-cells, because the holes H3 pads its output with around pentagons are removed natively before the
-buffer crosses. The
-[example app](https://github.com/vgorte/react-native-h3/tree/main/apps/example) exercises every
-domain and carries the benchmark screen.
+### 🔢 Working with `bigint`
 
-## Async variants
+For maximum performance, cells are represented as `bigint`. They compare and sort as numbers, and a
+cell set is a `BigUint64Array` whose `length` is the cell count: no padding entries, the holes H3
+leaves around pentagons are removed before the buffer reaches JavaScript. `JSON.stringify` does not
+accept `bigint`, so use `cellToString` and `cellFromString` at the very edges of your app, for
+example when talking to a backend that expects hexadecimal strings.
 
-Four functions have an async variant, because these four can exceed the 50 ms budget that costs you
-frames:
+> **Want to see more?** The included
+> [example app](https://github.com/vgorte/react-native-h3/tree/main/apps/example) exercises every
+> domain of the library and contains the complete benchmark screen.
+
+## 🧵 Async Variants (Thread Offloading)
+
+Four specific functions provide an async variant. Why only four? Because these are the only
+operations heavy enough to cross Nitro's 50 ms rule of thumb, where a call starts costing visible
+frames.
 
 ```ts
 import { polygonToCellsAsync, type Ring } from 'react-native-h3'
@@ -106,58 +144,77 @@ const sanFrancisco: Ring[] = [
   ],
 ]
 
-async function fill(): Promise<BigUint64Array> {
-  return polygonToCellsAsync(sanFrancisco, 12)
+// Offload heavy calculations to a background thread
+async function fillGrid(): Promise<BigUint64Array> {
+  return await polygonToCellsAsync(sanFrancisco, 12)
 }
 ```
 
-`cellsToMultiPolygonAsync`, `polygonToCellsExperimentalAsync` and `uncompactCellsAsync` have the
-same shape. Everything else is synchronous by design: a thread hop costs more than the call it would
-defer. An async variant copies any cell set you hand it before any work starts, so the buffer you
-passed is yours to reuse the moment the call returns, and it answers exactly as its synchronous
-sibling does.
+**Available Async Functions:**
 
-## The cell ceiling
+- `polygonToCellsAsync`
+- `cellsToMultiPolygonAsync`
+- `polygonToCellsExperimentalAsync`
+- `uncompactCellsAsync`
 
-A request whose result would exceed 4,000,000 cells is refused before anything is allocated:
+> **⚡ Why is everything else synchronous?** A thread hop (context switch) often costs more time than
+> the actual H3 C library call. Everything else is optimized to run synchronously by design.
+
+> **🛡️ Buffer Safety:** An async variant safely copies any input cell set before work starts on the
+> background thread. The buffer you pass in is immediately yours to reuse the moment the function
+> returns, while yielding the exact same results as its synchronous sibling.
+
+## 🛡️ Memory Safety: The Cell Ceiling
+
+On a server, an oversized H3 result just means a slow request. On a mobile device, allocating too
+much memory in C++ results in a silent process kill that your JavaScript `try/catch` cannot
+intercept.
+
+To prevent this, `react-native-h3` implements a **Cell Ceiling**. Every cell-producing function
+queries the required size before allocating anything. If the result exceeds the ceiling, it
+instantly throws a catchable `H3Error` instead of crashing your app:
 
 ```text
 The requested result of 4005541 cells exceeds the cell limit of 4000000, which guards against exhausting device memory. Raise it with configure({ maxCellCount })
 ```
 
-H3 allocates nothing itself: every cell-producing function asks a size query how large the answer
-will be, then writes into a buffer the caller provides. On a server an oversize result is a slow
-call. On a phone it is a process kill that JavaScript cannot catch, because the allocation fails
-inside the app's own heap, so there is no exception for a `catch` to receive. The ceiling turns that
-into an `H3Error` you can handle. `h3-js` has no equivalent: it bounds only its own wasm allocation,
-at 2 GB, and `gridDisk(cell, 1155)` allocates all 4,005,541 cells there. What that costs on a
-desktop machine is measured in
-[docs/benchmark.md](https://github.com/vgorte/react-native-h3/blob/main/docs/benchmark.md#what-an-unbounded-request-costs-h3-js).
+### Configuring the Ceiling
 
-4,000,000 cells is 32 MB at eight bytes a cell, allocated once in C++ and handed to JavaScript as
-the `BigUint64Array`'s backing store without a copy; an async variant that copies an inbound set
-holds two such buffers for the length of the call. The ceiling is a default, not a law:
+The default limit is **4,000,000 cells** (which translates to exactly 32 MB at 8 bytes per cell,
+allocated as a zero-copy `BigUint64Array`).
+
+The ceiling is a default, not a law. You can adjust it globally at runtime:
 
 ```ts
 import { configure } from 'react-native-h3'
 
+// Raise the limit if your target devices can handle it
 configure({ maxCellCount: 20_000_000 })
-configure({ maxCellCount: Infinity }) // no ceiling; the memory is yours to manage
+
+// Or disable it entirely (the memory is yours to manage)
+configure({ maxCellCount: Infinity })
 ```
 
-The value applies to every cell-producing function, synchronous and async alike, from the moment it
-is set. It must be a positive integer or `Infinity`; anything else throws an `H3Error` saying so.
+> **💡 How it compares to h3-js:** `h3-js` has no equivalent ceiling; it only bounds its WebAssembly
+> allocation at a massive 2 GB. A heavy call there will just execute: `gridDisk(cell, 1155)`
+> allocates all 4,005,541 cells,
+> [measured on a desktop machine in docs/benchmark.md](https://github.com/vgorte/react-native-h3/blob/main/docs/benchmark.md#-the-cost-of-unbounded-requests-why-the-cell-ceiling-exists).
+> In `react-native-h3`, the ceiling ensures you stay strictly in control of the native heap.
 
-## Errors
+*(Note: `maxCellCount` applies to all sync and async cell-producing functions from the moment it is
+set. It must be a positive integer or `Infinity`.)*
 
-Every function throws `H3Error`, an `Error` carrying a `message` and, when H3 itself reported the
-failure, its numeric `code`. The wording comes from H3's own `describeH3Error`, and the code is
-repeated at the end of the message as `(code: N)`, exactly as `h3-js` does.
+## 🚨 Error Handling
+
+Every function in the library throws a dedicated `H3Error`. When a failure originates from the
+native H3 library, the message is pulled directly from C++ (`describeH3Error`) and includes the
+exact numeric code, matching `h3-js` 1:1.
 
 ```ts
 import { H3Error, latLngToCell } from 'react-native-h3'
 
 try {
+  // 99 is an invalid resolution
   latLngToCell(37.7749, -122.4194, 99)
 } catch (error) {
   if (error instanceof H3Error) {
@@ -167,76 +224,95 @@ try {
 }
 ```
 
-The checks this binding makes before calling H3, on argument types and on the result size, carry
-their own wording and no `code`, because upstream has no code for them:
-`latLngToCell(37.7749, -122.4194, 9.5)` throws
-`Resolution must be an integer between 0 and 15` with `code` left `undefined`. An async variant
-carries the same message as its synchronous sibling.
+**Key Guarantees**
 
-## API
+- **Native Codes:** Standard H3 errors append `(code: N)` to the message and expose the `.code`
+  property.
+- **Binding Exceptions:** Errors caught before crossing into C++ (argument validation, such as a
+  non-integer resolution, or exceeding the Cell Ceiling) also throw `H3Error`, but leave the `.code`
+  property `undefined`.
+- **Async Parity:** Async variants throw the exact same errors and messages as their synchronous
+  siblings.
 
-The exported surface mirrors `h3-js` 4.5.0 function for function.
-[docs/api.md](https://github.com/vgorte/react-native-h3/blob/main/packages/react-native-h3/docs/api.md)
-documents every export, grouped by domain and generated from the TypeScript sources, so it cannot
-drift from the JSDoc your editor shows.
-[docs/h3-function-table.md](https://github.com/vgorte/react-native-h3/blob/main/docs/h3-function-table.md)
-maps each function to its H3 C counterpart.
+## 📚 API Reference
 
-## Migrating from h3-js
+The exported surface mirrors `h3-js` 4.5.0 function for function, complete with rich JSDoc comments.
 
-The function names match, so most code changes only in what a cell *is*.
+- 📖 **[Full API Documentation](https://github.com/vgorte/react-native-h3/blob/main/packages/react-native-h3/docs/api.md):**
+  Generated directly from the TypeScript sources and grouped by domain. What your editor shows is
+  exactly what you get.
+- 🗺️ **[H3 C-Function Mapping](https://github.com/vgorte/react-native-h3/blob/main/docs/h3-function-table.md):**
+  A table mapping every export to its H3 C library counterpart.
 
-| `h3-js` | react-native-h3 |
+## 🔄 Migrating from h3-js
+
+Because the function names match, migrating mostly comes down to handling high-performance `bigint`
+types instead of strings.
+
+| `h3-js` (Strings / Arrays) | `react-native-h3` (BigInt / TypedArrays) |
 |---|---|
-| `latLngToCell(37.7749, -122.4194, 9)` returns `'89283082803ffff'` | returns `0x89283082803ffffn`; `cellToString` and `cellFromString` convert at the edges |
-| `gridDisk` and friends return `string[]` | they return a `BigUint64Array`; call `Array.from` only if you need an array |
-| `cellArea(cell, 'km2')` | `cellAreaKm2(cell)`, and likewise for `edgeLength`, `greatCircleDistance`, `getHexagonAreaAvg` and `getHexagonEdgeLengthAvg` |
-| `polygonToCellsExperimental(rings, res, 'containmentFull')` | the same names work, and so do the `ContainmentMode` constants |
-| `constructCell(baseCellNumber, digits, res)` | the same argument order, not the C library's |
-| `h3IndexToSplitLong`, `splitLongToH3Index` | absent: they work around JavaScript's missing 64-bit integers |
+| `latLngToCell(…)` returns `'89283082803ffff'` | Returns `0x89283082803ffffn` (use `cellToString` and `cellFromString` at the edges) |
+| `gridDisk` and friends return `string[]` | Returns `BigUint64Array` (call `Array.from()` only if strictly needed) |
+| `cellArea(cell, 'km2')` | `cellAreaKm2(cell)` (same pattern for `edgeLength`, `greatCircleDistance`, `getHexagonAreaAvg`, `getHexagonEdgeLengthAvg`) |
+| `polygonToCellsExperimental(…, 'containmentFull')` | Works exactly the same, including the `ContainmentMode` constants |
+| `constructCell(base, digits, res)` | Retains the `h3-js` argument order (not the C library's) |
+| `h3IndexToSplitLong`, `splitLongToH3Index` | Not provided (they only work around JavaScript's missing 64-bit integers) |
 
-Three behaviours differ deliberately.
+### 🚧 Strict Validation (Deliberate Divergences)
 
-1. An invalid cell, directed edge or vertex raises an `H3Error` where `h3-js` reads the bits and
-   answers anyway. Validation happens once, at the boundary, in C++. Nine functions are exempt
-   because they have no error channel: `isValidCell`, `isValidIndex`, `isPentagon`, `isResClassIII`,
-   `isValidDirectedEdge`, `isValidVertex`, `getResolution`, `getBaseCellNumber` and `cellToString`.
-2. An argument that is not an integer is refused where `h3-js` truncates it: `gridDisk(cell, 1.5)`
-   throws here and returns the `k` of 1 disk there. So is a request for more cells than
-   [the cell ceiling](#the-cell-ceiling) allows, which is a limit no other H3 binding imposes.
-3. Messages come from H3's `describeH3Error` rather than `h3-js`'s own table, which has let two of
-   the nineteen H3 texts drift.
+Because this library binds directly to C++, it is intentionally stricter than `h3-js`:
 
-[docs/h3-js-divergences.md](https://github.com/vgorte/react-native-h3/blob/main/packages/react-native-h3/docs/h3-js-divergences.md)
-lists every case with the `h3-js` answer beside this one, each proved by a test.
+1. **Strict Types:** Arguments that are not integers are refused. `gridDisk(cell, 1.5)` throws here,
+   while `h3-js` silently truncates it to `1`.
+2. **Strict Validation:** Supplying an invalid cell, directed edge, or vertex throws an `H3Error` at
+   the C++ boundary, where `h3-js` reads the bits and answers anyway. Nine functions have no error
+   channel and are exempt, such as `isValidCell` or `getResolution`.
+3. **Memory Guard:** Requests exceeding the Cell Ceiling are refused with an `H3Error`, a limit no
+   other H3 binding imposes.
+4. **Accurate Error Messages:** Messages come straight from the H3 C library's `describeH3Error`;
+   two of the nineteen H3 texts have drifted in `h3-js`'s own table.
 
-## Requirements
+> **Verify it yourself:** Every deliberate divergence is listed with the `h3-js` answer beside this
+> one, each proved by a test, in
+> [docs/h3-js-divergences.md](https://github.com/vgorte/react-native-h3/blob/main/packages/react-native-h3/docs/h3-js-divergences.md).
 
-| Platform | Minimum | Notes |
+## ⚙️ Requirements
+
+This package requires React Native 0.75+, `react-native-nitro-modules` (`^0.37.0`), and a C++20
+compatible toolchain.
+
+**Architecture Support:** The New Architecture is not required. On React Native 0.75 to 0.81 the
+package also runs on the Legacy Architecture; from 0.82 React Native ships the New Architecture
+only.
+
+| Platform | Minimum Version | Notes |
 |---|---|---|
-| iOS | the deployment target React Native asks for, through `min_ios_version_supported` | Xcode 16.4 or newer |
+| iOS | The deployment target React Native sets (`min_ios_version_supported`) | Requires Xcode 16.4 or newer |
 | Android | `minSdk` 24 | `compileSdk` 36, NDK 27.1.12297006 |
 
-React Native 0.75 or newer, `react-native-nitro-modules` `^0.37.0`, and a C++20 toolchain, which the
-versions above already imply. The New Architecture is not required: Nitro compiles as a Native
-Module on the old architecture and as a Turbo Module on the new one, and only Nitro Views need the
-New Architecture, which this package has none of.
+## 🏷️ Versioning Strategy
 
-## Versioning
+The version of `react-native-h3` evolves independently of the upstream H3 C library.
 
-The package version is independent of the H3 version it carries. The bundled H3 C library is pinned
-to an upstream tag, currently v4.5.0, vendored under `third_party/h3` and updated by a reviewable
-commit rather than a submodule. `third_party/h3/H3_VERSION` ships inside the tarball and names the
-exact C version a release was built from.
+Currently, the bundled H3 C library is pinned to **v4.5.0**. It is vendored inside `third_party/h3`
+and updated via reviewable commits rather than git submodules. To verify exactly which C version a
+specific release was built against, check the `third_party/h3/H3_VERSION` file included in the
+published npm tarball.
 
-## Contributing
+## 🤝 Contributing
 
-The workspace layout, the test commands and the seven places a new operation touches are in
-[CONTRIBUTING.md](https://github.com/vgorte/react-native-h3/blob/main/CONTRIBUTING.md). The release
-process is in
-[docs/releasing.md](https://github.com/vgorte/react-native-h3/blob/main/docs/releasing.md).
+Contributions are heavily encouraged! Whether you're adding a missing feature, fixing a bug, or
+improving the docs, we'd love your help.
 
-## License
+- 🛠️ **[CONTRIBUTING.md](https://github.com/vgorte/react-native-h3/blob/main/CONTRIBUTING.md):**
+  Details on the workspace layout, test commands, and the exact 7 places you need to touch when
+  adding a new H3 operation.
+- 📦 **[docs/releasing.md](https://github.com/vgorte/react-native-h3/blob/main/docs/releasing.md):**
+  Step-by-step instructions for the release process.
 
-MIT. The vendored H3 C sources are Apache-2.0 and keep their own `LICENSE` and `NOTICE` under
-`third_party/h3/`.
+## ⚖️ License
+
+The `react-native-h3` bindings are released under the **MIT License**.
+
+The vendored H3 C sources (located in `third_party/h3/`) are released under the **Apache-2.0
+License** and retain their original `LICENSE` and `NOTICE` files.

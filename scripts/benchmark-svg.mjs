@@ -1,11 +1,11 @@
 /**
- * Renders `apps/example/benchmark.json` as a horizontal bar chart of the speedup over `h3-js`, on a
- * logarithmic axis: the fastest workload is over a hundred times the factor of the slowest, and a
- * linear axis flattens everything below it into a stub.
+ * Renders `apps/example/benchmark.json` as paired horizontal bars: for each of the three README
+ * workloads a `react-native-h3` bar above an `h3-js` bar, scaled per pair so that the `h3-js` median
+ * spans the full width and the shorter bar reads as the share of the time it takes.
  *
  * The JSON is the `BENCHMARK_JSON` line the example app's benchmark screen logs on a Release build,
  * reassembled from its chunks, pretty-printed and committed. Rows without an `h3-js` reference carry
- * no factor and are left out of the bars.
+ * no factor and are left out.
  *
  * Usage:
  *   bun run benchmark:svg
@@ -20,39 +20,48 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const INPUT = join(ROOT, 'apps', 'example', 'benchmark.json')
 const OUTPUT = join(ROOT, 'img', 'benchmark.svg')
 
-const TITLE = 'react-native-h3 vs h3-js, speedup per workload'
+const TITLE = 'react-native-h3 against h3-js, median milliseconds per workload'
 // no external resources: a system stack, resolved by the viewer
 const FONT = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
 
+// the workload ids the README table shows, in the order it shows them
+const CHART_IDS = ['W1', 'W3', 'W7']
+
 // No single colour clears 4.5:1 on white and on GitHub's `#0d1117` at once; 4.35:1 is the
-// arithmetic ceiling. The base pair sits on it, and the media queries lift each theme past 4.5:1
+// arithmetic ceiling. The base values sit on it, and the media queries lift each theme past 4.5:1
 // wherever the renderer honours them.
 const TEXT_BASE = '#727a84'
 const TEXT_LIGHT = '#57606a'
 const TEXT_DARK = '#8b949e'
-const VALUE_BASE = '#2f78dc'
-const VALUE_LIGHT = '#1f6feb'
-const VALUE_DARK = '#58a6ff'
-// a bar is not text, so 3:1 is the bar to clear: 3.68:1 on white, 5.15:1 on `#0d1117`
-const BAR_COLOR = '#3b82f6'
+const STRONG_BASE = '#727a84'
+const STRONG_LIGHT = '#1f2328'
+const STRONG_DARK = '#e6edf3'
+const ACCENT_BASE = '#2f78dc'
+const ACCENT_LIGHT = '#1f6feb'
+const ACCENT_DARK = '#58a6ff'
+// a bar is not text, so 3:1 is the bar to clear: the accent holds 3.68:1 on white and 5.15:1 on
+// `#0d1117`, the neutral 3.73:1 and 5.07:1
+const BAR_ACCENT = '#3b82f6'
+const BAR_NEUTRAL_BASE = '#7d8590'
+const BAR_NEUTRAL_LIGHT = '#6e7781'
+const BAR_NEUTRAL_DARK = '#8b949e'
 
-const WIDTH = 840
-const MARGIN = 20
-const LABEL_WIDTH = 300
-const VALUE_WIDTH = 64
-const BAR_HEIGHT = 22
-const ROW_STEP = 34
+const WIDTH = 800
+const MARGIN = 24
+const LABEL_WIDTH = 130
+const VALUE_WIDTH = 110
+const BAR_HEIGHT = 18
+const BAR_GAP = 6
+const LABEL_TO_BAR = 8
+const GROUP_STEP = 80
 const CHART_TOP = 62
-const HERO_TOP = 84
-const HERO_NUMBER = 44
-const HERO_CAPTION = 62
-const TICK_BASELINE = 6
-const FOOTER_FIRST = 30
-const FOOTER_SECOND = 46
-const FOOTER_GAP = 58
+const CAPTION_FIRST = 30
+const CAPTION_SECOND = 48
+const CAPTION_GAP = 62
 
 const BAR_LEFT = MARGIN + LABEL_WIDTH
 const BAR_MAX = WIDTH - MARGIN - VALUE_WIDTH - BAR_LEFT
+const GROUP_HEIGHT = LABEL_TO_BAR + 2 * BAR_HEIGHT + BAR_GAP
 
 function escapeXml(text) {
   return text
@@ -62,8 +71,10 @@ function escapeXml(text) {
     .replace(/"/g, '&quot;')
 }
 
-function formatFactor(factor) {
-  return factor >= 10 ? factor.toFixed(0) : factor.toFixed(1)
+// one decimal and grouped thousands, matching the README table; no ICU dependency
+function formatMillis(millis) {
+  const [whole, fraction] = millis.toFixed(1).split('.')
+  return `${whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}.${fraction}`
 }
 
 function fail(field, expectation) {
@@ -111,11 +122,28 @@ function validate(payload) {
   if (!Number.isInteger(measuredOn.warmupRuns) || measuredOn.warmupRuns < 0) {
     fail('measuredOn.warmupRuns', 'must be an integer of 0 or more')
   }
+  // a Debug build is several times slower on the native side, so its factors are not comparable
+  if (measuredOn.build.startsWith('Debug')) {
+    fail(
+      'measuredOn.build',
+      'is `Debug`: a Debug build is several times slower on the native side and its numbers must ' +
+        'not be published, re-run the benchmark screen in a Release build',
+    )
+  }
   return payload
 }
 
 function readPayload() {
   return validate(JSON.parse(readFileSync(INPUT, 'utf8')))
+}
+
+// the leading `W\d+` is an id, not part of the name a reader wants to see
+function workloadId(workload) {
+  return workload.split(' ')[0]
+}
+
+function workloadSubject(workload) {
+  return workload.replace(/^W\d+ /, '')
 }
 
 function toBars(rows) {
@@ -130,8 +158,11 @@ function toBars(rows) {
       continue
     }
     bars.push({
+      id: workloadId(row.workload),
       workload: row.workload,
+      subject: workloadSubject(row.workload),
       millis: row.millis,
+      referenceMillis: row.referenceMillis,
       factor: row.referenceMillis / row.millis,
     })
   }
@@ -141,12 +172,18 @@ function toBars(rows) {
   return bars
 }
 
-// the axis reaches the decade above the widest factor, so the longest bar always stops short of the
-// value labels and the decade ticks land at even fractions of the width. It never falls below 10x:
-// at 1x the axis would span nothing and every bar length would come out as a division by zero.
-function axisMax(bars) {
-  const widest = Math.max(...bars.map((bar) => bar.factor))
-  return Math.max(10, 10 ** (Math.floor(Math.log10(widest)) + 1))
+// the chart carries the README table and nothing else, so a missing or duplicated id is a defect
+function chartBars(bars) {
+  return CHART_IDS.map((id) => {
+    const matches = bars.filter((bar) => bar.id === id)
+    if (matches.length !== 1) {
+      fail(
+        'rows',
+        `must hold exactly one \`${id}\` row with an h3-js reference, found ${matches.length}`,
+      )
+    }
+    return matches[0]
+  })
 }
 
 // Rows under a millisecond of `react-native-h3` time are left out: their factor is dominated by
@@ -162,22 +199,9 @@ function headline(bars) {
   const widest = eligible.reduce((best, bar) => (bar.factor > best.factor ? bar : best))
   return {
     workload: widest.workload,
-    subject: widest.workload.replace(/^W\d+ /, ''),
+    subject: widest.subject,
     factor: Math.floor(widest.factor / 10) * 10,
   }
-}
-
-function decades(max) {
-  const ticks = []
-  for (let power = 1; 10 ** power < max; power++) {
-    ticks.push(10 ** power)
-  }
-  return ticks
-}
-
-// the axis starts at 1x, where a factor means no gain at all and the bar has no length
-function barLength(factor, max) {
-  return Math.max(2, Math.round((Math.log10(factor) / Math.log10(max)) * BAR_MAX))
 }
 
 // the run count is not assumed: it is read back off the rows, naming whichever ones differ
@@ -187,13 +211,17 @@ function runCounts(rows) {
     tally.set(row.runs, (tally.get(row.runs) ?? 0) + 1)
   }
   const [common] = [...tally.entries()].sort((a, b) => b[1] - a[1])[0]
-  const exceptions = [
-    ...new Set(
-      rows
-        .filter((row) => row.runs !== common)
-        .map((row) => `${row.runs} for ${row.workload.split(' ')[0]}`),
-    ),
-  ]
+  const exceptions = []
+  const named = new Set()
+  for (const row of rows) {
+    // variants of one workload share an id and are named once
+    const id = workloadId(row.workload)
+    if (row.runs === common || named.has(id)) {
+      continue
+    }
+    named.add(id)
+    exceptions.push(`${row.runs} for ${workloadSubject(row.workload).split(/[ ,]/)[0]}`)
+  }
   return exceptions.length === 0 ? `${common} runs` : `${common} runs (${exceptions.join(', ')})`
 }
 
@@ -201,14 +229,22 @@ function warmUps(count) {
   return count === 1 ? 'one warm-up' : `${count} warm-ups`
 }
 
+// `Platform.OS` is lowercase; the caption is prose, so it names the platform the way readers do
+const PLATFORM_NAMES = { ios: 'iOS', android: 'Android' }
+
+function platformName(platform) {
+  return PLATFORM_NAMES[platform] ?? platform
+}
+
 // two lines, split on the sentence: all three would run past the canvas at this font size
-function footer(payload) {
+function caption(payload) {
   const { platform, osVersion, build, reactNative, h3js, date, warmupRuns } = payload.measuredOn
   return [
-    `Measured on ${platform} ${osVersion}, ${build} build, react-native ${reactNative}, ` +
+    `Measured on ${platformName(platform)} ${osVersion}, ${build} build, ` +
+      `react-native ${reactNative}, ` +
       `against h3-js ${h3js}, ${date}.`,
     `Median of ${runCounts(payload.rows)} after ${warmUps(warmupRuns)}. ` +
-      'Bar length is logarithmic.',
+      'Bars are scaled per workload.',
   ]
 }
 
@@ -216,29 +252,61 @@ function styleBlock() {
   return [
     '<style>',
     `text { fill: ${TEXT_BASE} }`,
-    `.axis { stroke: ${TEXT_BASE} }`,
-    `.factor { fill: ${VALUE_BASE} }`,
+    `.strong { fill: ${STRONG_BASE} }`,
+    `.factor { fill: ${ACCENT_BASE} }`,
+    `.reference { fill: ${BAR_NEUTRAL_BASE} }`,
     '@media (prefers-color-scheme: light) {',
     `text { fill: ${TEXT_LIGHT} }`,
-    `.axis { stroke: ${TEXT_LIGHT} }`,
-    `.factor { fill: ${VALUE_LIGHT} }`,
+    `.strong { fill: ${STRONG_LIGHT} }`,
+    `.factor { fill: ${ACCENT_LIGHT} }`,
+    `.reference { fill: ${BAR_NEUTRAL_LIGHT} }`,
     '}',
     '@media (prefers-color-scheme: dark) {',
     `text { fill: ${TEXT_DARK} }`,
-    `.axis { stroke: ${TEXT_DARK} }`,
-    `.factor { fill: ${VALUE_DARK} }`,
+    `.strong { fill: ${STRONG_DARK} }`,
+    `.factor { fill: ${ACCENT_DARK} }`,
+    `.reference { fill: ${BAR_NEUTRAL_DARK} }`,
     '}',
     '</style>',
   ].join('\n')
 }
 
+// a bar never disappears: two pixels still read as a bar next to a full-width one
+function barLength(millis, referenceMillis) {
+  return Math.max(2, Math.round((millis / referenceMillis) * BAR_MAX))
+}
+
+function renderGroup(bar, top) {
+  const subjectBaseline = top
+  const fastTop = top + LABEL_TO_BAR
+  const slowTop = fastTop + BAR_HEIGHT + BAR_GAP
+  const fastLength = barLength(bar.millis, bar.referenceMillis)
+  const textBaseline = (barTop) => barTop + 13
+  return [
+    `<text class="strong" x="${MARGIN}" y="${subjectBaseline}" font-size="14" font-weight="600">` +
+      `${escapeXml(bar.subject)}</text>`,
+    `<text x="${BAR_LEFT - 10}" y="${textBaseline(fastTop)}" font-size="12" text-anchor="end">` +
+      'react-native-h3</text>',
+    `<rect x="${BAR_LEFT}" y="${fastTop}" width="${fastLength}" height="${BAR_HEIGHT}" rx="3" ` +
+      `fill="${BAR_ACCENT}"/>`,
+    `<text x="${BAR_LEFT + fastLength + 8}" y="${textBaseline(fastTop)}" font-size="12" ` +
+      `font-weight="600"><tspan class="strong">${escapeXml(`${formatMillis(bar.millis)} ms`)}` +
+      `</tspan><tspan class="factor" dx="10">${Math.round(bar.factor)}× faster</tspan></text>`,
+    `<text x="${BAR_LEFT - 10}" y="${textBaseline(slowTop)}" font-size="12" text-anchor="end">` +
+      'h3-js</text>',
+    `<rect class="reference" x="${BAR_LEFT}" y="${slowTop}" width="${BAR_MAX}" ` +
+      `height="${BAR_HEIGHT}" rx="3" fill="${BAR_NEUTRAL_BASE}"/>`,
+    `<text class="strong" x="${BAR_LEFT + BAR_MAX + 8}" y="${textBaseline(slowTop)}" ` +
+      `font-size="12" font-weight="600">` +
+      `${escapeXml(`${formatMillis(bar.referenceMillis)} ms`)}</text>`,
+  ]
+}
+
 function render(payload) {
   const bars = toBars(payload.rows)
-  const max = axisMax(bars)
-  const hero = headline(bars)
-  const chartTop = hero == null ? CHART_TOP : HERO_TOP
-  const chartBottom = chartTop + bars.length * ROW_STEP
-  const height = chartBottom + FOOTER_GAP
+  const groups = chartBars(bars)
+  const chartBottom = CHART_TOP + (groups.length - 1) * GROUP_STEP + GROUP_HEIGHT
+  const height = chartBottom + CAPTION_GAP
 
   const lines = [
     '<?xml version="1.0" encoding="UTF-8"?>',
@@ -247,52 +315,19 @@ function render(payload) {
       `aria-label="${escapeXml(TITLE)}">`,
     `<title>${escapeXml(TITLE)}</title>`,
     styleBlock(),
-    `<text x="${MARGIN}" y="34" font-size="17" font-weight="600">${escapeXml(TITLE)}</text>`,
+    `<text class="strong" x="${MARGIN}" y="32" font-size="17" font-weight="600">` +
+      `${escapeXml(TITLE)}</text>`,
   ]
 
-  if (hero != null) {
-    lines.push(
-      `<text class="factor" x="${WIDTH - MARGIN}" y="${HERO_NUMBER}" font-size="40" ` +
-        `font-weight="700" text-anchor="end">${hero.factor}×</text>`,
-      `<text x="${WIDTH - MARGIN}" y="${HERO_CAPTION}" font-size="12" text-anchor="end">` +
-        `${escapeXml(`faster than h3-js at ${hero.subject}`)}</text>`,
-    )
-  }
-
-  lines.push(
-    `<line class="axis" x1="${BAR_LEFT}" y1="${chartTop - 8}" x2="${BAR_LEFT}" ` +
-      `y2="${chartBottom - 4}" stroke-width="1" opacity="0.35"/>`,
-  )
-
-  for (const tick of decades(max)) {
-    const x = BAR_LEFT + barLength(tick, max)
-    lines.push(
-      `<line class="axis" x1="${x}" y1="${chartTop - 8}" x2="${x}" y2="${chartBottom - 4}" ` +
-        'stroke-width="1" opacity="0.15"/>',
-      `<text x="${x}" y="${chartBottom + TICK_BASELINE}" font-size="11" text-anchor="middle">` +
-        `${formatFactor(tick)}×</text>`,
-    )
-  }
-
-  bars.forEach((bar, index) => {
-    const top = chartTop + index * ROW_STEP
-    const baseline = top + BAR_HEIGHT - 6
-    const length = barLength(bar.factor, max)
-    lines.push(
-      `<text x="${BAR_LEFT - 12}" y="${baseline}" font-size="13" text-anchor="end">` +
-        `${escapeXml(bar.workload)}</text>`,
-      `<rect x="${BAR_LEFT}" y="${top}" width="${length}" height="${BAR_HEIGHT}" rx="3" ` +
-        `fill="${BAR_COLOR}"/>`,
-      `<text class="factor" x="${BAR_LEFT + length + 10}" y="${baseline}" font-size="13" ` +
-        `font-weight="600">${formatFactor(bar.factor)}×</text>`,
-    )
+  groups.forEach((bar, index) => {
+    lines.push(...renderGroup(bar, CHART_TOP + index * GROUP_STEP))
   })
 
-  const [first, second] = footer(payload)
+  const [first, second] = caption(payload)
   lines.push(
-    `<text x="${MARGIN}" y="${chartBottom + FOOTER_FIRST}" font-size="12">` +
+    `<text x="${MARGIN}" y="${chartBottom + CAPTION_FIRST}" font-size="11">` +
       `${escapeXml(first)}</text>`,
-    `<text x="${MARGIN}" y="${chartBottom + FOOTER_SECOND}" font-size="12">` +
+    `<text x="${MARGIN}" y="${chartBottom + CAPTION_SECOND}" font-size="11">` +
       `${escapeXml(second)}</text>`,
     '</svg>',
   )
