@@ -21,7 +21,7 @@ The canonical skeleton for the published README, in order. Loaded by the `readme
 
 Centred raw HTML (`<div align="center">`), in this order: logo, `<h1>` title, one-line tagline, badge row. Nothing else goes above the intro.
 
-- **Logo**: an `<img>` whose `src` is the absolute raw URL of the file in `img/`, for example `https://raw.githubusercontent.com/vgorte/react-native-h3/main/img/logo.svg`. Never a repository-relative path: the root README is a symlink, and npm resolves nothing relative to the repository.
+- **Logo**: an `<img>` whose `src` is the repository-relative path of the file in `img/`, for example `img/logo.svg`. The root README is a symlink, so GitHub resolves the path against the repository root, and npm rewrites it to the repository's raw URL via the `repository` field. Never an absolute `raw.githubusercontent.com` URL: a private repository serves those only with a token.
 - **Title**: the display name in an `<h1>`, not the npm package name if the two differ.
 - **Tagline**: one line that states what the package is and why it exists, in that order. It carries the motivation, so there is no `## Why` section anywhere in the file.
 - **Badges**: npm version, license, CI status, and a platforms badge. Skip social, sponsor and follower badges. Badges backed by the GitHub API stay blank while the repository is private, so keep the markup and re-check the rendered row right after the repository becomes public.
