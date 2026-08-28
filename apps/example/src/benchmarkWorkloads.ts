@@ -7,6 +7,7 @@ import {
   cellToChildrenSize,
   cellToLatLng,
   compactCells,
+  getResolution,
   gridDisk,
   gridPathCells,
   latLngToCell,
@@ -39,14 +40,14 @@ const CALLS_PER_RUN = 1_000
 const DISK_K = 20
 const EPSILON = 1e-9
 
-// one sample is one call here, and a call is the map tap a user waits for
+// one sample is one call, the tap a user waits for
 const SINGLE_CALLS = 1_000
 const SINGLE_CALL_STEP = 0.001
 const SINGLE_CALL_COLUMNS = 40
 // a macrotask between two single calls would cost more than the calls themselves
 const SINGLE_CALL_YIELD = 100
 
-// the k series shows how the factor moves with the work one call does; k=20 stays `W2`
+// the factor against the work one call does; `k=20` stays `W2`
 const DISK_SERIES = [
   { id: 'W2a', k: 1, runs: RUNS },
   { id: 'W2b', k: 5, runs: RUNS },
@@ -64,6 +65,7 @@ const CELL_CEILING = 4_000_000
 
 const OWN = 'react-native-h3'
 const REFERENCE = 'h3-js'
+const BASELINE = 'empty-body baseline'
 
 // every label is written once: the plan the screen lists up front and the row pushed afterwards
 const LABELS = {
@@ -123,6 +125,8 @@ export interface Row {
   referenceStats: Stats | undefined
   equivalent: boolean
   detail: string
+  // one sample is one call, so p95 belongs beside the median
+  singleCall: boolean
 }
 
 /**
@@ -140,13 +144,10 @@ export interface RunState {
   passes: number
 }
 
-function now(): number {
-  const performanceApi = (globalThis as { performance?: { now(): number } }).performance
-  if (performanceApi != null) {
-    return performanceApi.now()
-  }
-  return Date.now()
-}
+const performanceApi = (globalThis as { performance?: { now(): number } }).performance
+// resolved at load, so no lookup happens inside the timed window
+const now: () => number =
+  performanceApi != null ? performanceApi.now.bind(performanceApi) : Date.now
 
 function statsOf(samples: number[]): Stats {
   const sorted = [...samples].sort((a, b) => a - b)
@@ -163,8 +164,14 @@ function statsOf(samples: number[]): Stats {
   }
 }
 
+// loop and clock cost the same in both engines; subtract it
+function withoutBaseline(samples: number[], baseline: number): Stats {
+  return statsOf(samples.map((sample) => Math.max(0, sample - baseline)))
+}
+
 interface Timed<T> {
   value: T
+  samples: number[]
   stats: Stats
 }
 
@@ -194,7 +201,7 @@ async function timeRuns<T>(
       return undefined
     }
   }
-  return { value, stats: statsOf(samples) }
+  return { value, samples, stats: statsOf(samples) }
 }
 
 async function timeRunsAsync<T>(
@@ -218,7 +225,7 @@ async function timeRunsAsync<T>(
       return undefined
     }
   }
-  return { value, stats: statsOf(samples) }
+  return { value, samples, stats: statsOf(samples) }
 }
 
 // one call per sample, so the stats describe a single call and not a batch
@@ -248,7 +255,7 @@ async function timeCalls<T>(
       }
     }
   }
-  return { value, stats: statsOf(samples) }
+  return { value, samples, stats: statsOf(samples) }
 }
 
 function sortedHex(cells: BigUint64Array): string[] {
@@ -329,6 +336,7 @@ function toRow(
   referenceStats: Stats | undefined,
   equivalent: boolean,
   detail: string,
+  singleCall = false,
 ): Row {
   return {
     workload,
@@ -339,6 +347,7 @@ function toRow(
     referenceStats,
     equivalent,
     detail,
+    singleCall,
   }
 }
 
@@ -357,7 +366,12 @@ function singleCallInputs(): LatLng[] {
 // the ceiling rejects an oversized result before the work starts, so the row drops a resolution
 // instead of throwing
 function fittingResolution(cells: BigUint64Array, target: number): number {
-  for (let res = target; res > 0; res--) {
+  // nothing below the input's finest cell is left to uncompact
+  let floor = 0
+  for (let index = 0; index < cells.length; index++) {
+    floor = Math.max(floor, getResolution(cells[index] as bigint))
+  }
+  for (let res = target; res > floor; res--) {
     let size = 0
     for (let index = 0; index < cells.length; index++) {
       size += cellToChildrenSize(cells[index] as bigint, res)
@@ -366,7 +380,7 @@ function fittingResolution(cells: BigUint64Array, target: number): number {
       return res
     }
   }
-  return 0
+  return floor
 }
 
 export async function runBenchmark(
@@ -374,18 +388,8 @@ export async function runBenchmark(
   onState: (state: RunState) => void,
 ): Promise<{ rows: Row[]; seconds: number } | undefined> {
   const started = now()
-  const origin = latLngToCell(SAN_FRANCISCO.lat, SAN_FRANCISCO.lng, 9)
-  const disk = gridDisk(origin, DISK_K)
-  // `h3-js` stays in its own hexadecimal-string world; converting either side would time the conversion
-  const referenceOrigin = h3.latLngToCell(SAN_FRANCISCO.lat, SAN_FRANCISCO.lng, 9)
-  const referenceDisk = h3.gridDisk(referenceOrigin, DISK_K)
-  const cells = Array.from(disk)
-  // compacting the res 9 polygon is the input of `W8`, not the measurement, so it stays untimed
-  const compacted = compactCells(polygonToCells(SAN_FRANCISCO_POLYGON, 9))
-  const referenceCompacted = h3.compactCells(h3.polygonToCells(SAN_FRANCISCO_POLYGON, 9))
-  const uncompactRes = fittingResolution(compacted, UNCOMPACT_RES)
-
-  const plan = planOf(uncompactRes)
+  // plan starts at the target; the ceiling sets resolution after setup
+  let plan = planOf(UNCOMPACT_RES)
   const rows: Row[] = []
   let index = 0
   function report(engine: string, pass: number, passes: number): void {
@@ -402,8 +406,37 @@ export async function runBenchmark(
     report(OWN, 0, 0)
   }
   report(OWN, 0, 0)
+  // setup blocks the thread for seconds, so the list paints first
+  if (await pause(signal)) {
+    return undefined
+  }
+
+  const origin = latLngToCell(SAN_FRANCISCO.lat, SAN_FRANCISCO.lng, 9)
+  const disk = gridDisk(origin, DISK_K)
+  // `h3-js` stays in its own hexadecimal-string world; converting either side would time the conversion
+  const referenceOrigin = h3.latLngToCell(SAN_FRANCISCO.lat, SAN_FRANCISCO.lng, 9)
+  const referenceDisk = h3.gridDisk(referenceOrigin, DISK_K)
+  const cells = Array.from(disk)
+  // compacting the res 9 polygon is the input of `W8`, not the measurement, so it stays untimed
+  const compacted = compactCells(polygonToCells(SAN_FRANCISCO_POLYGON, 9))
+  const referenceCompacted = h3.compactCells(h3.polygonToCells(SAN_FRANCISCO_POLYGON, 9))
+  // `W8` compares two engines if both start from the same cells
+  const sameUncompactInput = sameCells(compacted, referenceCompacted)
+  const uncompactRes = fittingResolution(compacted, UNCOMPACT_RES)
+  plan = planOf(uncompactRes)
+  report(OWN, 0, 0)
 
   const singleInputs = singleCallInputs()
+  // an empty body over the loop measures its own cost
+  const w0Baseline = await timeCalls(
+    signal,
+    SINGLE_CALLS,
+    () => undefined,
+    track(BASELINE, SINGLE_CALLS),
+  )
+  if (w0Baseline == null) {
+    return undefined
+  }
   const w0 = await timeCalls(
     signal,
     SINGLE_CALLS,
@@ -428,18 +461,21 @@ export async function runBenchmark(
   if (w0Reference == null) {
     return undefined
   }
+  const baselineMillis = w0Baseline.stats.median
   finish(
     toRow(
       LABELS.w0,
       SINGLE_CALLS,
-      w0.stats,
-      w0Reference.stats,
+      withoutBaseline(w0.samples, baselineMillis),
+      withoutBaseline(w0Reference.samples, baselineMillis),
       singleInputs.every(
         (input) =>
           latLngToCell(input.lat, input.lng, 9).toString(16) ===
           h3.latLngToCell(input.lat, input.lng, 9).toLowerCase(),
       ),
-      `${SINGLE_CALLS} distinct inputs, median and p95 per call`,
+      `${SINGLE_CALLS} distinct inputs, median and p95 per call, ` +
+        `${baselineMillis.toFixed(4)} ms baseline subtracted`,
+      true,
     ),
   )
 
@@ -819,7 +855,7 @@ export async function runBenchmark(
       RUNS,
       w8.stats,
       w8Reference.stats,
-      sameCells(w8.value, w8Reference.value),
+      sameUncompactInput && sameCells(w8.value, w8Reference.value),
       `${compacted.length} cells in, ${w8.value.length} cells out`,
     ),
   )

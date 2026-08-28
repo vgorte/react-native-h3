@@ -59,6 +59,16 @@ function formatMillis(millis: number): string {
   return millis < 1 ? millis.toFixed(3) : millis.toFixed(1)
 }
 
+// a per-call row carries p95 beside median, the tail users feel
+function formatStats(stats: Stats, singleCall: boolean): string {
+  const median = formatMillis(stats.median)
+  return singleCall ? `${median} / ${formatMillis(stats.p95)} ms` : `${median} ms`
+}
+
+function formatReference(row: Row): string {
+  return row.referenceStats == null ? 'n/a' : formatStats(row.referenceStats, row.singleCall)
+}
+
 // a missing reference and an unmeasurable own time both mean no factor, as in the SVG script
 function factorOf(row: Row): number | undefined {
   if (row.referenceMillis == null || row.millis <= 0) {
@@ -110,10 +120,9 @@ function toMarkdown(rows: Row[], seconds: number): string {
     '| Workload | react-native-h3 | h3-js | Equivalent | Result |\n|---|---:|---:|:-:|---|'
   const body = rows
     .map((row) => {
-      const reference =
-        row.referenceMillis == null ? 'n/a' : `${formatMillis(row.referenceMillis)} ms`
       const equivalent = row.equivalent ? 'yes' : 'no'
-      return `| ${row.workload} | ${formatMillis(row.millis)} ms | ${reference} | ${equivalent} | ${row.detail} |`
+      const own = formatStats(row.stats, row.singleCall)
+      return `| ${row.workload} | ${own} | ${formatReference(row)} | ${equivalent} | ${row.detail} |`
     })
     .join('\n')
   return `${header}\n${body}\n\n${caption(rows, seconds)}`
@@ -154,6 +163,10 @@ function logPayload(payload: Payload): void {
     const chunk = text.slice(index * CHUNK, (index + 1) * CHUNK)
     console.log(`BENCHMARK_JSON ${index + 1}/${total} |${chunk}|`)
   }
+}
+
+function describe(error: unknown): string {
+  return error instanceof Error ? error.message : String(error)
 }
 
 // the JavaScript thread is blocked for the length of a sample, so this line only moves between
@@ -210,11 +223,8 @@ function WorkloadCard({
       </View>
       {row == null ? undefined : (
         <View style={styles.measures}>
-          <Measure label="react-native-h3" value={`${formatMillis(row.millis)} ms`} />
-          <Measure
-            label="h3-js"
-            value={row.referenceMillis == null ? 'n/a' : `${formatMillis(row.referenceMillis)} ms`}
-          />
+          <Measure label="react-native-h3" value={formatStats(row.stats, row.singleCall)} />
+          <Measure label="h3-js" value={formatReference(row)} />
           <View style={styles.measure}>
             <Text style={styles.measureLabel}>factor</Text>
             <Text style={styles.factor}>{factor == null ? 'n/a' : `${formatFactor(factor)}×`}</Text>
@@ -267,7 +277,10 @@ export function BenchmarkScreen(): React.JSX.Element {
   const [state, setState] = React.useState<RunState | undefined>(undefined)
   const [seconds, setSeconds] = React.useState<number | undefined>(undefined)
   const [running, setRunning] = React.useState(false)
+  const [failure, setFailure] = React.useState<string | undefined>(undefined)
   const signal = React.useRef<RunSignal | undefined>(undefined)
+  // a failing run reports rows reached before the setter commits them
+  const latest = React.useRef<RunState | undefined>(undefined)
 
   // leaving the tab abandons the run, so the thread goes back to the app instead of finishing
   // measurements nothing will read
@@ -282,12 +295,16 @@ export function BenchmarkScreen(): React.JSX.Element {
   const run = React.useCallback(() => {
     const current: RunSignal = { cancelled: false }
     signal.current = current
+    latest.current = undefined
     setRunning(true)
     setState(undefined)
     setSeconds(undefined)
-    // a frame, so the spinner paints before the first workload takes the thread
+    setFailure(undefined)
+    const startedAt = Date.now()
+    // a frame, so the disabled button paints before the workload starts
     requestAnimationFrame(() => {
       void runBenchmark(current, (next) => {
+        latest.current = next
         if (!current.cancelled) {
           setState(next)
         }
@@ -299,6 +316,19 @@ export function BenchmarkScreen(): React.JSX.Element {
           setSeconds(measured.seconds)
           console.log(toMarkdown(measured.rows, measured.seconds))
           logPayload(toPayload(measured.rows, measured.seconds))
+        })
+        .catch((error: unknown) => {
+          console.error('benchmark run failed', error)
+          const rows = latest.current?.rows ?? []
+          setFailure(
+            `${describe(error)} after ${rows.length} of ${latest.current?.plan.length ?? 0}`,
+          )
+          if (rows.length === 0) {
+            return
+          }
+          const elapsed = (Date.now() - startedAt) / 1000
+          console.log(toMarkdown(rows, elapsed))
+          logPayload(toPayload(rows, elapsed))
         })
         .finally(() => {
           // an abandoned run must not touch the state of a screen that is gone
@@ -321,6 +351,7 @@ export function BenchmarkScreen(): React.JSX.Element {
         <Text style={styles.buttonLabel}>{running ? 'Running' : 'Run benchmark'}</Text>
       </Pressable>
       {state == null ? undefined : <Results state={state} seconds={seconds} />}
+      {failure == null ? undefined : <Text style={styles.failure}>Run failed: {failure}</Text>}
     </ScrollView>
   )
 }
@@ -354,5 +385,6 @@ const styles = StyleSheet.create({
   measureValue: { fontSize: 15, fontVariant: ['tabular-nums'] },
   factor: { fontSize: 15, fontWeight: '700', color: HIGHLIGHT, fontVariant: ['tabular-nums'] },
   detail: { fontSize: 12, color: MUTED },
+  failure: { fontSize: 13, color: '#b3261e', marginTop: 12 },
   caption: { fontSize: 11, lineHeight: 16, color: MUTED, marginTop: 6 },
 })

@@ -104,8 +104,9 @@ function validate(payload) {
     if (!Number.isInteger(row.runs) || row.runs <= 0) {
       fail(`${at}.runs`, 'must be an integer greater than 0')
     }
-    if (typeof row.millis !== 'number' || !Number.isFinite(row.millis) || row.millis <= 0) {
-      fail(`${at}.millis`, 'must be a finite number greater than 0')
+    // a zero median is real, below clock resolution; `toBars` skips it
+    if (!Number.isFinite(row.millis) || row.millis < 0) {
+      fail(`${at}.millis`, 'must be a finite number of 0 or more')
     }
     const reference = row.referenceMillis
     if (reference !== null && (typeof reference !== 'number' || !Number.isFinite(reference))) {
