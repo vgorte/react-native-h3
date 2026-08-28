@@ -24,11 +24,14 @@ const config = {
     androidPlatform({
       name: 'android',
       // AVD name as `emulator -list-avds` reports it. The second argument is what
-      // `callstackincubator/react-native-harness` requires so a CI runner can create the AVD.
+      // `callstackincubator/react-native-harness` requires so a CI runner can create the AVD;
+      // it is ignored locally, where the harness reuses the AVD that already exists.
       device: androidEmulator('afterglow_pixel', {
         apiLevel: 36,
         profile: 'pixel_7',
-        diskSize: '6G',
+        // the emulator wants 1.2x this free before it creates the partition, and an
+        // `ubuntu-latest` runner has under 3.5 GB left where the AVD lives
+        diskSize: '2G',
         heapSize: '228M',
       }),
       bundleId: 'com.h3example',
