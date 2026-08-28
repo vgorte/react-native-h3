@@ -105,6 +105,22 @@ public:
   std::shared_ptr<ArrayBuffer> getRes0Cells() override;
   std::shared_ptr<ArrayBuffer> getPentagons(double res) override;
   std::vector<double> getIcosahedronFaces(uint64_t cell) override;
+
+  // Async
+  // each is a synchronous prologue plus a `Promise<T>::async` dispatch; a borrowed resource is
+  // touched only in the prologue, never in the dispatched lambda
+  std::shared_ptr<Promise<std::shared_ptr<ArrayBuffer>>>
+  polygonToCellsAsync(const std::vector<std::vector<std::vector<double>>>& rings, double res) override;
+  std::shared_ptr<Promise<std::shared_ptr<ArrayBuffer>>>
+  polygonToCellsExperimentalAsync(const std::vector<std::vector<std::vector<double>>>& rings, double res,
+                                  double flags) override;
+  std::shared_ptr<Promise<std::vector<std::vector<std::vector<LatLng>>>>>
+  cellsToMultiPolygonAsync(const std::shared_ptr<ArrayBuffer>& cells) override;
+  std::shared_ptr<Promise<std::shared_ptr<ArrayBuffer>>> uncompactCellsAsync(const std::shared_ptr<ArrayBuffer>& cells,
+                                                                             double res) override;
+
+  // Configuration
+  void setMaxCellCount(double maxCellCount) override;
 };
 
 } // namespace margelo::nitro::h3

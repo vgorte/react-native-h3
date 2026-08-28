@@ -78,6 +78,11 @@ namespace margelo::nitro::h3 {
       prototype.registerHybridMethod("getRes0Cells", &HybridH3Spec::getRes0Cells);
       prototype.registerHybridMethod("getPentagons", &HybridH3Spec::getPentagons);
       prototype.registerHybridMethod("getIcosahedronFaces", &HybridH3Spec::getIcosahedronFaces);
+      prototype.registerHybridMethod("polygonToCellsAsync", &HybridH3Spec::polygonToCellsAsync);
+      prototype.registerHybridMethod("polygonToCellsExperimentalAsync", &HybridH3Spec::polygonToCellsExperimentalAsync);
+      prototype.registerHybridMethod("cellsToMultiPolygonAsync", &HybridH3Spec::cellsToMultiPolygonAsync);
+      prototype.registerHybridMethod("uncompactCellsAsync", &HybridH3Spec::uncompactCellsAsync);
+      prototype.registerHybridMethod("setMaxCellCount", &HybridH3Spec::setMaxCellCount);
     });
   }
 

@@ -1,12 +1,8 @@
 import { toBuffer } from './buffers'
+import { toContainmentFlags } from './containment'
 import { rethrowAsH3Error } from './H3Error'
 import { native } from './native'
 import type { ContainmentModeName, ContainmentModeValue, LatLng, Ring } from './types'
-import { CONTAINMENT_MODE_BY_NAME } from './types'
-
-// H3's `CONTAINMENT_INVALID`, so an unrecognised mode name earns the same `E_OPTION_INVALID` that
-// h3-js reports for one, rather than this package's own wording.
-const CONTAINMENT_INVALID = 4
 
 /**
  * Finds the outline of a set of cells, as GeoJSON-shaped polygons.
@@ -37,7 +33,8 @@ export function cellsToMultiPolygon(cells: BigUint64Array): LatLng[][][] {
  * @param res The resolution, `0` to `15`.
  * @returns The cells covering the polygon, as a view onto the native buffer.
  * @throws {@linkcode H3Error} if a point is not a finite `[latitude, longitude]` pair, the
- * resolution is out of range, or the result would exceed this binding's limit of `4,000,000` cells.
+ * resolution is out of range, or the result would exceed the cell ceiling, `4,000,000` cells until
+ * {@linkcode configure} changes it.
  */
 export function polygonToCells(rings: Ring[], res: number): BigUint64Array {
   try {
@@ -61,16 +58,14 @@ export function polygonToCells(rings: Ring[], res: number): BigUint64Array {
  * the matching h3-js name such as `'containmentCenter'`.
  * @returns The cells covering the polygon, as a view onto the native buffer.
  * @throws {@linkcode H3Error} if the polygon, the resolution or the mode is invalid, or the result
- * would exceed this binding's limit of `4,000,000` cells.
+ * would exceed the cell ceiling, `4,000,000` cells until {@linkcode configure} changes it.
  */
 export function polygonToCellsExperimental(
   rings: Ring[],
   res: number,
   flags: ContainmentModeValue | ContainmentModeName,
 ): BigUint64Array {
-  // an unknown name falls through to H3, which stays the only judge of the mode.
-  const mode =
-    typeof flags === 'number' ? flags : (CONTAINMENT_MODE_BY_NAME[flags] ?? CONTAINMENT_INVALID)
+  const mode = toContainmentFlags(flags)
   try {
     return new BigUint64Array(native.polygonToCellsExperimental(rings, res, mode))
   } catch (error) {

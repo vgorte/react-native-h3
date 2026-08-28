@@ -228,7 +228,7 @@ describe.skipIf(skipWithoutProbe)('divergence: the cell ceiling', () => {
   test('a request above four million cells is refused where h3-js allocates it', () => {
     // `3 * 1155 * 1156 + 1` is 4,005,541 cells, the first `k` past the ceiling
     expect(refusal(`gridDisk ${CELL} 1155`)).toBe(
-      "The requested result would exceed this binding's limit of 4000000 cells",
+      'The requested result of 4005541 cells exceeds the cell limit of 4000000, which guards against exhausting device memory. Raise it with configure({ maxCellCount })',
     )
     expect(h3.gridDisk(CELL, 1155)).toHaveLength(4005541)
   })
@@ -394,6 +394,7 @@ describe.skipIf(skipWithoutProbe)('parity: where a divergence would be easy to a
     expect(answer(`compactCells ${CELL},0`)).toEqual(h3.compactCells([CELL, '0']))
   })
 
+  // spawns a fresh bun process for h3-js, which can exceed bun's default 5 s timeout on a cold CI runner
   test('uncompactCells refuses an invalid member with a different code, and ignores 0 alike', () => {
     expect(refusal(`uncompactCells ${CELL},1 10`)).toBe('Cell argument was not valid (code: 5)')
     expect(askH3JsInAFreshProcess(`h3.uncompactCells(['${CELL}', '1'], 10)`)).toBe(
@@ -401,7 +402,7 @@ describe.skipIf(skipWithoutProbe)('parity: where a divergence would be easy to a
     )
 
     expect(answer(`uncompactCells ${CELL},0 10`)).toEqual(h3.uncompactCells([CELL, '0'], 10))
-  })
+  }, 30_000)
 })
 
 describe.skipIf(skipWithoutProbe)('parity: arithmetic away from a pole', () => {

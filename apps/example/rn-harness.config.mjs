@@ -1,10 +1,18 @@
 import { androidEmulator, androidPlatform } from '@react-native-harness/platform-android'
 import { applePlatform, appleSimulator } from '@react-native-harness/platform-apple'
 
+// `H3_SANITIZER` is set by `harness-android.yml` and by `scripts/device-ios.sh`; unset locally.
+const TIMEOUT_SCALE = (process.env.H3_SANITIZER ?? '') === '' ? 1 : 4
+
 const config = {
   entryPoint: './index.js',
   // Must match the name `index.js` registers, which comes from `app.json`.
   appRegistryComponentName: 'H3Example',
+  // A sanitised build boots and runs several times slower, so every timeout scales with it.
+  bridgeTimeout: 60000 * TIMEOUT_SCALE,
+  testTimeout: 5000 * TIMEOUT_SCALE,
+  bundleStartTimeout: 60000 * TIMEOUT_SCALE,
+  platformReadyTimeout: 300000 * TIMEOUT_SCALE,
   runners: [
     applePlatform({
       name: 'ios',
@@ -15,8 +23,17 @@ const config = {
     }),
     androidPlatform({
       name: 'android',
-      // AVD name as `emulator -list-avds` reports it.
-      device: androidEmulator('afterglow_pixel'),
+      // AVD name as `emulator -list-avds` reports it. The second argument is what
+      // `callstackincubator/react-native-harness` requires so a CI runner can create the AVD;
+      // it is ignored locally, where the harness reuses the AVD that already exists.
+      device: androidEmulator('afterglow_pixel', {
+        apiLevel: 36,
+        profile: 'pixel_7',
+        // what the `pixel_7` profile itself asks for; a smaller value here is ignored, because
+        // `avdmanager` has already written the profile's size into `config.ini`
+        diskSize: '6G',
+        heapSize: '228M',
+      }),
       bundleId: 'com.h3example',
     }),
   ],

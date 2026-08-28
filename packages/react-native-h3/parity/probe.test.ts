@@ -124,9 +124,12 @@ describe.skipIf(skipWithoutProbe)('parity probe', () => {
     const probe = openProbe()
     try {
       const exported = Object.entries(await import('../src/index'))
-        // `H3Error` is a class, so it is a function too; every other export is an operation
+        // `H3Error` is a class, so it is a function too
         .filter(([name, value]) => typeof value === 'function' && name !== 'H3Error')
         .map(([name]) => name)
+        // an `Async` variant runs the same `h3ops::` call its synchronous sibling does, and
+        // `configure` sets the ceiling rather than naming an operation, so neither is a probe op
+        .filter((name) => name !== 'configure' && !name.endsWith('Async'))
         .sort()
       expect(exported).toHaveLength(64)
       expect(probe.ops().sort()).toEqual(exported)

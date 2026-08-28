@@ -49,6 +49,19 @@ template <typename Call> void expectMessage(const char* label, const char* messa
   }
 }
 
+/** Asserts on the tail of a message whose head carries a number upstream owns. */
+template <typename Call> void expectMessageEnding(const char* label, const std::string& suffix, Call&& call) {
+  SCOPED_TRACE(label);
+  try {
+    call();
+    FAIL() << "expected an exception";
+  } catch (const std::runtime_error& error) {
+    const std::string message = error.what();
+    ASSERT_GE(message.size(), suffix.size());
+    EXPECT_EQ(message.substr(message.size() - suffix.size()), suffix);
+  }
+}
+
 TEST(GeoPolygonBuilder, BuildsAnOuterRingInRadians) {
   const h3core::GeoPolygonBuilder builder(sanFranciscoTriangle());
   const ::GeoPolygon* polygon = builder.polygon();
@@ -223,11 +236,11 @@ TEST(RegionsOps, PolygonToCellsRefusesAnUnaffordableRequest) {
   // a whole-globe polygon at resolution `15` is what the ceiling exists for: without it,
   // `maxPolygonToCellsSize` reports a number that would exhaust the device.
   const Rings globe = {{{89.0, -180.0}, {89.0, 0.0}, {-89.0, 0.0}, {-89.0, -180.0}}};
-  expectMessage("the globe at resolution 15", "The requested result would exceed this binding's limit of 4000000 cells",
-                [&globe] { h3ops::polygonToCells(globe, 15); });
-  expectMessage("the globe at resolution 15, experimental",
-                "The requested result would exceed this binding's limit of 4000000 cells",
-                [&globe] { h3ops::polygonToCellsExperimental(globe, 15, 0); });
+  const std::string breach = " cells exceeds the cell limit of 4000000, which guards against exhausting "
+                             "device memory. Raise it with configure({ maxCellCount })";
+  expectMessageEnding("the globe at resolution 15", breach, [&globe] { h3ops::polygonToCells(globe, 15); });
+  expectMessageEnding("the globe at resolution 15, experimental", breach,
+                      [&globe] { h3ops::polygonToCellsExperimental(globe, 15, 0); });
 }
 
 } // namespace

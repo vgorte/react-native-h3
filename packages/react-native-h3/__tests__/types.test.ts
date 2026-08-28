@@ -18,7 +18,7 @@ describe('containment modes', () => {
   })
 
   test('answers undefined for a name h3-js does not have', () => {
-    // `regions.ts` turns that into `4`, which is H3's `CONTAINMENT_INVALID`.
+    // `containment.ts` turns that into `4`, which is H3's `CONTAINMENT_INVALID`.
     const unknown = (CONTAINMENT_MODE_BY_NAME as Record<string, number | undefined>).containmentNone
     expect(unknown).toBeUndefined()
   })
