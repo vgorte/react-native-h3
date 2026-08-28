@@ -2,46 +2,185 @@
   "rows": [
     {
       "workload": "W1 latLngToCell x 100,000",
-      "millis": 36.65208411216736,
-      "referenceMillis": 771.568666934967,
+      "runs": 20,
+      "millis": 34.29166603088379,
+      "referenceMillis": 703.4154999256134,
+      "equivalent": true,
+      "stats": {
+        "millis": {
+          "median": 34.29166603088379,
+          "p95": 35.90791702270508,
+          "min": 32.726625204086304,
+          "max": 35.90791702270508
+        },
+        "referenceMillis": {
+          "median": 703.4154999256134,
+          "p95": 791.3715419769287,
+          "min": 694.5312089920044,
+          "max": 791.3715419769287
+        }
+      },
       "detail": "89283082803ffff"
     },
     {
       "workload": "W2 gridDisk(k=20) x 1,000",
-      "millis": 12.292999982833862,
-      "referenceMillis": 1785.0460000038147,
+      "runs": 20,
+      "millis": 11.415416955947876,
+      "referenceMillis": 1613.9180829524994,
+      "equivalent": true,
+      "stats": {
+        "millis": {
+          "median": 11.415416955947876,
+          "p95": 15.209332942962646,
+          "min": 10.966874837875366,
+          "max": 15.209332942962646
+        },
+        "referenceMillis": {
+          "median": 1613.9180829524994,
+          "p95": 1662.1915829181671,
+          "min": 1602.3470420837402,
+          "max": 1662.1915829181671
+        }
+      },
       "detail": "1261 cells per call"
     },
     {
       "workload": "W3 polygonToCells, SF, res 12",
-      "millis": 88.86762499809265,
-      "referenceMillis": 22515.34445786476,
+      "runs": 3,
+      "millis": 75.2795000076294,
+      "referenceMillis": 20744.036624908447,
+      "equivalent": true,
+      "stats": {
+        "millis": {
+          "median": 75.2795000076294,
+          "p95": 77.44429183006287,
+          "min": 75.2170832157135,
+          "max": 77.44429183006287
+        },
+        "referenceMillis": {
+          "median": 20744.036624908447,
+          "p95": 21285.159082889557,
+          "min": 20633.55649995804,
+          "max": 21285.159082889557
+        }
+      },
       "detail": "412377 cells"
     },
     {
       "workload": "W3 polygonToCellsAsync, SF, res 12",
-      "millis": 87.959792137146,
+      "runs": 3,
+      "millis": 76.41158294677734,
       "referenceMillis": null,
+      "equivalent": true,
+      "stats": {
+        "millis": {
+          "median": 76.41158294677734,
+          "p95": 76.67204213142395,
+          "min": 76.29245805740356,
+          "max": 76.67204213142395
+        },
+        "referenceMillis": null
+      },
       "detail": "412377 cells"
     },
     {
       "workload": "W4 compactCells of a k=20 disk",
-      "millis": 0.044625043869018555,
-      "referenceMillis": 22.204041004180908,
+      "runs": 20,
+      "millis": 0.012999773025512695,
+      "referenceMillis": 20.45562505722046,
+      "equivalent": true,
+      "stats": {
+        "millis": {
+          "median": 0.012999773025512695,
+          "p95": 0.018584012985229492,
+          "min": 0.011834144592285156,
+          "max": 0.018584012985229492
+        },
+        "referenceMillis": {
+          "median": 20.45562505722046,
+          "p95": 21.67525005340576,
+          "min": 20.222583770751953,
+          "max": 21.67525005340576
+        }
+      },
       "detail": "163 cells"
     },
     {
       "workload": "W5 cellsToMultiPolygon of a k=20 disk",
-      "millis": 0.49266600608825684,
-      "referenceMillis": 114.67491602897644,
+      "runs": 20,
+      "millis": 0.33545804023742676,
+      "referenceMillis": 104.92837500572205,
+      "equivalent": true,
+      "stats": {
+        "millis": {
+          "median": 0.33545804023742676,
+          "p95": 0.3984999656677246,
+          "min": 0.3167080879211426,
+          "max": 0.3984999656677246
+        },
+        "referenceMillis": {
+          "median": 104.92837500572205,
+          "p95": 111.60170793533325,
+          "min": 103.48129200935364,
+          "max": 111.60170793533325
+        }
+      },
       "detail": "1 polygons"
+    },
+    {
+      "workload": "W6 cellToLatLng x 100,000",
+      "runs": 20,
+      "millis": 33.49979209899902,
+      "referenceMillis": 399.4305410385132,
+      "equivalent": true,
+      "stats": {
+        "millis": {
+          "median": 33.49979209899902,
+          "p95": 39.67004108428955,
+          "min": 32.99495816230774,
+          "max": 39.67004108428955
+        },
+        "referenceMillis": {
+          "median": 399.4305410385132,
+          "p95": 415.6825830936432,
+          "min": 397.583291053772,
+          "max": 415.6825830936432
+        }
+      },
+      "detail": "100000 calls over 1261 distinct cells"
+    },
+    {
+      "workload": "W7 cellToBoundary x 100,000",
+      "runs": 20,
+      "millis": 112.76454210281372,
+      "referenceMillis": 1142.9004158973694,
+      "equivalent": true,
+      "stats": {
+        "millis": {
+          "median": 112.76454210281372,
+          "p95": 119.59020805358887,
+          "min": 111.42462515830994,
+          "max": 119.59020805358887
+        },
+        "referenceMillis": {
+          "median": 1142.9004158973694,
+          "p95": 1291.608999967575,
+          "min": 1130.8153340816498,
+          "max": 1291.608999967575
+        }
+      },
+      "detail": "100000 calls over 1261 distinct cells"
     }
   ],
   "measuredOn": {
     "platform": "ios",
     "osVersion": "26.5",
     "build": "Release",
+    "reactNative": "0.87.0",
+    "hermes": "250829098.0.16",
     "h3js": "4.5.0",
-    "date": "2026-08-28"
+    "date": "2026-08-28",
+    "warmupRuns": 1,
+    "durationSeconds": 173.3
   }
 }

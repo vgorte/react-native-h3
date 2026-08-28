@@ -21,9 +21,18 @@ const OUTPUT = join(ROOT, 'img', 'benchmark.svg')
 const TITLE = 'react-native-h3 vs h3-js, speedup per workload'
 // no external resources: a system stack, resolved by the viewer
 const FONT = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
-// mid-tones, so both stay legible on a light and on a dark page background
+
+// No single colour clears 4.5:1 on white and on GitHub's #0d1117 at once; 4.35:1 is the arithmetic
+// ceiling. The base pair sits on it, and the media queries lift each theme past 4.5:1 wherever the
+// renderer honours them.
+const TEXT_BASE = '#727a84'
+const TEXT_LIGHT = '#57606a'
+const TEXT_DARK = '#8b949e'
+const VALUE_BASE = '#2f78dc'
+const VALUE_LIGHT = '#1f6feb'
+const VALUE_DARK = '#58a6ff'
+// a bar is not text, so 3:1 is the bar to clear: 3.68:1 on white, 5.15:1 on #0d1117
 const BAR_COLOR = '#3b82f6'
-const TEXT_COLOR = '#6b7280'
 
 const WIDTH = 840
 const MARGIN = 20
@@ -49,18 +58,61 @@ function formatFactor(factor) {
   return factor >= 10 ? factor.toFixed(0) : factor.toFixed(1)
 }
 
-function readPayload() {
-  const payload = JSON.parse(readFileSync(INPUT, 'utf8'))
-  if (!Array.isArray(payload.rows) || payload.measuredOn == null) {
-    throw new Error(`${INPUT} is not a benchmark payload: expected \`rows\` and \`measuredOn\``)
+function fail(field, expectation) {
+  throw new Error(`${INPUT}: \`${field}\` ${expectation}`)
+}
+
+function requireString(value, field) {
+  if (typeof value !== 'string' || value.length === 0) {
+    fail(field, 'must be a non-empty string')
+  }
+}
+
+function validate(payload) {
+  if (payload == null || typeof payload !== 'object') {
+    fail('payload', 'must be an object')
+  }
+  if (!Array.isArray(payload.rows) || payload.rows.length === 0) {
+    fail('rows', 'must be a non-empty array')
+  }
+  payload.rows.forEach((row, index) => {
+    const at = `rows[${index}]`
+    if (row == null || typeof row !== 'object') {
+      fail(at, 'must be an object')
+    }
+    requireString(row.workload, `${at}.workload`)
+    requireString(row.detail, `${at}.detail`)
+    if (typeof row.millis !== 'number' || !Number.isFinite(row.millis) || row.millis <= 0) {
+      fail(`${at}.millis`, 'must be a finite number greater than 0')
+    }
+    const reference = row.referenceMillis
+    if (reference !== null && (typeof reference !== 'number' || !Number.isFinite(reference))) {
+      fail(`${at}.referenceMillis`, 'must be a finite number or null')
+    }
+  })
+  const measuredOn = payload.measuredOn
+  if (measuredOn == null || typeof measuredOn !== 'object') {
+    fail('measuredOn', 'must be an object')
+  }
+  for (const field of ['platform', 'osVersion', 'build', 'h3js', 'date']) {
+    requireString(measuredOn[field], `measuredOn.${field}`)
   }
   return payload
+}
+
+function readPayload() {
+  return validate(JSON.parse(readFileSync(INPUT, 'utf8')))
 }
 
 function toBars(rows) {
   const bars = []
   for (const row of rows) {
-    if (row.referenceMillis == null || row.millis <= 0) {
+    // a row with no h3-js counterpart has no factor; that is expected, not a defect
+    if (row.referenceMillis === null) {
+      continue
+    }
+    if (row.millis <= 0) {
+      console.warn(`Skipped \`${row.workload}\`: \`millis\` is ${row.millis}, no factor to draw`)
       continue
     }
     bars.push({ workload: row.workload, factor: row.referenceMillis / row.millis })
@@ -76,6 +128,26 @@ function footer(measuredOn) {
   return `Measured on ${platform} ${osVersion}, ${build} build, against h3-js ${h3js}, ${date}.`
 }
 
+function styleBlock() {
+  return [
+    '<style>',
+    `text { fill: ${TEXT_BASE} }`,
+    `.axis { stroke: ${TEXT_BASE} }`,
+    `.factor { fill: ${VALUE_BASE} }`,
+    '@media (prefers-color-scheme: light) {',
+    `text { fill: ${TEXT_LIGHT} }`,
+    `.axis { stroke: ${TEXT_LIGHT} }`,
+    `.factor { fill: ${VALUE_LIGHT} }`,
+    '}',
+    '@media (prefers-color-scheme: dark) {',
+    `text { fill: ${TEXT_DARK} }`,
+    `.axis { stroke: ${TEXT_DARK} }`,
+    `.factor { fill: ${VALUE_DARK} }`,
+    '}',
+    '</style>',
+  ].join('\n')
+}
+
 function render(payload) {
   const bars = toBars(payload.rows)
   const scale = BAR_MAX / Math.max(...bars.map((bar) => bar.factor))
@@ -87,11 +159,10 @@ function render(payload) {
       `viewBox="0 0 ${WIDTH} ${height}" font-family="${FONT}" role="img" ` +
       `aria-label="${escapeXml(TITLE)}">`,
     `<title>${escapeXml(TITLE)}</title>`,
-    `<text x="${MARGIN}" y="34" font-size="17" font-weight="600" fill="${TEXT_COLOR}">` +
-      `${escapeXml(TITLE)}</text>`,
-    `<line x1="${BAR_LEFT}" y1="${CHART_TOP - 8}" x2="${BAR_LEFT}" ` +
-      `y2="${CHART_TOP + bars.length * ROW_STEP - 4}" stroke="${TEXT_COLOR}" ` +
-      'stroke-width="1" opacity="0.35"/>',
+    styleBlock(),
+    `<text x="${MARGIN}" y="34" font-size="17" font-weight="600">${escapeXml(TITLE)}</text>`,
+    `<line class="axis" x1="${BAR_LEFT}" y1="${CHART_TOP - 8}" x2="${BAR_LEFT}" ` +
+      `y2="${CHART_TOP + bars.length * ROW_STEP - 4}" stroke-width="1" opacity="0.35"/>`,
   ]
 
   bars.forEach((bar, index) => {
@@ -99,17 +170,17 @@ function render(payload) {
     const baseline = top + BAR_HEIGHT - 6
     const length = Math.max(2, Math.round(bar.factor * scale))
     lines.push(
-      `<text x="${BAR_LEFT - 12}" y="${baseline}" font-size="13" fill="${TEXT_COLOR}" ` +
-        `text-anchor="end">${escapeXml(bar.workload)}</text>`,
+      `<text x="${BAR_LEFT - 12}" y="${baseline}" font-size="13" text-anchor="end">` +
+        `${escapeXml(bar.workload)}</text>`,
       `<rect x="${BAR_LEFT}" y="${top}" width="${length}" height="${BAR_HEIGHT}" rx="3" ` +
         `fill="${BAR_COLOR}"/>`,
-      `<text x="${BAR_LEFT + length + 10}" y="${baseline}" font-size="13" font-weight="600" ` +
-        `fill="${BAR_COLOR}">${formatFactor(bar.factor)}×</text>`,
+      `<text class="factor" x="${BAR_LEFT + length + 10}" y="${baseline}" font-size="13" ` +
+        `font-weight="600">${formatFactor(bar.factor)}×</text>`,
     )
   })
 
   lines.push(
-    `<text x="${MARGIN}" y="${height - 12}" font-size="12" fill="${TEXT_COLOR}">` +
+    `<text x="${MARGIN}" y="${height - 12}" font-size="12">` +
       `${escapeXml(footer(payload.measuredOn))}</text>`,
     '</svg>',
   )
