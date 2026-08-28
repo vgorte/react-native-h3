@@ -204,9 +204,10 @@ immediately:
 
 Verify the README renders correctly on both GitHub and npm.
 
-- The logo and the benchmark chart are absolute `raw.githubusercontent.com` URLs pointing at
-  `main`, which a private repository serves only with a token; they render once the repository is
-  public.
+- The logo and the benchmark chart are repository-relative paths (`img/logo.svg`,
+  `img/benchmark.svg`). GitHub resolves them against the repository root, and npm rewrites them to
+  the repository's raw URL via the `repository` field, which serves them only once the repository
+  is public.
 - The npm version and downloads badges (`shields.io`) report "package not found" until the first
   tarball is actually published to the registry.
 
