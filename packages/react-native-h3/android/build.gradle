@@ -9,6 +9,13 @@ buildscript {
   }
 }
 
+// Must stay identical to `react-native-nitro-modules/android/build.gradle`, whose prefab we link
+// against: an ABI we build but Nitro does not has no `libNitroModules.so` to resolve.
+def reactNativeArchitectures() {
+  def value = rootProject.getProperties().get("reactNativeArchitectures")
+  return value ? value.split(",") : ["armeabi-v7a", "x86", "x86_64", "arm64-v8a"]
+}
+
 apply plugin: 'com.android.library'
 apply plugin: 'org.jetbrains.kotlin.android'  // <-- compiles nitrogen's `NitroH3OnLoad.kt`
 
@@ -27,6 +34,7 @@ android {
         // `rootProject` is the app building us through autolinking, so `-Ph3Sanitizer` reaches here
         arguments "-DANDROID_STL=c++_shared",
                   "-DH3_SANITIZER=${rootProject.findProperty('h3Sanitizer') ?: ''}"
+        abiFilters (*reactNativeArchitectures())
       }
     }
   }

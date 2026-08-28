@@ -10,8 +10,9 @@ if (h3Sanitizer != '' && h3SanitizerRuntime == null) {
     throw new GradleException("Unsupported h3Sanitizer: ${h3Sanitizer}. The only supported value is 'address'.")
 }
 
+// narrow a sanitised build to these with `-PreactNativeArchitectures=arm64-v8a,x86_64`
 def h3SanitizerAbis = ['arm64-v8a', 'x86_64']
-def h3SanitizerRuntimeArch = ['arm64-v8a': 'aarch64', 'x86_64': 'x86_64', 'armeabi-v7a': 'arm', 'x86': 'i686']
+def h3SanitizerRuntimeArch = ['arm64-v8a': 'aarch64', 'x86_64': 'x86_64']
 // plain `File`s: the AGP 9 source set API rejects a `Provider`, and the task wiring below is manual
 def h3SanitizerJniLibsDir = layout.buildDirectory.dir('generated/h3SanitizerJniLibs').get().asFile
 def h3SanitizerResourcesDir = layout.buildDirectory.dir('generated/h3SanitizerResources').get().asFile
@@ -137,12 +138,13 @@ android {
 }
 
 if (h3SanitizerRuntime != null) {
+    // staged into the debug source set only, so a release APK never carries the runtime
     def copyH3SanitizerRuntime = tasks.register('copyH3SanitizerRuntime', Copy) {
         into(h3SanitizerJniLibsDir)
         h3SanitizerAbis.each { abi ->
             def runtimeFileName = "libclang_rt.${h3SanitizerRuntime}-${h3SanitizerRuntimeArch[abi]}-android.so"
             def runtimeFiles = fileTree("${android.ndkDirectory}/toolchains/llvm/prebuilt") {
-                include "**/${runtimeFileName}"
+                include "*/lib/clang/*/lib/linux/${runtimeFileName}"
             }
             from(runtimeFiles) {
                 // the NDK nests the runtime under `<host>/lib/clang/<n>/lib/linux`, flatten it
