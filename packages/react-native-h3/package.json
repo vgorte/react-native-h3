@@ -33,7 +33,8 @@
     "build": "tsc",
     "specs": "nitrogen",
     "test": "bun test",
-    "parity": "bun test parity"
+    "parity": "bun test parity",
+    "prepack": "bun run ../../scripts/check-pack.ts"
   },
   "files": [
     "src",
