@@ -20,6 +20,7 @@ export const colors = {
   zoneA: '#3b82f6',
   zoneB: '#f59e0b',
   zoneC: '#10b981',
+  zoneD: '#c026d3',
   shared: '#e879f9',
 } as const
 

@@ -3,14 +3,18 @@ import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { LogoMark } from './LogoMark'
 import { colors, space } from './theme'
 
-/** Renders the bar every screen wears: the mark opens the about sheet, resolution on the right. */
+/**
+ * Renders the bar every screen wears: the mark opens the about sheet, resolution on the right.
+ *
+ * @param resolution The resolution on screen, or `null` before a screen has drawn anything.
+ */
 export function TitleBar({
   title,
   resolution,
   onPressMark,
 }: {
   title: string
-  resolution: number
+  resolution: number | null
   onPressMark: () => void
 }): React.JSX.Element {
   return (
@@ -24,7 +28,7 @@ export function TitleBar({
         <LogoMark />
       </Pressable>
       <Text style={styles.title}>{title}</Text>
-      <Text style={styles.resolution}>res {resolution}</Text>
+      <Text style={styles.resolution}>res {resolution ?? '-'}</Text>
     </View>
   )
 }

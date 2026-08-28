@@ -11,11 +11,15 @@ export type HudRow = { label: string; value: string; side: HudSide }
 /** Holds the two totals the split bar compares, in milliseconds. */
 export type HudSplit = { h3Ms: number; appMs: number }
 
+/** Holds one colour of a map ramp beside the threshold it stands for. */
+export type LegendStop = { label: string; color: string }
+
 /** Holds everything the card draws, which is what a screen hands to its stage. */
 export type HudProps = {
   rows: HudRow[]
   split?: HudSplit
   note?: string
+  legend?: LegendStop[]
 }
 
 /**
@@ -78,6 +82,7 @@ export function HudCard({
   rows,
   split,
   note,
+  legend,
   onHeight,
 }: HudProps & { onHeight?: (height: number) => void }): React.JSX.Element {
   return (
@@ -93,6 +98,16 @@ export function HudCard({
       </View>
       {split == null ? null : <SplitBar split={split} />}
       {note == null ? null : <Text style={styles.note}>{note}</Text>}
+      {legend == null ? null : (
+        <View style={styles.legend}>
+          {legend.map((stop) => (
+            <View key={stop.label} style={styles.stop}>
+              <View style={[styles.swatch, { backgroundColor: stop.color }]} />
+              <Text style={styles.label}>{stop.label}</Text>
+            </View>
+          ))}
+        </View>
+      )}
     </View>
   )
 }
@@ -138,4 +153,7 @@ const styles = StyleSheet.create({
   splitH3: { backgroundColor: colors.accent },
   splitApp: { flex: 1, backgroundColor: colors.appTone },
   note: { color: colors.accent, fontSize: 12 },
+  legend: { flexDirection: 'row', flexWrap: 'wrap', columnGap: space.md, rowGap: space.xs },
+  stop: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
+  swatch: { width: 12, height: 12, borderRadius: 3 },
 })
