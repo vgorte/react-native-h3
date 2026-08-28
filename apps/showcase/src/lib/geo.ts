@@ -35,6 +35,35 @@ export function hasThreeDistinctPoints(ring: Ring): boolean {
   return distinct.size >= MIN_RING_POINTS
 }
 
+/**
+ * Reports whether a point lies inside a ring, by counting the crossings of a ray east of it.
+ *
+ * The ring is treated as closed whether or not it repeats its first point, and a point exactly on
+ * an edge falls on one side or the other, which is what keeps neighbouring rings from overlapping.
+ *
+ * @param point Either `{ lat, lng }` or the `[lat, lng]` pair a `Ring` holds.
+ */
+export function pointInRing(point: LatLng | [lat: number, lng: number], ring: Ring): boolean {
+  const lat = Array.isArray(point) ? point[0] : point.lat
+  const lng = Array.isArray(point) ? point[1] : point.lng
+
+  let inside = false
+  for (let i = 0; i < ring.length; i++) {
+    const here = ring[i]
+    const previous = ring[(i + ring.length - 1) % ring.length]
+    const [hereLat, hereLng] = here
+    const [previousLat, previousLng] = previous
+    if (hereLat > lat === previousLat > lat) {
+      continue
+    }
+    const crossing = ((previousLng - hereLng) * (lat - hereLat)) / (previousLat - hereLat) + hereLng
+    if (lng < crossing) {
+      inside = !inside
+    }
+  }
+  return inside
+}
+
 function closedPositions(boundary: readonly LatLng[]): Position[] {
   const positions = boundary.map(({ lat, lng }): Position => [lng, lat])
   const first = positions[0]

@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test'
+import type { Ring } from 'react-native-h3'
 import {
   emptyFeatureCollection,
   hasThreeDistinctPoints,
@@ -6,9 +7,11 @@ import {
   lineFeature,
   multiPolygonFeature,
   pointFeature,
+  pointInRing,
   polygonFeature,
   ringFromLngLat,
 } from './geo'
+import { GERMANY_RING } from './germany'
 
 describe('ringFromLngLat', () => {
   test('swaps MapLibre order into H3 order', () => {
@@ -155,5 +158,50 @@ describe('pointFeature', () => {
 describe('emptyFeatureCollection', () => {
   test('has no features', () => {
     expect(emptyFeatureCollection().features).toEqual([])
+  })
+})
+
+describe('pointInRing', () => {
+  const square: Ring = [
+    [0, 0],
+    [0, 10],
+    [10, 10],
+    [10, 0],
+  ]
+
+  test('accepts a point inside the square', () => {
+    expect(pointInRing([5, 5], square)).toBe(true)
+  })
+
+  test('rejects a point outside the square', () => {
+    expect(pointInRing([5, 15], square)).toBe(false)
+    expect(pointInRing([-1, 5], square)).toBe(false)
+  })
+
+  test('takes the point as a LatLng too', () => {
+    expect(pointInRing({ lat: 5, lng: 5 }, square)).toBe(true)
+    expect(pointInRing({ lat: 20, lng: 20 }, square)).toBe(false)
+  })
+
+  test('counts a corner vertex as inside', () => {
+    // a vertex lands on one side only, so rings never overlap
+    expect(pointInRing([0, 0], square)).toBe(true)
+  })
+
+  test('rejects a ring that encloses nothing', () => {
+    expect(
+      pointInRing(
+        [5, 5],
+        [
+          [0, 0],
+          [0, 10],
+        ],
+      ),
+    ).toBe(false)
+  })
+
+  test('places Berlin inside Germany and Prague outside it', () => {
+    expect(pointInRing([52.52, 13.405], GERMANY_RING)).toBe(true)
+    expect(pointInRing([50.0755, 14.4378], GERMANY_RING)).toBe(false)
   })
 })

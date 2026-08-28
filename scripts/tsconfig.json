@@ -2,7 +2,12 @@
   "extends": "../config/tsconfig.base.json",
   "compilerOptions": {
     "types": ["bun"],
-    "noEmit": true
+    "noEmit": true,
+    "baseUrl": ".",
+    // package sources, not `lib`, which is build output
+    "paths": {
+      "react-native-h3": ["../packages/react-native-h3/src/index.ts"]
+    }
   },
   "include": ["./**/*.ts"]
 }
