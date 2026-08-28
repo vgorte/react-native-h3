@@ -7,6 +7,8 @@
     "ios": "react-native run-ios",
     "start": "react-native start",
     "typecheck": "tsc --noEmit",
+    "bundle-install": "bundle install",
+    "pods": "cd ios && bundle exec pod install",
     "test:ios": "react-native-harness --harnessRunner ios",
     "test:android": "react-native-harness --harnessRunner android"
   },

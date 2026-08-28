@@ -17,11 +17,49 @@
     "docs:api": "bun run scripts/gen-api-docs.ts",
     "example": "bun run --cwd apps/example",
     "example:ios": "bun run --cwd apps/example ios",
-    "example:android": "bun run --cwd apps/example android"
+    "example:android": "bun run --cwd apps/example android",
+    "release": "./scripts/release.sh"
+  },
+  "release-it": {
+    "npm": {
+      "publish": false
+    },
+    "git": {
+      "commitMessage": "chore: release ${version}",
+      "tagName": "v${version}",
+      "requireCleanWorkingDir": false
+    },
+    "github": {
+      "release": true
+    },
+    "hooks": {
+      "before:release": "bun install && bun run lint && bun run build && bun run specs && bun test && H3_PARITY_REQUIRED=1 bun run --cwd packages/react-native-h3 parity",
+      "after:bump": "bun install && git add bun.lock && bun example bundle-install && bun example pods && git add apps/example/ios/Podfile.lock"
+    },
+    "plugins": {
+      "@release-it/bumper": {
+        "out": [
+          {
+            "file": "packages/react-native-h3/package.json",
+            "path": "version"
+          },
+          {
+            "file": "apps/example/package.json",
+            "path": "version"
+          }
+        ]
+      },
+      "@release-it/conventional-changelog": {
+        "preset": "conventionalcommits"
+      }
+    }
   },
   "devDependencies": {
     "@biomejs/biome": "^2.0.0",
+    "@release-it/bumper": "^8.0.0",
+    "@release-it/conventional-changelog": "^12.0.0",
     "@types/bun": "^1.4.0",
+    "release-it": "^21.0.2",
     "typescript": "^5.6.0"
   }
 }

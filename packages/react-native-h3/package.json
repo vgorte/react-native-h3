@@ -34,7 +34,8 @@
     "specs": "nitrogen",
     "test": "bun test",
     "parity": "bun test parity",
-    "prepack": "bun run ../../scripts/check-pack.ts"
+    "prepack": "bun run ../../scripts/check-pack.ts",
+    "release": "release-it"
   },
   "files": [
     "src",
@@ -61,6 +62,18 @@
     "README.md",
     "LICENSE"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "release-it": {
+    "npm": {
+      "publish": true
+    },
+    "git": false,
+    "github": {
+      "release": false
+    }
+  },
   "peerDependencies": {
     "react": "*",
     "react-native": "*",
