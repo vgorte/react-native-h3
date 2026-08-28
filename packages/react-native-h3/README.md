@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://raw.githubusercontent.com/vgorte/react-native-h3/main/img/logo.svg" alt="react-native-h3" width="132" height="132" />
+  <img src="img/logo.svg" alt="react-native-h3" width="132" height="132" />
   <h1>react-native-h3</h1>
   <p><b>Uber's H3 geospatial grid for React Native, powered by Nitro Modules for blazing fast performance.</b></p>
   <p>
@@ -46,7 +46,7 @@ While `h3-js` compiles the C library to JavaScript via Emscripten and relies on 
 allocation, `react-native-h3` executes in pure machine code and hands over memory without a single
 copy.
 
-![react-native-h3 against h3-js, median milliseconds per workload](https://raw.githubusercontent.com/vgorte/react-native-h3/main/img/benchmark.svg)
+![react-native-h3 against h3-js, median milliseconds per workload](img/benchmark.svg)
 
 **Up to 260× faster than `h3-js`**, on `polygonToCells` over San Francisco at resolution 12,
 412,377 cells, with the result verified identical to `h3-js`'s.
