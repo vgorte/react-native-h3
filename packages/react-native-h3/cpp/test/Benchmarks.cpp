@@ -124,7 +124,7 @@ void operator delete[](void* pointer, size_t) noexcept {
 int main() {
   std::vector<Measurement> results;
 
-  // the W2 buffer path: allocate zeroed, fill, compact, release
+  // the buffer path: allocate zeroed, fill, compact, release
   const H3Index origin9 = sanFrancisco(9);
   results.push_back(measure("gridDisk k=20 through CellBuffer", 200, [&]() -> int64_t {
     int64_t maxSize = 0;
