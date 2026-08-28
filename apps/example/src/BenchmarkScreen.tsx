@@ -100,13 +100,16 @@ function now(): number {
 
 function statsOf(samples: number[]): Stats {
   const sorted = [...samples].sort((a, b) => a - b)
-  const at = (fraction: number): number =>
-    sorted[Math.min(sorted.length - 1, Math.floor(fraction * sorted.length))] as number
+  const last = sorted.length - 1
+  // the median takes the upper of the two middle samples on an even count
+  const median = sorted[Math.min(last, Math.floor(0.5 * sorted.length))] as number
+  // nearest rank, so 20 runs put the p95 on the nineteenth sample rather than on the maximum
+  const rank = Math.min(last, Math.max(0, Math.ceil(0.95 * sorted.length) - 1))
   return {
-    median: at(0.5),
-    p95: at(0.95),
+    median,
+    p95: sorted[rank] as number,
     min: sorted[0] as number,
-    max: sorted[sorted.length - 1] as number,
+    max: sorted[last] as number,
   }
 }
 
@@ -336,9 +339,10 @@ async function runBenchmark(): Promise<{ rows: Row[]; seconds: number }> {
       RUNS,
       w6.stats,
       w6Reference.stats,
-      cells.every((cell, index) =>
-        sameLatLng(cellToLatLng(cell), h3.cellToLatLng(referenceDisk[index] as string)),
-      ),
+      cells.length === referenceDisk.length &&
+        cells.every((cell, index) =>
+          sameLatLng(cellToLatLng(cell), h3.cellToLatLng(referenceDisk[index] as string)),
+        ),
       `${CALLS} calls over ${cells.length} distinct cells`,
     ),
   )
@@ -363,9 +367,10 @@ async function runBenchmark(): Promise<{ rows: Row[]; seconds: number }> {
       RUNS,
       w7.stats,
       w7Reference.stats,
-      cells.every((cell, index) =>
-        sameBoundary(cellToBoundary(cell), h3.cellToBoundary(referenceDisk[index] as string)),
-      ),
+      cells.length === referenceDisk.length &&
+        cells.every((cell, index) =>
+          sameBoundary(cellToBoundary(cell), h3.cellToBoundary(referenceDisk[index] as string)),
+        ),
       `${CALLS} calls over ${cells.length} distinct cells`,
     ),
   )
@@ -442,14 +447,16 @@ function toPayload(rows: Row[], seconds: number): Payload {
   }
 }
 
-// os_log drops everything past about a kilobyte, so the payload leaves in numbered chunks
+// os_log drops everything past about a kilobyte, so the payload leaves in numbered chunks. The bars
+// around each one are not decoration: the log trims a line's outer whitespace, which once ate the
+// space off a chunk boundary and silently corrupted a workload name. Quoting instead of bracketing
+// would not help, because the log rewrites a backslash as `\134`.
 function logPayload(payload: Payload): void {
   const text = JSON.stringify(payload)
   const total = Math.ceil(text.length / CHUNK)
   for (let index = 0; index < total; index++) {
-    console.log(
-      `BENCHMARK_JSON ${index + 1}/${total} ${text.slice(index * CHUNK, (index + 1) * CHUNK)}`,
-    )
+    const chunk = text.slice(index * CHUNK, (index + 1) * CHUNK)
+    console.log(`BENCHMARK_JSON ${index + 1}/${total} |${chunk}|`)
   }
 }
 

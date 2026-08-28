@@ -135,10 +135,11 @@ function toBars(rows) {
 }
 
 // the axis reaches the decade above the widest factor, so the longest bar always stops short of the
-// value labels and the decade ticks land at even fractions of the width
+// value labels and the decade ticks land at even fractions of the width. It never falls below 10x:
+// at 1x the axis would span nothing and every bar length would come out as a division by zero.
 function axisMax(bars) {
   const widest = Math.max(...bars.map((bar) => bar.factor))
-  return 10 ** (Math.floor(Math.log10(widest)) + 1)
+  return Math.max(10, 10 ** (Math.floor(Math.log10(widest)) + 1))
 }
 
 function decades(max) {
