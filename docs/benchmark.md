@@ -36,13 +36,16 @@ Each workload is timed using the following sequence:
 
 - **Warm-up:** One untimed warm-up pass so neither library pays the initialisation cost of its first
   call.
-- **Timed Passes:** 20 timed passes for most workloads. (Exception: `W3` gets three passes, as a
-  single `h3-js` run takes about 20 seconds.)
+- **Timed Passes:** 20 timed passes for most workloads. (Exceptions: `W3` and `W2d` get three
+  passes, as a single `h3-js` run of either takes seconds; `W0` takes 1,000 passes of one call.)
 - **Event Loop Yielding:** Between samples, the thread yields to the event loop. This prevents the
   app from freezing during minutes-long runs. The pause occurs strictly outside the timed windows.
+  (Exception: `W0` yields every hundredth sample, because a macrotask costs more than the single
+  call it would separate.)
 - **Statistical Aggregation:** The published figure is the median (the upper of the two middle
   samples on an even count). The p95 (by nearest rank, the 19th sample out of 20), minimum, and
-  maximum are recorded beside it.
+  maximum are recorded beside it. A `W0` sample is one call, so its median and p95 describe a single
+  call rather than a pass.
 
 ### 3. Strict Equivalence Validation
 
@@ -53,8 +56,9 @@ from the warm-up value or a fresh untimed pass:
   libraries can be brought to without timing the conversion).
 - **Coordinates and Boundaries:** Compared component by component with a tolerance of `1e-9`
   degrees.
-- **Async Parity:** The async `W3` row has no `h3-js` counterpart, so its output is validated
-  against the synchronous `W3` result.
+- **Order:** Sorted for a set of cells, in order for `W10`, where the path is the answer.
+- **Async Parity:** The async `W3` and `W8` rows have no `h3-js` counterpart, so their output is
+  validated against the synchronous result of the same workload.
 
 > **Note:** A run that fails validation is marked `RESULTS DIFFER FROM h3-js` in the screen's
 > caption and must not be published.
@@ -72,6 +76,32 @@ purpose.
 - **Paired Bars:** `img/benchmark.svg` shows the three README workloads as paired bars,
   `react-native-h3` above `h3-js`, each pair scaled linearly so the `h3-js` bar spans the full
   width. The remaining workloads are in the table below.
+- **Where the Headline Comes From:** `bun run benchmark:svg` computes it from a payload; the screen
+  reports rows and their per-row factors and nothing else. Which factor deserves a headline is a
+  judgement made when the numbers are published, not by the app that measures them.
+
+### 5. The Workload Ids
+
+The screen measures every id below. The table under Detailed Results publishes the subset the README
+rests on; the rest are measured to keep the published rows in context.
+
+| Id | Workload |
+|---|---|
+| `W0` | `latLngToCell`, one call per sample over 1,000 distinct coordinates: the map tap, where no batch hides the cost of a single crossing |
+| `W1` | `latLngToCell`, 100,000 calls per pass |
+| `W2` | `gridDisk(k=20)`, 1,000 calls per pass |
+| `W2a` to `W2d` | the same loop at `k` of 1, 5, 10 and 50, so the factor can be read against the work one call does |
+| `W3` | `polygonToCells` over San Francisco at res 12, synchronous and async |
+| `W4` | `compactCells` of a `k=20` disk |
+| `W5` | `cellsToMultiPolygon` of a `k=20` disk |
+| `W6` | `cellToLatLng`, 100,000 calls over the cells of a `k=20` disk |
+| `W7` | `cellToBoundary`, 100,000 calls over the cells of a `k=20` disk |
+| `W8` | `uncompactCells` of the compacted res 9 San Francisco polygon, synchronous and async |
+| `W9` | `cellToChildren`, from a res 5 cell over San Francisco to res 10 |
+| `W10` | `gridPathCells`, Berlin to Hamburg at res 9, 1,000 calls per pass |
+
+`W8` sizes its result with `cellToChildrenSize` before the run and targets the highest resolution
+that stays under the Cell Ceiling, so the row label names the resolution actually measured.
 
 ## 📈 Detailed Results
 
