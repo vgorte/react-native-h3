@@ -8,7 +8,10 @@ mock.module('react-native-nitro-modules', () => ({
   },
 }))
 
-/** Lists every public function this package exports, as listed in `docs/h3-function-table.md`. */
+/**
+ * Lists every public function this package exports: the H3 surface of `docs/h3-function-table.md`,
+ * the four `Async` variants of it, and `configure`.
+ */
 const EXPECTED_FUNCTIONS = [
   'areNeighborCells',
   'cellAreaKm2',
@@ -28,8 +31,10 @@ const EXPECTED_FUNCTIONS = [
   'cellToVertexes',
   'cellsToDirectedEdge',
   'cellsToMultiPolygon',
+  'cellsToMultiPolygonAsync',
   'childPosToCell',
   'compactCells',
+  'configure',
   'constructCell',
   'degsToRads',
   'directedEdgeToBoundary',
@@ -69,17 +74,20 @@ const EXPECTED_FUNCTIONS = [
   'localIjToCell',
   'originToDirectedEdges',
   'polygonToCells',
+  'polygonToCellsAsync',
   'polygonToCellsExperimental',
+  'polygonToCellsExperimentalAsync',
   'radsToDegs',
   'reverseDirectedEdge',
   'uncompactCells',
+  'uncompactCellsAsync',
   'vertexToLatLng',
 ] as const
 
 describe('public API', () => {
-  test('exports all 64 functions the function table lists', async () => {
+  test('exports all 69 functions the surface holds', async () => {
     const h3 = await import('../src/index')
-    expect(EXPECTED_FUNCTIONS).toHaveLength(64)
+    expect(EXPECTED_FUNCTIONS).toHaveLength(69)
     for (const name of EXPECTED_FUNCTIONS) {
       expect(typeof (h3 as Record<string, unknown>)[name]).toBe('function')
     }
