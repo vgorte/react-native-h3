@@ -62,6 +62,51 @@ const PATH_RES = 9
 // the package's default cell ceiling, which `configure({ maxCellCount })` would move
 const CELL_CEILING = 4_000_000
 
+const OWN = 'react-native-h3'
+const REFERENCE = 'h3-js'
+
+// every label is written once: the plan the screen lists up front and the row pushed afterwards
+const LABELS = {
+  w0: 'W0 latLngToCell, one call per sample',
+  w1: 'W1 latLngToCell x 100,000',
+  w2: `W2 gridDisk(k=${DISK_K}) x 1,000`,
+  w3: 'W3 polygonToCells, SF, res 12',
+  w3Async: 'W3 polygonToCellsAsync, SF, res 12',
+  w4: `W4 compactCells of a k=${DISK_K} disk`,
+  w5: `W5 cellsToMultiPolygon of a k=${DISK_K} disk`,
+  w6: 'W6 cellToLatLng x 100,000',
+  w7: 'W7 cellToBoundary x 100,000',
+  w9: `W9 cellToChildren, res ${CHILDREN_PARENT_RES} to res ${CHILDREN_RES}`,
+  w10: `W10 gridPathCells, Berlin to Hamburg, res ${PATH_RES} x 1,000`,
+}
+
+function diskSeriesLabel(series: { id: string; k: number }): string {
+  return `${series.id} gridDisk(k=${series.k}) x 1,000`
+}
+
+function uncompactLabel(res: number, asynchronous: boolean): string {
+  return `W8 uncompactCells${asynchronous ? 'Async' : ''}, SF res 9 compacted, to res ${res}`
+}
+
+function planOf(uncompactRes: number): string[] {
+  return [
+    LABELS.w0,
+    LABELS.w1,
+    LABELS.w2,
+    ...DISK_SERIES.map(diskSeriesLabel),
+    LABELS.w3,
+    LABELS.w3Async,
+    LABELS.w4,
+    LABELS.w5,
+    LABELS.w6,
+    LABELS.w7,
+    uncompactLabel(uncompactRes, false),
+    uncompactLabel(uncompactRes, true),
+    LABELS.w9,
+    LABELS.w10,
+  ]
+}
+
 export interface Stats {
   median: number
   p95: number
@@ -78,6 +123,21 @@ export interface Row {
   referenceStats: Stats | undefined
   equivalent: boolean
   detail: string
+}
+
+/**
+ * Reports what the run is doing between two samples, so the screen can show one line per workload.
+ *
+ * `index` is the workload being measured; every workload before it is finished and carried in
+ * `rows`. `passes` of `0` means the workload has not started timing yet.
+ */
+export interface RunState {
+  plan: string[]
+  rows: Row[]
+  index: number
+  engine: string
+  pass: number
+  passes: number
 }
 
 function now(): number {
@@ -108,14 +168,19 @@ interface Timed<T> {
   stats: Stats
 }
 
+// reports the pass just finished, `0` for the warm-up; it runs outside every `now()` window
+type OnPass = (pass: number) => void
+
 // warm-up untimed; its value feeds the equivalence check
 // a pause outside every `now()` window caps the longest freeze at one run
 async function timeRuns<T>(
   signal: RunSignal,
   runs: number,
   body: () => T,
+  onPass: OnPass,
 ): Promise<Timed<T> | undefined> {
   const value = body()
+  onPass(0)
   if (await pause(signal)) {
     return undefined
   }
@@ -124,6 +189,7 @@ async function timeRuns<T>(
     const start = now()
     body()
     samples.push(now() - start)
+    onPass(index + 1)
     if (await pause(signal)) {
       return undefined
     }
@@ -135,8 +201,10 @@ async function timeRunsAsync<T>(
   signal: RunSignal,
   runs: number,
   body: () => Promise<T>,
+  onPass: OnPass,
 ): Promise<Timed<T> | undefined> {
   const value = await body()
+  onPass(0)
   if (await pause(signal)) {
     return undefined
   }
@@ -145,6 +213,7 @@ async function timeRunsAsync<T>(
     const start = now()
     await body()
     samples.push(now() - start)
+    onPass(index + 1)
     if (await pause(signal)) {
       return undefined
     }
@@ -157,11 +226,13 @@ async function timeCalls<T>(
   signal: RunSignal,
   calls: number,
   body: (index: number) => T,
+  onPass: OnPass,
 ): Promise<Timed<T> | undefined> {
   let value = body(0)
   for (let index = 1; index < calls; index++) {
     value = body(index)
   }
+  onPass(0)
   if (await pause(signal)) {
     return undefined
   }
@@ -170,8 +241,11 @@ async function timeCalls<T>(
     const start = now()
     value = body(index)
     samples.push(now() - start)
-    if (index % SINGLE_CALL_YIELD === SINGLE_CALL_YIELD - 1 && (await pause(signal))) {
-      return undefined
+    if (index % SINGLE_CALL_YIELD === SINGLE_CALL_YIELD - 1) {
+      onPass(index + 1)
+      if (await pause(signal)) {
+        return undefined
+      }
     }
   }
   return { value, stats: statsOf(samples) }
@@ -297,6 +371,7 @@ function fittingResolution(cells: BigUint64Array, target: number): number {
 
 export async function runBenchmark(
   signal: RunSignal,
+  onState: (state: RunState) => void,
 ): Promise<{ rows: Row[]; seconds: number } | undefined> {
   const started = now()
   const origin = latLngToCell(SAN_FRANCISCO.lat, SAN_FRANCISCO.lng, 9)
@@ -305,26 +380,57 @@ export async function runBenchmark(
   const referenceOrigin = h3.latLngToCell(SAN_FRANCISCO.lat, SAN_FRANCISCO.lng, 9)
   const referenceDisk = h3.gridDisk(referenceOrigin, DISK_K)
   const cells = Array.from(disk)
+  // compacting the res 9 polygon is the input of `W8`, not the measurement, so it stays untimed
+  const compacted = compactCells(polygonToCells(SAN_FRANCISCO_POLYGON, 9))
+  const referenceCompacted = h3.compactCells(h3.polygonToCells(SAN_FRANCISCO_POLYGON, 9))
+  const uncompactRes = fittingResolution(compacted, UNCOMPACT_RES)
+
+  const plan = planOf(uncompactRes)
   const rows: Row[] = []
+  let index = 0
+  function report(engine: string, pass: number, passes: number): void {
+    onState({ plan, rows: [...rows], index, engine, pass, passes })
+  }
+  function track(engine: string, passes: number): OnPass {
+    return (pass) => {
+      report(engine, pass, passes)
+    }
+  }
+  function finish(row: Row): void {
+    rows.push(row)
+    index += 1
+    report(OWN, 0, 0)
+  }
+  report(OWN, 0, 0)
 
   const singleInputs = singleCallInputs()
-  const w0 = await timeCalls(signal, SINGLE_CALLS, (index) => {
-    const input = singleInputs[index] as LatLng
-    return latLngToCell(input.lat, input.lng, 9)
-  })
+  const w0 = await timeCalls(
+    signal,
+    SINGLE_CALLS,
+    (call) => {
+      const input = singleInputs[call] as LatLng
+      return latLngToCell(input.lat, input.lng, 9)
+    },
+    track(OWN, SINGLE_CALLS),
+  )
   if (w0 == null) {
     return undefined
   }
-  const w0Reference = await timeCalls(signal, SINGLE_CALLS, (index) => {
-    const input = singleInputs[index] as LatLng
-    return h3.latLngToCell(input.lat, input.lng, 9)
-  })
+  const w0Reference = await timeCalls(
+    signal,
+    SINGLE_CALLS,
+    (call) => {
+      const input = singleInputs[call] as LatLng
+      return h3.latLngToCell(input.lat, input.lng, 9)
+    },
+    track(REFERENCE, SINGLE_CALLS),
+  )
   if (w0Reference == null) {
     return undefined
   }
-  rows.push(
+  finish(
     toRow(
-      'W0 latLngToCell, one call per sample',
+      LABELS.w0,
       SINGLE_CALLS,
       w0.stats,
       w0Reference.stats,
@@ -341,29 +447,39 @@ export async function runBenchmark(
     return undefined
   }
 
-  const w1 = await timeRuns(signal, RUNS, () => {
-    let last = 0n
-    for (let i = 0; i < CALLS; i++) {
-      last = latLngToCell(SAN_FRANCISCO.lat, SAN_FRANCISCO.lng, 9)
-    }
-    return last
-  })
+  const w1 = await timeRuns(
+    signal,
+    RUNS,
+    () => {
+      let last = 0n
+      for (let i = 0; i < CALLS; i++) {
+        last = latLngToCell(SAN_FRANCISCO.lat, SAN_FRANCISCO.lng, 9)
+      }
+      return last
+    },
+    track(OWN, RUNS),
+  )
   if (w1 == null) {
     return undefined
   }
-  const w1Reference = await timeRuns(signal, RUNS, () => {
-    let last = ''
-    for (let i = 0; i < CALLS; i++) {
-      last = h3.latLngToCell(SAN_FRANCISCO.lat, SAN_FRANCISCO.lng, 9)
-    }
-    return last
-  })
+  const w1Reference = await timeRuns(
+    signal,
+    RUNS,
+    () => {
+      let last = ''
+      for (let i = 0; i < CALLS; i++) {
+        last = h3.latLngToCell(SAN_FRANCISCO.lat, SAN_FRANCISCO.lng, 9)
+      }
+      return last
+    },
+    track(REFERENCE, RUNS),
+  )
   if (w1Reference == null) {
     return undefined
   }
-  rows.push(
+  finish(
     toRow(
-      'W1 latLngToCell x 100,000',
+      LABELS.w1,
       RUNS,
       w1.stats,
       w1Reference.stats,
@@ -376,29 +492,39 @@ export async function runBenchmark(
     return undefined
   }
 
-  const w2 = await timeRuns(signal, RUNS, () => {
-    let last = disk
-    for (let i = 0; i < CALLS_PER_RUN; i++) {
-      last = gridDisk(origin, DISK_K)
-    }
-    return last
-  })
+  const w2 = await timeRuns(
+    signal,
+    RUNS,
+    () => {
+      let last = disk
+      for (let i = 0; i < CALLS_PER_RUN; i++) {
+        last = gridDisk(origin, DISK_K)
+      }
+      return last
+    },
+    track(OWN, RUNS),
+  )
   if (w2 == null) {
     return undefined
   }
-  const w2Reference = await timeRuns(signal, RUNS, () => {
-    let last = referenceDisk
-    for (let i = 0; i < CALLS_PER_RUN; i++) {
-      last = h3.gridDisk(referenceOrigin, DISK_K)
-    }
-    return last
-  })
+  const w2Reference = await timeRuns(
+    signal,
+    RUNS,
+    () => {
+      let last = referenceDisk
+      for (let i = 0; i < CALLS_PER_RUN; i++) {
+        last = h3.gridDisk(referenceOrigin, DISK_K)
+      }
+      return last
+    },
+    track(REFERENCE, RUNS),
+  )
   if (w2Reference == null) {
     return undefined
   }
-  rows.push(
+  finish(
     toRow(
-      'W2 gridDisk(k=20) x 1,000',
+      LABELS.w2,
       RUNS,
       w2.stats,
       w2Reference.stats,
@@ -412,29 +538,39 @@ export async function runBenchmark(
   }
 
   for (const series of DISK_SERIES) {
-    const own = await timeRuns(signal, series.runs, () => {
-      let last = disk
-      for (let i = 0; i < CALLS_PER_RUN; i++) {
-        last = gridDisk(origin, series.k)
-      }
-      return last
-    })
+    const own = await timeRuns(
+      signal,
+      series.runs,
+      () => {
+        let last = disk
+        for (let i = 0; i < CALLS_PER_RUN; i++) {
+          last = gridDisk(origin, series.k)
+        }
+        return last
+      },
+      track(OWN, series.runs),
+    )
     if (own == null) {
       return undefined
     }
-    const reference = await timeRuns(signal, series.runs, () => {
-      let last = referenceDisk
-      for (let i = 0; i < CALLS_PER_RUN; i++) {
-        last = h3.gridDisk(referenceOrigin, series.k)
-      }
-      return last
-    })
+    const reference = await timeRuns(
+      signal,
+      series.runs,
+      () => {
+        let last = referenceDisk
+        for (let i = 0; i < CALLS_PER_RUN; i++) {
+          last = h3.gridDisk(referenceOrigin, series.k)
+        }
+        return last
+      },
+      track(REFERENCE, series.runs),
+    )
     if (reference == null) {
       return undefined
     }
-    rows.push(
+    finish(
       toRow(
-        `${series.id} gridDisk(k=${series.k}) x 1,000`,
+        diskSeriesLabel(series),
         series.runs,
         own.stats,
         reference.stats,
@@ -448,20 +584,28 @@ export async function runBenchmark(
     }
   }
 
-  const w3 = await timeRuns(signal, RUNS_SLOW, () => polygonToCells(SAN_FRANCISCO_POLYGON, 12))
+  const w3 = await timeRuns(
+    signal,
+    RUNS_SLOW,
+    () => polygonToCells(SAN_FRANCISCO_POLYGON, 12),
+    track(OWN, RUNS_SLOW),
+  )
   if (w3 == null) {
     return undefined
   }
-  const w3Reference = await timeRuns(signal, RUNS_SLOW, () =>
-    h3.polygonToCells(SAN_FRANCISCO_POLYGON, 12),
+  const w3Reference = await timeRuns(
+    signal,
+    RUNS_SLOW,
+    () => h3.polygonToCells(SAN_FRANCISCO_POLYGON, 12),
+    track(REFERENCE, RUNS_SLOW),
   )
   if (w3Reference == null) {
     return undefined
   }
   const w3Hex = sortedHex(w3.value)
-  rows.push(
+  finish(
     toRow(
-      'W3 polygonToCells, SF, res 12',
+      LABELS.w3,
       RUNS_SLOW,
       w3.stats,
       w3Reference.stats,
@@ -474,15 +618,18 @@ export async function runBenchmark(
     return undefined
   }
 
-  const w3Async = await timeRunsAsync(signal, RUNS_SLOW, () =>
-    polygonToCellsAsync(SAN_FRANCISCO_POLYGON, 12),
+  const w3Async = await timeRunsAsync(
+    signal,
+    RUNS_SLOW,
+    () => polygonToCellsAsync(SAN_FRANCISCO_POLYGON, 12),
+    track(OWN, RUNS_SLOW),
   )
   if (w3Async == null) {
     return undefined
   }
-  rows.push(
+  finish(
     toRow(
-      'W3 polygonToCellsAsync, SF, res 12',
+      LABELS.w3Async,
       RUNS_SLOW,
       w3Async.stats,
       undefined,
@@ -495,17 +642,22 @@ export async function runBenchmark(
     return undefined
   }
 
-  const w4 = await timeRuns(signal, RUNS, () => compactCells(disk))
+  const w4 = await timeRuns(signal, RUNS, () => compactCells(disk), track(OWN, RUNS))
   if (w4 == null) {
     return undefined
   }
-  const w4Reference = await timeRuns(signal, RUNS, () => h3.compactCells(referenceDisk))
+  const w4Reference = await timeRuns(
+    signal,
+    RUNS,
+    () => h3.compactCells(referenceDisk),
+    track(REFERENCE, RUNS),
+  )
   if (w4Reference == null) {
     return undefined
   }
-  rows.push(
+  finish(
     toRow(
-      'W4 compactCells of a k=20 disk',
+      LABELS.w4,
       RUNS,
       w4.stats,
       w4Reference.stats,
@@ -518,17 +670,22 @@ export async function runBenchmark(
     return undefined
   }
 
-  const w5 = await timeRuns(signal, RUNS, () => cellsToMultiPolygon(disk))
+  const w5 = await timeRuns(signal, RUNS, () => cellsToMultiPolygon(disk), track(OWN, RUNS))
   if (w5 == null) {
     return undefined
   }
-  const w5Reference = await timeRuns(signal, RUNS, () => h3.cellsToMultiPolygon(referenceDisk))
+  const w5Reference = await timeRuns(
+    signal,
+    RUNS,
+    () => h3.cellsToMultiPolygon(referenceDisk),
+    track(REFERENCE, RUNS),
+  )
   if (w5Reference == null) {
     return undefined
   }
-  rows.push(
+  finish(
     toRow(
-      'W5 cellsToMultiPolygon of a k=20 disk',
+      LABELS.w5,
       RUNS,
       w5.stats,
       w5Reference.stats,
@@ -541,35 +698,45 @@ export async function runBenchmark(
     return undefined
   }
 
-  const w6 = await timeRuns(signal, RUNS, () => {
-    let last: LatLng = { lat: 0, lng: 0 }
-    for (let i = 0; i < CALLS; i++) {
-      last = cellToLatLng(cells[i % cells.length] as bigint)
-    }
-    return last
-  })
+  const w6 = await timeRuns(
+    signal,
+    RUNS,
+    () => {
+      let last: LatLng = { lat: 0, lng: 0 }
+      for (let i = 0; i < CALLS; i++) {
+        last = cellToLatLng(cells[i % cells.length] as bigint)
+      }
+      return last
+    },
+    track(OWN, RUNS),
+  )
   if (w6 == null) {
     return undefined
   }
-  const w6Reference = await timeRuns(signal, RUNS, () => {
-    let last: number[] = []
-    for (let i = 0; i < CALLS; i++) {
-      last = h3.cellToLatLng(referenceDisk[i % referenceDisk.length] as string)
-    }
-    return last
-  })
+  const w6Reference = await timeRuns(
+    signal,
+    RUNS,
+    () => {
+      let last: number[] = []
+      for (let i = 0; i < CALLS; i++) {
+        last = h3.cellToLatLng(referenceDisk[i % referenceDisk.length] as string)
+      }
+      return last
+    },
+    track(REFERENCE, RUNS),
+  )
   if (w6Reference == null) {
     return undefined
   }
-  rows.push(
+  finish(
     toRow(
-      'W6 cellToLatLng x 100,000',
+      LABELS.w6,
       RUNS,
       w6.stats,
       w6Reference.stats,
       cells.length === referenceDisk.length &&
-        cells.every((cell, index) =>
-          sameLatLng(cellToLatLng(cell), h3.cellToLatLng(referenceDisk[index] as string)),
+        cells.every((cell, at) =>
+          sameLatLng(cellToLatLng(cell), h3.cellToLatLng(referenceDisk[at] as string)),
         ),
       `${CALLS} calls over ${cells.length} distinct cells`,
     ),
@@ -579,35 +746,45 @@ export async function runBenchmark(
     return undefined
   }
 
-  const w7 = await timeRuns(signal, RUNS, () => {
-    let last: LatLng[] = []
-    for (let i = 0; i < CALLS; i++) {
-      last = cellToBoundary(cells[i % cells.length] as bigint)
-    }
-    return last
-  })
+  const w7 = await timeRuns(
+    signal,
+    RUNS,
+    () => {
+      let last: LatLng[] = []
+      for (let i = 0; i < CALLS; i++) {
+        last = cellToBoundary(cells[i % cells.length] as bigint)
+      }
+      return last
+    },
+    track(OWN, RUNS),
+  )
   if (w7 == null) {
     return undefined
   }
-  const w7Reference = await timeRuns(signal, RUNS, () => {
-    let last: number[][] = []
-    for (let i = 0; i < CALLS; i++) {
-      last = h3.cellToBoundary(referenceDisk[i % referenceDisk.length] as string)
-    }
-    return last
-  })
+  const w7Reference = await timeRuns(
+    signal,
+    RUNS,
+    () => {
+      let last: number[][] = []
+      for (let i = 0; i < CALLS; i++) {
+        last = h3.cellToBoundary(referenceDisk[i % referenceDisk.length] as string)
+      }
+      return last
+    },
+    track(REFERENCE, RUNS),
+  )
   if (w7Reference == null) {
     return undefined
   }
-  rows.push(
+  finish(
     toRow(
-      'W7 cellToBoundary x 100,000',
+      LABELS.w7,
       RUNS,
       w7.stats,
       w7Reference.stats,
       cells.length === referenceDisk.length &&
-        cells.every((cell, index) =>
-          sameBoundary(cellToBoundary(cell), h3.cellToBoundary(referenceDisk[index] as string)),
+        cells.every((cell, at) =>
+          sameBoundary(cellToBoundary(cell), h3.cellToBoundary(referenceDisk[at] as string)),
         ),
       `${CALLS} calls over ${cells.length} distinct cells`,
     ),
@@ -617,24 +794,28 @@ export async function runBenchmark(
     return undefined
   }
 
-  // compacting the res 9 polygon is the input, not the measurement, so it stays outside the runs
-  const compacted = compactCells(polygonToCells(SAN_FRANCISCO_POLYGON, 9))
-  const referenceCompacted = h3.compactCells(h3.polygonToCells(SAN_FRANCISCO_POLYGON, 9))
-  const uncompactRes = fittingResolution(compacted, UNCOMPACT_RES)
-  const w8 = await timeRuns(signal, RUNS, () => uncompactCells(compacted, uncompactRes))
+  const w8 = await timeRuns(
+    signal,
+    RUNS,
+    () => uncompactCells(compacted, uncompactRes),
+    track(OWN, RUNS),
+  )
   if (w8 == null) {
     return undefined
   }
-  const w8Reference = await timeRuns(signal, RUNS, () =>
-    h3.uncompactCells(referenceCompacted, uncompactRes),
+  const w8Reference = await timeRuns(
+    signal,
+    RUNS,
+    () => h3.uncompactCells(referenceCompacted, uncompactRes),
+    track(REFERENCE, RUNS),
   )
   if (w8Reference == null) {
     return undefined
   }
   const w8Hex = sortedHex(w8.value)
-  rows.push(
+  finish(
     toRow(
-      `W8 uncompactCells, SF res 9 compacted, to res ${uncompactRes}`,
+      uncompactLabel(uncompactRes, false),
       RUNS,
       w8.stats,
       w8Reference.stats,
@@ -647,15 +828,18 @@ export async function runBenchmark(
     return undefined
   }
 
-  const w8Async = await timeRunsAsync(signal, RUNS, () =>
-    uncompactCellsAsync(compacted, uncompactRes),
+  const w8Async = await timeRunsAsync(
+    signal,
+    RUNS,
+    () => uncompactCellsAsync(compacted, uncompactRes),
+    track(OWN, RUNS),
   )
   if (w8Async == null) {
     return undefined
   }
-  rows.push(
+  finish(
     toRow(
-      `W8 uncompactCellsAsync, SF res 9 compacted, to res ${uncompactRes}`,
+      uncompactLabel(uncompactRes, true),
       RUNS,
       w8Async.stats,
       undefined,
@@ -670,19 +854,27 @@ export async function runBenchmark(
 
   const parent = latLngToCell(SAN_FRANCISCO.lat, SAN_FRANCISCO.lng, CHILDREN_PARENT_RES)
   const referenceParent = h3.latLngToCell(SAN_FRANCISCO.lat, SAN_FRANCISCO.lng, CHILDREN_PARENT_RES)
-  const w9 = await timeRuns(signal, RUNS, () => cellToChildren(parent, CHILDREN_RES))
+  const w9 = await timeRuns(
+    signal,
+    RUNS,
+    () => cellToChildren(parent, CHILDREN_RES),
+    track(OWN, RUNS),
+  )
   if (w9 == null) {
     return undefined
   }
-  const w9Reference = await timeRuns(signal, RUNS, () =>
-    h3.cellToChildren(referenceParent, CHILDREN_RES),
+  const w9Reference = await timeRuns(
+    signal,
+    RUNS,
+    () => h3.cellToChildren(referenceParent, CHILDREN_RES),
+    track(REFERENCE, RUNS),
   )
   if (w9Reference == null) {
     return undefined
   }
-  rows.push(
+  finish(
     toRow(
-      `W9 cellToChildren, res ${CHILDREN_PARENT_RES} to res ${CHILDREN_RES}`,
+      LABELS.w9,
       RUNS,
       w9.stats,
       w9Reference.stats,
@@ -699,29 +891,39 @@ export async function runBenchmark(
   const hamburg = latLngToCell(HAMBURG.lat, HAMBURG.lng, PATH_RES)
   const referenceBerlin = h3.latLngToCell(BERLIN.lat, BERLIN.lng, PATH_RES)
   const referenceHamburg = h3.latLngToCell(HAMBURG.lat, HAMBURG.lng, PATH_RES)
-  const w10 = await timeRuns(signal, RUNS, () => {
-    let last: BigUint64Array = new BigUint64Array(0)
-    for (let i = 0; i < CALLS_PER_RUN; i++) {
-      last = gridPathCells(berlin, hamburg)
-    }
-    return last
-  })
+  const w10 = await timeRuns(
+    signal,
+    RUNS,
+    () => {
+      let last: BigUint64Array = new BigUint64Array(0)
+      for (let i = 0; i < CALLS_PER_RUN; i++) {
+        last = gridPathCells(berlin, hamburg)
+      }
+      return last
+    },
+    track(OWN, RUNS),
+  )
   if (w10 == null) {
     return undefined
   }
-  const w10Reference = await timeRuns(signal, RUNS, () => {
-    let last: string[] = []
-    for (let i = 0; i < CALLS_PER_RUN; i++) {
-      last = h3.gridPathCells(referenceBerlin, referenceHamburg)
-    }
-    return last
-  })
+  const w10Reference = await timeRuns(
+    signal,
+    RUNS,
+    () => {
+      let last: string[] = []
+      for (let i = 0; i < CALLS_PER_RUN; i++) {
+        last = h3.gridPathCells(referenceBerlin, referenceHamburg)
+      }
+      return last
+    },
+    track(REFERENCE, RUNS),
+  )
   if (w10Reference == null) {
     return undefined
   }
-  rows.push(
+  finish(
     toRow(
-      `W10 gridPathCells, Berlin to Hamburg, res ${PATH_RES} x 1,000`,
+      LABELS.w10,
       RUNS,
       w10.stats,
       w10Reference.stats,

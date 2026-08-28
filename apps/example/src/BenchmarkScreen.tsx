@@ -8,7 +8,7 @@ import {
   Text,
   View,
 } from 'react-native'
-import type { Row, RunSignal, Stats } from './benchmarkWorkloads'
+import type { Row, RunSignal, RunState, Stats } from './benchmarkWorkloads'
 import { runBenchmark } from './benchmarkWorkloads'
 
 // the unified log on iOS truncates a message at about a kilobyte
@@ -156,6 +156,17 @@ function logPayload(payload: Payload): void {
   }
 }
 
+// the JavaScript thread is blocked for the length of a sample, so this line only moves between
+// samples; the spinner beside it is native and keeps turning throughout
+function progressLabel(state: RunState): string {
+  if (state.passes === 0) {
+    return 'starting'
+  }
+  return state.pass === 0
+    ? `${state.engine}, warm-up`
+    : `${state.engine}, pass ${state.pass}/${state.passes}`
+}
+
 function Measure({ label, value }: { label: string; value: string }): React.JSX.Element {
   return (
     <View style={styles.measure}>
@@ -165,40 +176,82 @@ function Measure({ label, value }: { label: string; value: string }): React.JSX.
   )
 }
 
-function WorkloadCard({ row }: { row: Row }): React.JSX.Element {
-  const factor = factorOf(row)
+function Status({ row, running }: { row: Row | undefined; running: boolean }): React.JSX.Element {
+  if (row != null) {
+    return (
+      <Text style={row.equivalent ? styles.equivalent : styles.differs}>
+        {row.equivalent ? '✓' : '✗'}
+      </Text>
+    )
+  }
+  if (running) {
+    return <ActivityIndicator size="small" />
+  }
+  return <Text style={styles.waiting}>-</Text>
+}
+
+function WorkloadCard({
+  label,
+  row,
+  progress,
+}: {
+  label: string
+  row: Row | undefined
+  progress: string | undefined
+}): React.JSX.Element {
+  const factor = row == null ? undefined : factorOf(row)
   return (
     <View style={styles.card}>
       <View style={styles.cardHeader}>
-        <Text style={styles.workload}>{row.workload}</Text>
-        <Text style={row.equivalent ? styles.equivalent : styles.differs}>
-          {row.equivalent ? 'yes' : 'no'}
+        <Text style={row == null ? styles.workloadWaiting : styles.workload}>
+          {row?.workload ?? label}
         </Text>
+        <Status row={row} running={progress != null} />
       </View>
-      <View style={styles.measures}>
-        <Measure label="react-native-h3" value={`${formatMillis(row.millis)} ms`} />
-        <Measure
-          label="h3-js"
-          value={row.referenceMillis == null ? 'n/a' : `${formatMillis(row.referenceMillis)} ms`}
-        />
-        <View style={styles.measure}>
-          <Text style={styles.measureLabel}>factor</Text>
-          <Text style={styles.factor}>{factor == null ? 'n/a' : `${formatFactor(factor)}×`}</Text>
+      {row == null ? undefined : (
+        <View style={styles.measures}>
+          <Measure label="react-native-h3" value={`${formatMillis(row.millis)} ms`} />
+          <Measure
+            label="h3-js"
+            value={row.referenceMillis == null ? 'n/a' : `${formatMillis(row.referenceMillis)} ms`}
+          />
+          <View style={styles.measure}>
+            <Text style={styles.measureLabel}>factor</Text>
+            <Text style={styles.factor}>{factor == null ? 'n/a' : `${formatFactor(factor)}×`}</Text>
+          </View>
         </View>
-      </View>
-      <Text style={styles.detail}>{row.detail}</Text>
+      )}
+      {row == null ? undefined : <Text style={styles.detail}>{row.detail}</Text>}
+      {progress == null ? undefined : <Text style={styles.detail}>{progress}</Text>}
     </View>
   )
 }
 
-function Results({ rows, seconds }: { rows: Row[]; seconds: number }): React.JSX.Element {
+function Results({
+  state,
+  seconds,
+}: {
+  state: RunState
+  seconds: number | undefined
+}): React.JSX.Element {
   return (
     <View style={styles.results}>
-      <Text style={styles.summaryMeta}>{`${rows.length} workloads, ${seconds.toFixed(0)} s`}</Text>
-      {rows.map((row) => (
-        <WorkloadCard key={row.workload} row={row} />
+      <Text style={styles.summaryMeta}>
+        {seconds == null
+          ? `${state.rows.length} of ${state.plan.length} workloads`
+          : `${state.rows.length} workloads, ${seconds.toFixed(0)} s`}
+      </Text>
+      {state.plan.map((label, index) => (
+        <WorkloadCard
+          key={label}
+          label={label}
+          row={state.rows[index]}
+          progress={seconds == null && index === state.index ? progressLabel(state) : undefined}
+        />
       ))}
-      <Text style={styles.caption}>{caption(rows, seconds)}</Text>
+      {seconds == null ? undefined : (
+        <Text style={styles.caption}>{caption(state.rows, seconds)}</Text>
+      )}
     </View>
   )
 }
@@ -211,9 +264,8 @@ function Results({ rows, seconds }: { rows: Row[]; seconds: number }): React.JSX
  * which one produced the numbers.
  */
 export function BenchmarkScreen(): React.JSX.Element {
-  const [result, setResult] = React.useState<{ rows: Row[]; seconds: number } | undefined>(
-    undefined,
-  )
+  const [state, setState] = React.useState<RunState | undefined>(undefined)
+  const [seconds, setSeconds] = React.useState<number | undefined>(undefined)
   const [running, setRunning] = React.useState(false)
   const signal = React.useRef<RunSignal | undefined>(undefined)
 
@@ -231,15 +283,20 @@ export function BenchmarkScreen(): React.JSX.Element {
     const current: RunSignal = { cancelled: false }
     signal.current = current
     setRunning(true)
-    setResult(undefined)
+    setState(undefined)
+    setSeconds(undefined)
     // a frame, so the spinner paints before the first workload takes the thread
     requestAnimationFrame(() => {
-      void runBenchmark(current)
+      void runBenchmark(current, (next) => {
+        if (!current.cancelled) {
+          setState(next)
+        }
+      })
         .then((measured) => {
           if (measured == null) {
             return
           }
-          setResult(measured)
+          setSeconds(measured.seconds)
           console.log(toMarkdown(measured.rows, measured.seconds))
           logPayload(toPayload(measured.rows, measured.seconds))
         })
@@ -263,8 +320,7 @@ export function BenchmarkScreen(): React.JSX.Element {
       <Pressable style={styles.button} onPress={run} disabled={running}>
         <Text style={styles.buttonLabel}>{running ? 'Running' : 'Run benchmark'}</Text>
       </Pressable>
-      {running ? <ActivityIndicator style={styles.spinner} /> : undefined}
-      {result == null ? undefined : <Results rows={result.rows} seconds={result.seconds} />}
+      {state == null ? undefined : <Results state={state} seconds={seconds} />}
     </ScrollView>
   )
 }
@@ -283,14 +339,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#1f6feb',
   },
   buttonLabel: { color: 'white', fontSize: 16, textAlign: 'center' },
-  spinner: { marginTop: 16 },
   results: { marginTop: 20, gap: 10 },
   summaryMeta: { fontSize: 13, color: MUTED },
   card: { borderWidth: 1, borderColor: '#e4e4e4', borderRadius: 10, padding: 12, gap: 10 },
   cardHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
   workload: { flex: 1, fontSize: 14, fontWeight: '600' },
-  equivalent: { fontSize: 13, fontWeight: '700', color: HIGHLIGHT },
-  differs: { fontSize: 13, fontWeight: '700', color: '#b3261e' },
+  workloadWaiting: { flex: 1, fontSize: 14, color: MUTED },
+  equivalent: { fontSize: 15, fontWeight: '700', color: HIGHLIGHT },
+  differs: { fontSize: 15, fontWeight: '700', color: '#b3261e' },
+  waiting: { fontSize: 15, color: MUTED },
   measures: { flexDirection: 'row', gap: 12 },
   measure: { flex: 1, gap: 2 },
   measureLabel: { fontSize: 11, color: MUTED },
