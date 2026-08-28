@@ -1,0 +1,47 @@
+{
+  "rows": [
+    {
+      "workload": "W1 latLngToCell x 100,000",
+      "millis": 36.65208411216736,
+      "referenceMillis": 771.568666934967,
+      "detail": "89283082803ffff"
+    },
+    {
+      "workload": "W2 gridDisk(k=20) x 1,000",
+      "millis": 12.292999982833862,
+      "referenceMillis": 1785.0460000038147,
+      "detail": "1261 cells per call"
+    },
+    {
+      "workload": "W3 polygonToCells, SF, res 12",
+      "millis": 88.86762499809265,
+      "referenceMillis": 22515.34445786476,
+      "detail": "412377 cells"
+    },
+    {
+      "workload": "W3 polygonToCellsAsync, SF, res 12",
+      "millis": 87.959792137146,
+      "referenceMillis": null,
+      "detail": "412377 cells"
+    },
+    {
+      "workload": "W4 compactCells of a k=20 disk",
+      "millis": 0.044625043869018555,
+      "referenceMillis": 22.204041004180908,
+      "detail": "163 cells"
+    },
+    {
+      "workload": "W5 cellsToMultiPolygon of a k=20 disk",
+      "millis": 0.49266600608825684,
+      "referenceMillis": 114.67491602897644,
+      "detail": "1 polygons"
+    }
+  ],
+  "measuredOn": {
+    "platform": "ios",
+    "osVersion": "26.5",
+    "build": "Release",
+    "h3js": "4.5.0",
+    "date": "2026-08-28"
+  }
+}

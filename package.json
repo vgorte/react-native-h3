@@ -11,6 +11,7 @@
     "specs": "bun run --cwd packages/react-native-h3 specs",
     "lint": "biome check .",
     "format": "biome check --write .",
+    "benchmark:svg": "bun scripts/benchmark-svg.mjs",
     "vendor:h3": "bun run scripts/vendor-h3.ts",
     "icons": "bun run scripts/generate-app-icons.ts",
     "example": "bun run --cwd apps/example",

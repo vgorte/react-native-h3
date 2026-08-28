@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="840" height="266" viewBox="0 0 840 266" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" role="img" aria-label="react-native-h3 vs h3-js, speedup per workload">
+<title>react-native-h3 vs h3-js, speedup per workload</title>
+<text x="20" y="34" font-size="17" font-weight="600" fill="#6b7280">react-native-h3 vs h3-js, speedup per workload</text>
+<line x1="320" y1="54" x2="320" y2="228" stroke="#6b7280" stroke-width="1" opacity="0.35"/>
+<text x="308" y="78" font-size="13" fill="#6b7280" text-anchor="end">W1 latLngToCell x 100,000</text>
+<rect x="320" y="62" width="18" height="22" rx="3" fill="#3b82f6"/>
+<text x="348" y="78" font-size="13" font-weight="600" fill="#3b82f6">21×</text>
+<text x="308" y="112" font-size="13" fill="#6b7280" text-anchor="end">W2 gridDisk(k=20) x 1,000</text>
+<rect x="320" y="96" width="127" height="22" rx="3" fill="#3b82f6"/>
+<text x="457" y="112" font-size="13" font-weight="600" fill="#3b82f6">145×</text>
+<text x="308" y="146" font-size="13" fill="#6b7280" text-anchor="end">W3 polygonToCells, SF, res 12</text>
+<rect x="320" y="130" width="222" height="22" rx="3" fill="#3b82f6"/>
+<text x="552" y="146" font-size="13" font-weight="600" fill="#3b82f6">253×</text>
+<text x="308" y="180" font-size="13" fill="#6b7280" text-anchor="end">W4 compactCells of a k=20 disk</text>
+<rect x="320" y="164" width="436" height="22" rx="3" fill="#3b82f6"/>
+<text x="766" y="180" font-size="13" font-weight="600" fill="#3b82f6">498×</text>
+<text x="308" y="214" font-size="13" fill="#6b7280" text-anchor="end">W5 cellsToMultiPolygon of a k=20 disk</text>
+<rect x="320" y="198" width="204" height="22" rx="3" fill="#3b82f6"/>
+<text x="534" y="214" font-size="13" font-weight="600" fill="#3b82f6">233×</text>
+<text x="20" y="254" font-size="12" fill="#6b7280">Measured on ios 26.5, Release build, against h3-js 4.5.0, 2026-08-28.</text>
+</svg>
