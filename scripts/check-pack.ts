@@ -24,6 +24,12 @@ const ALWAYS_REQUIRED = [
   'NitroH3.podspec',
   'lib/index.js',
   'lib/index.d.ts',
+  // one anchor per `cpp` entry in `files`, which are separate globs and directories
+  'cpp/HybridH3.cpp',
+  'cpp/HybridH3.hpp',
+  'cpp/core/CellBuffer.hpp',
+  'cpp/ops/Indexing.cpp',
+  'cpp/shapes/CellSetCall.hpp',
   'android/CMakeLists.txt',
   'android/build.gradle',
   'android/gradle.properties',
@@ -47,7 +53,7 @@ export function checkPackList(): Promise<string[]> {
 }
 
 async function computePackList(): Promise<string[]> {
-  // --ignore-scripts is what keeps this from recursing when it runs as prepack
+  // `--ignore-scripts` is what keeps this from recursing when it runs as `prepack`
   const packed = Bun.spawnSync(['npm', 'pack', '--dry-run', '--json', '--ignore-scripts'], {
     cwd: PACKAGE,
   })
