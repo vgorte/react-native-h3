@@ -9,7 +9,7 @@
       "**",
       "!**/nitrogen/generated",
       "!**/third_party",
-      "!**/lib",
+      "!packages/react-native-h3/lib",
       "!**/node_modules",
       "!**/build",
       "!**/.cxx",
