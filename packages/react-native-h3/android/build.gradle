@@ -52,6 +52,22 @@ android {
   buildFeatures {
     prefab true  // <-- the prefabs CMake resolves via find_package
   }
+
+  // Ship only our own `libNitroH3.so`; the prefabs stay link-time only. React Native 0.75-0.81 on
+  // the Legacy Architecture pick-firsts just `libfbjni.so` and `libc++_shared.so` for the app
+  // (`NdkConfiguratorUtils.configureNewArchPackagingOptions`), so re-packaging the rest breaks
+  // `mergeDebugNativeLibs`. Mirrors `react-native-nitro-modules/android/build.gradle`.
+  packaging {
+    jniLibs {
+      excludes += [
+        "**/libNitroModules.so",
+        "**/libc++_shared.so",
+        "**/libfbjni.so",
+        "**/libjsi.so",
+        "**/libreactnative.so",
+      ]
+    }
+  }
 }
 
 repositories {
