@@ -17,6 +17,7 @@
 
 #include "HybridH3Conversions.hpp"
 #include "core/CellBuffer.hpp"
+#include "core/H3ErrorMapping.hpp"
 #include "core/Validation.hpp"
 #include "ops/Edges.hpp"
 #include "ops/Hierarchy.hpp"

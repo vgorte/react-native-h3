@@ -107,16 +107,16 @@ public:
   std::vector<double> getIcosahedronFaces(uint64_t cell) override;
 
   // Async
-  // Each one is a synchronous prologue that copies whatever it received from JS, plus a
-  // `Promise<T>::async` dispatch of the same `h3ops::` function the synchronous sibling calls.
-  std::shared_ptr<Promise<std::shared_ptr<ArrayBuffer>>> polygonToCellsAsync(
-      const std::vector<std::vector<std::vector<double>>>& rings, double res) override;
-  std::shared_ptr<Promise<std::shared_ptr<ArrayBuffer>>> polygonToCellsExperimentalAsync(
-      const std::vector<std::vector<std::vector<double>>>& rings, double res, double flags) override;
+  // each is a synchronous prologue plus a `Promise<T>::async` dispatch
+  std::shared_ptr<Promise<std::shared_ptr<ArrayBuffer>>>
+  polygonToCellsAsync(const std::vector<std::vector<std::vector<double>>>& rings, double res) override;
+  std::shared_ptr<Promise<std::shared_ptr<ArrayBuffer>>>
+  polygonToCellsExperimentalAsync(const std::vector<std::vector<std::vector<double>>>& rings, double res,
+                                  double flags) override;
   std::shared_ptr<Promise<std::vector<std::vector<std::vector<LatLng>>>>>
   cellsToMultiPolygonAsync(const std::shared_ptr<ArrayBuffer>& cells) override;
   std::shared_ptr<Promise<std::shared_ptr<ArrayBuffer>>> uncompactCellsAsync(const std::shared_ptr<ArrayBuffer>& cells,
-                                                                            double res) override;
+                                                                             double res) override;
 
   // Configuration
   void setMaxCellCount(double maxCellCount) override;

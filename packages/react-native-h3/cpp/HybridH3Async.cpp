@@ -6,6 +6,7 @@
 //
 
 #include <cstdint>
+#include <exception>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -20,11 +21,7 @@
 
 namespace margelo::nitro::h3 {
 
-/**
- * Implements the four async methods, each as a synchronous prologue on the JavaScript thread plus a
- * `Promise<T>::async` dispatch whose lambda captures only values this process owns. Anything that
- * touches a borrowed resource happens in the prologue and nowhere else.
- */
+// a borrowed resource is touched only in the synchronous prologue, never in the dispatched lambda
 
 std::shared_ptr<Promise<std::shared_ptr<ArrayBuffer>>>
 HybridH3::polygonToCellsAsync(const std::vector<std::vector<std::vector<double>>>& rings, double res) {
@@ -48,19 +45,32 @@ HybridH3::polygonToCellsExperimentalAsync(const std::vector<std::vector<std::vec
 
 std::shared_ptr<Promise<std::vector<std::vector<std::vector<LatLng>>>>>
 HybridH3::cellsToMultiPolygonAsync(const std::shared_ptr<ArrayBuffer>& cells) {
-  const std::shared_ptr<ArrayBuffer> owned = detail::copyInbound(cells);
+  std::shared_ptr<ArrayBuffer> owned;
+  // a malformed cell set rejects the promise rather than throwing out of a promise-returning method
+  try {
+    owned = detail::copyInbound(cells);
+  } catch (...) {
+    return Promise<std::vector<std::vector<std::vector<LatLng>>>>::rejected(std::current_exception());
+  }
   return Promise<std::vector<std::vector<std::vector<LatLng>>>>::async(
-      [owned]() -> std::vector<std::vector<std::vector<LatLng>>> {
+      [owned = std::move(owned)]() -> std::vector<std::vector<std::vector<LatLng>>> {
         return detail::toLatLngGrid(h3ops::cellsToMultiPolygon(detail::cellsOf(owned), detail::countOf(owned)));
       });
 }
 
 std::shared_ptr<Promise<std::shared_ptr<ArrayBuffer>>>
 HybridH3::uncompactCellsAsync(const std::shared_ptr<ArrayBuffer>& cells, double res) {
-  const std::shared_ptr<ArrayBuffer> owned = detail::copyInbound(cells);
-  return Promise<std::shared_ptr<ArrayBuffer>>::async([owned, res]() -> std::shared_ptr<ArrayBuffer> {
-    return detail::toArrayBuffer(h3ops::uncompactCells(detail::cellsOf(owned), detail::countOf(owned), res));
-  });
+  std::shared_ptr<ArrayBuffer> owned;
+  // a malformed cell set rejects the promise rather than throwing out of a promise-returning method
+  try {
+    owned = detail::copyInbound(cells);
+  } catch (...) {
+    return Promise<std::shared_ptr<ArrayBuffer>>::rejected(std::current_exception());
+  }
+  return Promise<std::shared_ptr<ArrayBuffer>>::async(
+      [owned = std::move(owned), res]() -> std::shared_ptr<ArrayBuffer> {
+        return detail::toArrayBuffer(h3ops::uncompactCells(detail::cellsOf(owned), detail::countOf(owned), res));
+      });
 }
 
 } // namespace margelo::nitro::h3
