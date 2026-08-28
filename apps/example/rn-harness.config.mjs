@@ -29,9 +29,9 @@ const config = {
       device: androidEmulator('afterglow_pixel', {
         apiLevel: 36,
         profile: 'pixel_7',
-        // the emulator wants 1.2x this free before it creates the partition, and an
-        // `ubuntu-latest` runner has under 3.5 GB left where the AVD lives
-        diskSize: '2G',
+        // what the `pixel_7` profile itself asks for; a smaller value here is ignored, because
+        // `avdmanager` has already written the profile's size into `config.ini`
+        diskSize: '6G',
         heapSize: '228M',
       }),
       bundleId: 'com.h3example',
