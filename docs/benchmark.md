@@ -51,9 +51,9 @@ factor of the slowest, and on a linear axis everything below the top bar collaps
 
 ## Results
 
-Every figure is a median in milliseconds. `Speedup` is the h3-js median divided by ours.
+Every figure is a median in milliseconds. `Speedup` is the `h3-js` median divided by the `react-native-h3` median.
 
-| Workload | react-native-h3 | h3-js | Speedup | p95, ours | p95, h3-js | Equivalent | Detail |
+| Workload | react-native-h3 | h3-js | Speedup | p95, react-native-h3 | p95, h3-js | Equivalent | Detail |
 |---|---:|---:|---:|---:|---:|:-:|---|
 | W1 `latLngToCell` x 100,000 | 33.0 ms | 700.5 ms | 21× | 33.1 ms | 718.0 ms | yes | `89283082803ffff` |
 | W2 `gridDisk(k=20)` x 1,000 | 12.2 ms | 1,613.5 ms | 132× | 12.9 ms | 1,636.2 ms | yes | 1,261 cells per call |
@@ -97,7 +97,7 @@ a release.
 4. Save the result as `apps/example/benchmark.json`, pretty-printed with two spaces.
 5. Run `bun run benchmark:svg`. It validates the JSON, rewrites `img/benchmark.svg`, and prints one
    line beginning `HEADLINE`.
-6. Put that headline in the README's "Why" section and update the three published rows and the
+6. Put that headline in the README's Benchmark section and update the three published rows and the
    provenance sentence from the new JSON. Update this document's table and conditions from the same
    file.
 
