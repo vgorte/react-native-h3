@@ -47,6 +47,15 @@ add_library(
 target_include_directories(NitroH3 PUBLIC ${PACKAGE_ROOT}/cpp ${H3_ROOT}/include)
 set_source_files_properties(${H3_SOURCES} PROPERTIES COMPILE_FLAGS "-w")  # <-- vendored, not ours to fix
 
+# AddressSanitizer, opt in only. Target options, so they also reach the sources autolinking adds.
+set(H3_SANITIZER "" CACHE STRING "Native sanitizer to build with: empty or 'address'")
+if(H3_SANITIZER STREQUAL "address")
+  target_compile_options(NitroH3 PUBLIC -fsanitize=address -fno-omit-frame-pointer)
+  target_link_options(NitroH3 PUBLIC -fsanitize=address)
+elseif(NOT H3_SANITIZER STREQUAL "")
+  message(FATAL_ERROR "Unsupported H3_SANITIZER: ${H3_SANITIZER}")
+endif()
+
 # Nitrogen autolinking, which must stay last. Purely additive to the target above: generated
 # sources, include paths and `c++20`.
 include(${CMAKE_CURRENT_SOURCE_DIR}/../nitrogen/generated/android/NitroH3+autolinking.cmake)

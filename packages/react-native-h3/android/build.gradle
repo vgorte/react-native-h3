@@ -24,7 +24,9 @@ android {
     externalNativeBuild {
       cmake {
         cppFlags "-frtti -fexceptions -std=c++20"
-        arguments "-DANDROID_STL=c++_shared"
+        // `rootProject` is the app building us through autolinking, so `-Ph3Sanitizer` reaches here
+        arguments "-DANDROID_STL=c++_shared",
+                  "-DH3_SANITIZER=${rootProject.findProperty('h3Sanitizer') ?: ''}"
       }
     }
   }

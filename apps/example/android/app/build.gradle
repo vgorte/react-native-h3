@@ -2,6 +2,20 @@ apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
 
+// AddressSanitizer staging, enabled with `-Ph3Sanitizer=address`
+// an instrumented `.so` only loads with the ASan runtime and the NDK's `wrap.sh` in the APK
+def h3Sanitizer = rootProject.findProperty('h3Sanitizer') ?: ''
+def h3SanitizerRuntime = ['address': 'asan'][h3Sanitizer]
+if (h3Sanitizer != '' && h3SanitizerRuntime == null) {
+    throw new GradleException("Unsupported h3Sanitizer: ${h3Sanitizer}. The only supported value is 'address'.")
+}
+
+def h3SanitizerAbis = ['arm64-v8a', 'x86_64']
+def h3SanitizerRuntimeArch = ['arm64-v8a': 'aarch64', 'x86_64': 'x86_64', 'armeabi-v7a': 'arm', 'x86': 'i686']
+// plain `File`s: the AGP 9 source set API rejects a `Provider`, and the task wiring below is manual
+def h3SanitizerJniLibsDir = layout.buildDirectory.dir('generated/h3SanitizerJniLibs').get().asFile
+def h3SanitizerResourcesDir = layout.buildDirectory.dir('generated/h3SanitizerResources').get().asFile
+
 /**
  * This is the configuration block to customize your React Native Android app.
  * By default you don't need to apply any configuration, just uncomment the lines you need.
@@ -104,6 +118,55 @@ android {
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
         }
+    }
+
+    if (h3SanitizerRuntime != null) {
+        packaging {
+            jniLibs {
+                // `extractNativeLibs="true"`, so `wrap.sh` reaches the filesystem the loader reads
+                useLegacyPackaging = true
+            }
+        }
+        sourceSets {
+            debug {
+                jniLibs.srcDir(h3SanitizerJniLibsDir)
+                resources.srcDir(h3SanitizerResourcesDir)
+            }
+        }
+    }
+}
+
+if (h3SanitizerRuntime != null) {
+    def copyH3SanitizerRuntime = tasks.register('copyH3SanitizerRuntime', Copy) {
+        into(h3SanitizerJniLibsDir)
+        h3SanitizerAbis.each { abi ->
+            def runtimeFileName = "libclang_rt.${h3SanitizerRuntime}-${h3SanitizerRuntimeArch[abi]}-android.so"
+            def runtimeFiles = fileTree("${android.ndkDirectory}/toolchains/llvm/prebuilt") {
+                include "**/${runtimeFileName}"
+            }
+            from(runtimeFiles) {
+                // the NDK nests the runtime under `<host>/lib/clang/<n>/lib/linux`, flatten it
+                eachFile { it.path = "${abi}/${it.name}" }
+                includeEmptyDirs = false
+            }
+        }
+    }
+
+    // `wrap.sh` ships as a java resource so it lands at `lib/<abi>/wrap.sh` unfiltered by ABI
+    def copyH3SanitizerWrap = tasks.register('copyH3SanitizerWrap', Copy) {
+        def wrapScript = file("${android.ndkDirectory}/wrap.sh/${h3SanitizerRuntime}.sh")
+        into(h3SanitizerResourcesDir)
+        h3SanitizerAbis.each { abi ->
+            from(wrapScript) {
+                rename { 'wrap.sh' }
+                into("lib/${abi}")
+            }
+        }
+    }
+
+    afterEvaluate {
+        tasks.named('mergeDebugJniLibFolders').configure { dependsOn(copyH3SanitizerRuntime) }
+        tasks.named('processDebugJavaRes').configure { dependsOn(copyH3SanitizerWrap) }
     }
 }
 
