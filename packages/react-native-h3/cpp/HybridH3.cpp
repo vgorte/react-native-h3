@@ -7,7 +7,9 @@
 
 #include "HybridH3.hpp"
 
+#include <cmath>
 #include <cstdint>
+#include <limits>
 #include <memory>
 #include <string>
 #include <utility>
@@ -15,6 +17,7 @@
 
 #include "HybridH3Conversions.hpp"
 #include "core/CellBuffer.hpp"
+#include "core/Validation.hpp"
 #include "ops/Edges.hpp"
 #include "ops/Hierarchy.hpp"
 #include "ops/Indexing.hpp"
@@ -25,6 +28,7 @@
 #include "ops/Traversal.hpp"
 #include "ops/Units.hpp"
 #include "ops/Vertexes.hpp"
+#include "shapes/CellSetCall.hpp"
 
 using namespace margelo::nitro::h3::detail;
 
@@ -142,19 +146,7 @@ LatLng HybridH3::vertexToLatLng(uint64_t vertex) {
 
 std::vector<std::vector<std::vector<LatLng>>> HybridH3::cellsToMultiPolygon(const std::shared_ptr<ArrayBuffer>& cells) {
   const CellSpan span = toCellSpan(cells);
-  const h3core::MultiPolygon polygons = h3ops::cellsToMultiPolygon(span.data, span.count);
-
-  std::vector<std::vector<std::vector<LatLng>>> result;
-  result.reserve(polygons.size());
-  for (const h3core::Polygon& polygon : polygons) {
-    std::vector<std::vector<LatLng>> loops;
-    loops.reserve(polygon.size());
-    for (const h3core::Ring& ring : polygon) {
-      loops.push_back(toLatLngs(ring));
-    }
-    result.push_back(std::move(loops));
-  }
-  return result;
+  return toLatLngGrid(h3ops::cellsToMultiPolygon(span.data, span.count));
 }
 
 std::shared_ptr<ArrayBuffer> HybridH3::polygonToCells(const std::vector<std::vector<std::vector<double>>>& rings,
@@ -320,6 +312,21 @@ std::vector<double> HybridH3::getIcosahedronFaces(uint64_t cell) {
     widened.push_back(static_cast<double>(face));
   }
   return widened;
+}
+
+void HybridH3::setMaxCellCount(double maxCellCount) {
+  static constexpr const char* kMessage = "maxCellCount must be a positive integer or Infinity";
+  // `Infinity` is how a caller switches the ceiling off, and `h3core::toInt64` rejects it, so it is
+  // mapped before the narrowing rather than after.
+  if (std::isinf(maxCellCount) && maxCellCount > 0.0) {
+    h3shapes::setMaxCellCount(std::numeric_limits<int64_t>::max());
+    return;
+  }
+  const int64_t limit = h3core::toInt64(maxCellCount, kMessage);
+  if (limit < 1) {
+    h3core::throwInvalidArgument(kMessage);
+  }
+  h3shapes::setMaxCellCount(limit);
 }
 
 } // namespace margelo::nitro::h3

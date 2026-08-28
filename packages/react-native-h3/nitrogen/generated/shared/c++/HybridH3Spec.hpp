@@ -23,6 +23,7 @@ namespace margelo::nitro::h3 { struct CoordIJ; }
 #include <NitroModules/ArrayBuffer.hpp>
 #include "CoordIJ.hpp"
 #include <string>
+#include <NitroModules/Promise.hpp>
 
 namespace margelo::nitro::h3 {
 
@@ -119,6 +120,11 @@ namespace margelo::nitro::h3 {
       virtual std::shared_ptr<ArrayBuffer> getRes0Cells() = 0;
       virtual std::shared_ptr<ArrayBuffer> getPentagons(double res) = 0;
       virtual std::vector<double> getIcosahedronFaces(uint64_t cell) = 0;
+      virtual std::shared_ptr<Promise<std::shared_ptr<ArrayBuffer>>> polygonToCellsAsync(const std::vector<std::vector<std::vector<double>>>& rings, double res) = 0;
+      virtual std::shared_ptr<Promise<std::shared_ptr<ArrayBuffer>>> polygonToCellsExperimentalAsync(const std::vector<std::vector<std::vector<double>>>& rings, double res, double flags) = 0;
+      virtual std::shared_ptr<Promise<std::vector<std::vector<std::vector<LatLng>>>>> cellsToMultiPolygonAsync(const std::shared_ptr<ArrayBuffer>& cells) = 0;
+      virtual std::shared_ptr<Promise<std::shared_ptr<ArrayBuffer>>> uncompactCellsAsync(const std::shared_ptr<ArrayBuffer>& cells, double res) = 0;
+      virtual void setMaxCellCount(double maxCellCount) = 0;
 
     protected:
       // Hybrid Setup

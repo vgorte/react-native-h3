@@ -40,6 +40,7 @@ add_library(
   ${PACKAGE_ROOT}/cpp/ops/Units.cpp
   ${PACKAGE_ROOT}/cpp/ops/Vertexes.cpp
   ${PACKAGE_ROOT}/cpp/HybridH3.cpp
+  ${PACKAGE_ROOT}/cpp/HybridH3Async.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/main/cpp/cpp-adapter.cpp  # <-- `JNI_OnLoad`, Android only
 )
 
