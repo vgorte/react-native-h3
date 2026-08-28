@@ -5,6 +5,7 @@
 #   scripts/release.sh 0.2.0
 #   scripts/release.sh --dry-run --ci
 set -euo pipefail
+export PATH=/opt/homebrew/bin:$PATH
 
 if [ "$#" -eq 0 ]; then
   echo "Usage: scripts/release.sh <version> | scripts/release.sh --dry-run --ci" >&2
@@ -22,14 +23,14 @@ bun run build
 bun run specs
 bun test
 
-# the parity suite skips itself when its probe is missing, so build the probe and make a miss fatal
+# without its probe the parity suite skips itself; build it and make a miss fatal
 cmake -S packages/react-native-h3/cpp/test -B build/host -DCMAKE_BUILD_TYPE=Release
 cmake --build build/host --target parity_probe -j
 export H3_PARITY_PROBE="${ROOT}/build/host/parity_probe"
 export H3_PARITY_REQUIRED=1
 bun run --cwd packages/react-native-h3 parity
 
-# Packages: npm publish only, no git operations
+# Packages: `npm publish` only, no git operations
 for pkg in packages/*; do
   [ -d "$pkg" ] || continue
   (cd "$pkg" && bun release "$@")
