@@ -9,6 +9,14 @@ export PATH=/opt/homebrew/bin:$PATH
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 IOS="${ROOT}/apps/example/ios"
 
+# the restore at the end is a hard reset, so start from a clean tree
+DIRTY="$(git -C "${ROOT}" status --porcelain apps/example/ios)"
+if [ -n "${DIRTY}" ]; then
+  echo "apps/example/ios has uncommitted changes, refusing to run:" >&2
+  echo "${DIRTY}" >&2
+  exit 1
+fi
+
 build_variant() {
   local label="$1"
   cd "${IOS}"
@@ -35,8 +43,12 @@ build_variant() {
 build_variant static
 build_variant dynamic
 
-# a static-frameworks lockfile must never be committed, and the static pass also leaves header
-# search paths in the project file that the dynamic pass does not undo
+# the static pass rewrites both files and neither may reach a commit
 cd "${ROOT}"
 git checkout -- apps/example/ios/Podfile.lock apps/example/ios/H3Example.xcodeproj/project.pbxproj
-git status --short apps/example/ios
+LEFTOVER="$(git status --porcelain apps/example/ios)"
+if [ -n "${LEFTOVER}" ]; then
+  echo "apps/example/ios is not clean after the restore:" >&2
+  echo "${LEFTOVER}" >&2
+  exit 1
+fi
