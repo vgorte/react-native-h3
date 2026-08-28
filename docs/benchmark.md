@@ -83,6 +83,27 @@ thread hop costs, which is 2.4 ms on a 76 ms call.
 CI does not produce these figures. They come from a hand-run Release build and are refreshed before
 a release.
 
+### What an unbounded request costs h3-js
+
+The cell ceiling this package applies has no counterpart in h3-js, which bounds only its own wasm
+allocation at 2 GB and builds the JavaScript array of hexadecimal strings on top of it without a
+bound. These two calls show what that costs on hardware far larger than a phone:
+
+| Call | Cells | Packed size | Wall clock |
+|---|---:|---:|---:|
+| `gridDisk(cell, 2000)` | 12,006,001 | 96 MB | 1.14 s |
+| `gridDisk(cell, 4000)` | 48,012,001 | 384 MB | 6.16 s |
+
+Measured on 2026-08-28 with h3-js 4.5.0 under bun 1.3.14, on an Apple M5 Pro with 24 GB of memory
+running macOS 26.5.2, from `latLngToCell(37.7749, -122.4194, 9)`. "Packed size" is what those cells
+cost as 64-bit integers, at eight bytes each; as an array of hexadecimal strings they cost
+considerably more, which is what the wall clock is mostly spent on. `gridDisk(cell, 8000)`, which is
+192,024,001 cells, was not run: the array of strings it builds is large enough to put the machine
+into swap.
+
+A phone has neither that memory nor those seconds, and the allocation happens in the app's own heap,
+where a failure is a process kill rather than an exception. That is the reason for the ceiling.
+
 ## Regenerating
 
 1. Build the example app in Release and open the Benchmark screen. The run takes about three

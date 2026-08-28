@@ -8,8 +8,9 @@ import type { ContainmentModeName, ContainmentModeValue, LatLng, Ring } from './
  * Finds the cells covering a polygon as {@linkcode polygonToCells} does, off the JS thread.
  *
  * Worth the thread hop once the fill is long enough to drop frames: San Francisco at resolution
- * `12` is 412,459 cells and 97 ms, about six frames. Below that the synchronous call is cheaper,
- * because it has no hop at all.
+ * `12` is 412,377 cells and about five frames of work, measured in
+ * https://github.com/vgorte/react-native-h3/blob/main/docs/benchmark.md. Below that the
+ * synchronous call is cheaper, because it has no hop at all.
  *
  * @param rings The outer ring first, then holes, as `[latitude, longitude]` degrees.
  * @param res The resolution, `0` to `15`.

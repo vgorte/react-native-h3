@@ -18,8 +18,9 @@ rather than on an Emscripten heap. There is no web implementation; on web, use
 
 ## Features
 
-- **Full API parity with `h3-js` 4.5.0**, all 69 functions under the same names, checked by a parity
-  suite over every resolution 0 cell, all sixteen resolutions, all 192 pentagons and the poles.
+- **Full API parity with `h3-js` 4.5.0**, all 69 functions, under the same names where `h3-js` has
+  one, checked by a parity suite over every resolution 0 cell, all sixteen resolutions, all 192
+  pentagons and the poles.
 - **Cell indexes are `bigint`**, not hexadecimal strings, so nothing converts on the hot path.
 - **Cell sets are `BigUint64Array`**, a view onto the buffer C++ produced, handed over without a copy.
 - **Synchronous by default**, with async variants for the four calls that can drop frames.
@@ -68,7 +69,7 @@ npx expo prebuild
 `react-native-nitro-modules` is a peer dependency at `^0.37.0`: install it in your app so the build
 holds exactly one copy of the Nitro runtime. The package needs React Native 0.75 or newer and builds
 on the old architecture as well as the New Architecture. Platform floors are under
-[Platforms](#platforms).
+[Requirements](#requirements).
 
 ## Usage
 
@@ -129,10 +130,13 @@ will be, then writes into a buffer the caller provides. On a server an oversize 
 call. On a phone it is a process kill that JavaScript cannot catch, because the allocation fails
 inside the app's own heap, so there is no exception for a `catch` to receive. The ceiling turns that
 into an `H3Error` you can handle. `h3-js` has no equivalent: it bounds only its own wasm allocation,
-at 2 GB, and `gridDisk(cell, 1155)` allocates all 4,005,541 cells there.
+at 2 GB, and `gridDisk(cell, 1155)` allocates all 4,005,541 cells there. What that costs on a
+desktop machine is measured in
+[docs/benchmark.md](https://github.com/vgorte/react-native-h3/blob/main/docs/benchmark.md#what-an-unbounded-request-costs-h3-js).
 
 4,000,000 cells is 32 MB at eight bytes a cell, allocated once in C++ and handed to JavaScript as
-the `BigUint64Array`'s backing store without a copy. The ceiling is a default, not a law:
+the `BigUint64Array`'s backing store without a copy; an async variant that copies an inbound set
+holds two such buffers for the length of the call. The ceiling is a default, not a law:
 
 ```ts
 import { configure } from 'react-native-h3'
@@ -206,7 +210,7 @@ Three behaviours differ deliberately.
 [docs/h3-js-divergences.md](https://github.com/vgorte/react-native-h3/blob/main/packages/react-native-h3/docs/h3-js-divergences.md)
 lists every case with the `h3-js` answer beside this one, each proved by a test.
 
-## Platforms
+## Requirements
 
 | Platform | Minimum | Notes |
 |---|---|---|
