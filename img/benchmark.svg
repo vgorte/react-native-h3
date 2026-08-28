@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="840" height="358" viewBox="0 0 840 358" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" role="img" aria-label="react-native-h3 vs h3-js, speedup per workload">
+<svg xmlns="http://www.w3.org/2000/svg" width="840" height="380" viewBox="0 0 840 380" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" role="img" aria-label="react-native-h3 vs h3-js, speedup per workload">
 <title>react-native-h3 vs h3-js, speedup per workload</title>
 <style>
 text { fill: #727a84 }
@@ -17,34 +17,36 @@ text { fill: #8b949e }
 }
 </style>
 <text x="20" y="34" font-size="17" font-weight="600">react-native-h3 vs h3-js, speedup per workload</text>
-<line class="axis" x1="320" y1="54" x2="320" y2="296" stroke-width="1" opacity="0.35"/>
-<line class="axis" x1="429" y1="54" x2="429" y2="296" stroke-width="1" opacity="0.15"/>
-<text x="429" y="306" font-size="11" text-anchor="middle">10×</text>
-<line class="axis" x1="538" y1="54" x2="538" y2="296" stroke-width="1" opacity="0.15"/>
-<text x="538" y="306" font-size="11" text-anchor="middle">100×</text>
-<line class="axis" x1="647" y1="54" x2="647" y2="296" stroke-width="1" opacity="0.15"/>
-<text x="647" y="306" font-size="11" text-anchor="middle">1000×</text>
-<text x="308" y="78" font-size="13" text-anchor="end">W1 latLngToCell x 100,000</text>
-<rect x="320" y="62" width="145" height="22" rx="3" fill="#3b82f6"/>
-<text class="factor" x="475" y="78" font-size="13" font-weight="600">21×</text>
-<text x="308" y="112" font-size="13" text-anchor="end">W2 gridDisk(k=20) x 1,000</text>
-<rect x="320" y="96" width="231" height="22" rx="3" fill="#3b82f6"/>
-<text class="factor" x="561" y="112" font-size="13" font-weight="600">132×</text>
-<text x="308" y="146" font-size="13" text-anchor="end">W3 polygonToCells, SF, res 12</text>
-<rect x="320" y="130" width="265" height="22" rx="3" fill="#3b82f6"/>
-<text class="factor" x="595" y="146" font-size="13" font-weight="600">269×</text>
-<text x="308" y="180" font-size="13" text-anchor="end">W4 compactCells of a k=20 disk</text>
-<rect x="320" y="164" width="345" height="22" rx="3" fill="#3b82f6"/>
-<text class="factor" x="675" y="180" font-size="13" font-weight="600">1464×</text>
-<text x="308" y="214" font-size="13" text-anchor="end">W5 cellsToMultiPolygon of a k=20 disk</text>
-<rect x="320" y="198" width="268" height="22" rx="3" fill="#3b82f6"/>
-<text class="factor" x="598" y="214" font-size="13" font-weight="600">290×</text>
-<text x="308" y="248" font-size="13" text-anchor="end">W6 cellToLatLng x 100,000</text>
-<rect x="320" y="232" width="118" height="22" rx="3" fill="#3b82f6"/>
-<text class="factor" x="448" y="248" font-size="13" font-weight="600">12×</text>
-<text x="308" y="282" font-size="13" text-anchor="end">W7 cellToBoundary x 100,000</text>
-<rect x="320" y="266" width="111" height="22" rx="3" fill="#3b82f6"/>
-<text class="factor" x="441" y="282" font-size="13" font-weight="600">10×</text>
-<text x="20" y="330" font-size="12">Measured on ios 26.5, Release build, react-native 0.87.0, against h3-js 4.5.0, 2026-08-28.</text>
-<text x="20" y="346" font-size="12">Median of 20 runs (3 for W3) after one warm-up. Bar length is logarithmic.</text>
+<text class="factor" x="820" y="44" font-size="40" font-weight="700" text-anchor="end">260×</text>
+<text x="820" y="62" font-size="12" text-anchor="end">faster than h3-js at polygonToCells, SF, res 12</text>
+<line class="axis" x1="320" y1="76" x2="320" y2="318" stroke-width="1" opacity="0.35"/>
+<line class="axis" x1="429" y1="76" x2="429" y2="318" stroke-width="1" opacity="0.15"/>
+<text x="429" y="328" font-size="11" text-anchor="middle">10×</text>
+<line class="axis" x1="538" y1="76" x2="538" y2="318" stroke-width="1" opacity="0.15"/>
+<text x="538" y="328" font-size="11" text-anchor="middle">100×</text>
+<line class="axis" x1="647" y1="76" x2="647" y2="318" stroke-width="1" opacity="0.15"/>
+<text x="647" y="328" font-size="11" text-anchor="middle">1000×</text>
+<text x="308" y="100" font-size="13" text-anchor="end">W1 latLngToCell x 100,000</text>
+<rect x="320" y="84" width="145" height="22" rx="3" fill="#3b82f6"/>
+<text class="factor" x="475" y="100" font-size="13" font-weight="600">21×</text>
+<text x="308" y="134" font-size="13" text-anchor="end">W2 gridDisk(k=20) x 1,000</text>
+<rect x="320" y="118" width="231" height="22" rx="3" fill="#3b82f6"/>
+<text class="factor" x="561" y="134" font-size="13" font-weight="600">132×</text>
+<text x="308" y="168" font-size="13" text-anchor="end">W3 polygonToCells, SF, res 12</text>
+<rect x="320" y="152" width="265" height="22" rx="3" fill="#3b82f6"/>
+<text class="factor" x="595" y="168" font-size="13" font-weight="600">269×</text>
+<text x="308" y="202" font-size="13" text-anchor="end">W4 compactCells of a k=20 disk</text>
+<rect x="320" y="186" width="345" height="22" rx="3" fill="#3b82f6"/>
+<text class="factor" x="675" y="202" font-size="13" font-weight="600">1464×</text>
+<text x="308" y="236" font-size="13" text-anchor="end">W5 cellsToMultiPolygon of a k=20 disk</text>
+<rect x="320" y="220" width="268" height="22" rx="3" fill="#3b82f6"/>
+<text class="factor" x="598" y="236" font-size="13" font-weight="600">290×</text>
+<text x="308" y="270" font-size="13" text-anchor="end">W6 cellToLatLng x 100,000</text>
+<rect x="320" y="254" width="118" height="22" rx="3" fill="#3b82f6"/>
+<text class="factor" x="448" y="270" font-size="13" font-weight="600">12×</text>
+<text x="308" y="304" font-size="13" text-anchor="end">W7 cellToBoundary x 100,000</text>
+<rect x="320" y="288" width="111" height="22" rx="3" fill="#3b82f6"/>
+<text class="factor" x="441" y="304" font-size="13" font-weight="600">10×</text>
+<text x="20" y="352" font-size="12">Measured on ios 26.5, Release build, react-native 0.87.0, against h3-js 4.5.0, 2026-08-28.</text>
+<text x="20" y="368" font-size="12">Median of 20 runs (3 for W3) after one warm-up. Bar length is logarithmic.</text>
 </svg>

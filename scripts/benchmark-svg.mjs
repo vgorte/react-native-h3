@@ -43,6 +43,9 @@ const VALUE_WIDTH = 64
 const BAR_HEIGHT = 22
 const ROW_STEP = 34
 const CHART_TOP = 62
+const HERO_TOP = 84
+const HERO_NUMBER = 44
+const HERO_CAPTION = 62
 const TICK_BASELINE = 6
 const FOOTER_FIRST = 30
 const FOOTER_SECOND = 46
@@ -126,7 +129,11 @@ function toBars(rows) {
       console.warn(`Skipped \`${row.workload}\`: \`millis\` is ${row.millis}, no factor to draw`)
       continue
     }
-    bars.push({ workload: row.workload, factor: row.referenceMillis / row.millis })
+    bars.push({
+      workload: row.workload,
+      millis: row.millis,
+      factor: row.referenceMillis / row.millis,
+    })
   }
   if (bars.length === 0) {
     throw new Error(`${INPUT} holds no row with an \`h3-js\` reference time`)
@@ -140,6 +147,26 @@ function toBars(rows) {
 function axisMax(bars) {
   const widest = Math.max(...bars.map((bar) => bar.factor))
   return Math.max(10, 10 ** (Math.floor(Math.log10(widest)) + 1))
+}
+
+// The headline is deliberately not the widest bar. W4's factor is h3-js marshalling 1,261
+// hexadecimal strings in and 163 out against about 13 microseconds of C, which says more about the
+// reference than about this package, and any future micro-row would outrank the real work the same
+// way. So the headline takes the widest factor among rows that spend at least a millisecond of
+// react-native-h3's own time, then rounds down to the nearest ten so the figure never flatters.
+const HEADLINE_MIN_MILLIS = 1
+
+function headline(bars) {
+  const eligible = bars.filter((bar) => bar.millis >= HEADLINE_MIN_MILLIS)
+  if (eligible.length === 0) {
+    return undefined
+  }
+  const widest = eligible.reduce((best, bar) => (bar.factor > best.factor ? bar : best))
+  return {
+    workload: widest.workload,
+    subject: widest.workload.replace(/^W\d+ /, ''),
+    factor: Math.floor(widest.factor / 10) * 10,
+  }
 }
 
 function decades(max) {
@@ -210,7 +237,9 @@ function styleBlock() {
 function render(payload) {
   const bars = toBars(payload.rows)
   const max = axisMax(bars)
-  const chartBottom = CHART_TOP + bars.length * ROW_STEP
+  const hero = headline(bars)
+  const chartTop = hero == null ? CHART_TOP : HERO_TOP
+  const chartBottom = chartTop + bars.length * ROW_STEP
   const height = chartBottom + FOOTER_GAP
 
   const lines = [
@@ -221,14 +250,26 @@ function render(payload) {
     `<title>${escapeXml(TITLE)}</title>`,
     styleBlock(),
     `<text x="${MARGIN}" y="34" font-size="17" font-weight="600">${escapeXml(TITLE)}</text>`,
-    `<line class="axis" x1="${BAR_LEFT}" y1="${CHART_TOP - 8}" x2="${BAR_LEFT}" ` +
-      `y2="${chartBottom - 4}" stroke-width="1" opacity="0.35"/>`,
   ]
+
+  if (hero != null) {
+    lines.push(
+      `<text class="factor" x="${WIDTH - MARGIN}" y="${HERO_NUMBER}" font-size="40" ` +
+        `font-weight="700" text-anchor="end">${hero.factor}×</text>`,
+      `<text x="${WIDTH - MARGIN}" y="${HERO_CAPTION}" font-size="12" text-anchor="end">` +
+        `${escapeXml(`faster than h3-js at ${hero.subject}`)}</text>`,
+    )
+  }
+
+  lines.push(
+    `<line class="axis" x1="${BAR_LEFT}" y1="${chartTop - 8}" x2="${BAR_LEFT}" ` +
+      `y2="${chartBottom - 4}" stroke-width="1" opacity="0.35"/>`,
+  )
 
   for (const tick of decades(max)) {
     const x = BAR_LEFT + barLength(tick, max)
     lines.push(
-      `<line class="axis" x1="${x}" y1="${CHART_TOP - 8}" x2="${x}" y2="${chartBottom - 4}" ` +
+      `<line class="axis" x1="${x}" y1="${chartTop - 8}" x2="${x}" y2="${chartBottom - 4}" ` +
         'stroke-width="1" opacity="0.15"/>',
       `<text x="${x}" y="${chartBottom + TICK_BASELINE}" font-size="11" text-anchor="middle">` +
         `${formatFactor(tick)}×</text>`,
@@ -236,7 +277,7 @@ function render(payload) {
   }
 
   bars.forEach((bar, index) => {
-    const top = CHART_TOP + index * ROW_STEP
+    const top = chartTop + index * ROW_STEP
     const baseline = top + BAR_HEIGHT - 6
     const length = barLength(bar.factor, max)
     lines.push(
@@ -260,5 +301,12 @@ function render(payload) {
   return `${lines.join('\n')}\n`
 }
 
-writeFileSync(OUTPUT, render(readPayload()), 'utf8')
+const payload = readPayload()
+writeFileSync(OUTPUT, render(payload), 'utf8')
 console.log(`Wrote ${OUTPUT}`)
+
+// one line the README task can copy verbatim
+const hero = headline(toBars(payload.rows))
+if (hero != null) {
+  console.log(`HEADLINE up to ${hero.factor}× faster than h3-js (${hero.workload})`)
+}
