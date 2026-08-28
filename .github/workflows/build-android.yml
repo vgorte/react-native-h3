@@ -1,0 +1,53 @@
+name: Build Android
+
+on:
+  pull_request:
+    paths:
+      - 'packages/react-native-h3/cpp/**'
+      - 'packages/react-native-h3/third_party/**'
+      - 'packages/react-native-h3/nitrogen/generated/**'
+      - 'packages/react-native-h3/android/**'
+      - 'apps/example/android/**'
+      - 'bun.lock'
+      - '.github/workflows/build-android.yml'
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build Android (min-sdk ${{ matrix.min-sdk }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        min-sdk: ['24', '26']
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14  # <-- pinned: `latest` turns an upstream release into a red build
+
+      - run: bun install --frozen-lockfile
+
+      - name: Set minSdk
+        run: sed -i "s/minSdkVersion = 24/minSdkVersion = ${{ matrix.min-sdk }}/g" apps/example/android/build.gradle
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: '17'
+
+      - name: Build the app
+        working-directory: apps/example/android
+        run: |
+          ./gradlew :app:assembleDebug --no-daemon --build-cache \
+            -PreactNativeArchitectures=arm64-v8a,x86_64
