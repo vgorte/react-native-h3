@@ -4,6 +4,7 @@
 # Usage:
 #   scripts/build-ios-variants.sh
 set -euo pipefail
+# release-it hooks and IDE runners get no Homebrew profile; the directory is absent on Linux
 export PATH=/opt/homebrew/bin:$PATH
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"

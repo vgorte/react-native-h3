@@ -6,6 +6,7 @@
 #   scripts/device-ios.sh asan
 #   scripts/device-ios.sh tsan
 set -euo pipefail
+# release-it hooks and IDE runners get no Homebrew profile; the directory is absent on Linux
 export PATH=/opt/homebrew/bin:$PATH
 
 FLAVOR="${1:-default}"

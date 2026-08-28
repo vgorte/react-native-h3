@@ -5,6 +5,7 @@
 #   scripts/release.sh 0.2.0
 #   scripts/release.sh --dry-run --ci
 set -euo pipefail
+# release-it hooks and IDE runners get no Homebrew profile; the directory is absent on Linux
 export PATH=/opt/homebrew/bin:$PATH
 
 if [ "$#" -eq 0 ]; then
@@ -12,11 +13,23 @@ if [ "$#" -eq 0 ]; then
   exit 1
 fi
 
+case " $* " in
+  *" --dry-run "*) DRY_RUN=true ;;
+  *) DRY_RUN=false ;;
+esac
+
+# without a version the packages bump a patch and the root asks the changelog plugin, publishing two
+# different versions
+if [ "${DRY_RUN}" = false ] && [[ ! "$1" =~ ^[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+  echo "pass an explicit version, e.g. bun release 1.0.0" >&2
+  exit 1
+fi
+
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "${ROOT}"
 
 # Verification gate, before the first publish rather than after it
-bun install
+bun install --frozen-lockfile
 bun run lint
 bun run typecheck
 bun run build
