@@ -2,7 +2,7 @@
  * Generates the example app's launcher icons from `img/logo.svg`.
  *
  * The logo is the single source of truth, so the icons are derived rather than drawn twice.
- * No SVG rasteriser is assumed to be installed: the mark is eight convex polygons, which a
+ * No SVG rasteriser is assumed to be installed: the mark is eight simple polygons, which a
  * supersampling scanline fill and a hand-rolled PNG encoder cover exactly.
  *
  * Usage:

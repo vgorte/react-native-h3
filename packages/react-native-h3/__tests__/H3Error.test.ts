@@ -50,7 +50,9 @@ describe('H3Error', () => {
     // a number in the middle is prose, not H3's suffix.
     try {
       rethrowAsH3Error(
-        new Error("The requested result would exceed this binding's limit of 4000000 cells"),
+        new Error(
+          'The requested result of 4005541 cells exceeds the cell limit of 4000000, which guards against exhausting device memory. Raise it with configure({ maxCellCount })',
+        ),
       )
     } catch (error) {
       expect((error as H3Error).code).toBeUndefined()
@@ -75,5 +77,42 @@ describe('H3Error', () => {
       expect((error as H3Error).message).toBe('something odd')
       expect((error as H3Error).code).toBeUndefined()
     }
+  })
+})
+
+describe('H3Error on the async path', () => {
+  async function rejectWith(message: string): Promise<never> {
+    try {
+      return await Promise.reject(new Error(message))
+    } catch (error) {
+      rethrowAsH3Error(error)
+    }
+  }
+
+  test('a rejection carries no method prefix and is passed through unchanged', async () => {
+    // `JSIConverter+Exception.hpp:40` rejects with `what()` alone, where `HybridFunction.hpp`
+    // prefixes synchronous throws
+    let thrown: unknown
+    try {
+      await rejectWith('Resolution argument was outside of acceptable range (code: 4)')
+    } catch (error) {
+      thrown = error
+    }
+    expect(thrown).toBeInstanceOf(H3Error)
+    expect((thrown as H3Error).message).toBe(
+      'Resolution argument was outside of acceptable range (code: 4)',
+    )
+    expect((thrown as H3Error).code).toBe(4)
+  })
+
+  test('a prefixed message is still stripped on the async path', async () => {
+    // not the shape Nitro produces for rejections today, but the regex must not depend on that
+    let thrown: unknown
+    try {
+      await rejectWith('H3.uncompactCellsAsync(...): Cell argument was not valid (code: 5)')
+    } catch (error) {
+      thrown = error
+    }
+    expect((thrown as H3Error).message).toBe('Cell argument was not valid (code: 5)')
   })
 })

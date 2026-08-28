@@ -1,4 +1,12 @@
 export {
+  cellsToMultiPolygonAsync,
+  polygonToCellsAsync,
+  polygonToCellsExperimentalAsync,
+  uncompactCellsAsync,
+} from './async'
+export type { H3Config } from './configure'
+export { configure } from './configure'
+export {
   areNeighborCells,
   cellsToDirectedEdge,
   directedEdgeToBoundary,

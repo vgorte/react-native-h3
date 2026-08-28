@@ -1,0 +1,100 @@
+name: Harness Android
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'packages/react-native-h3/cpp/**'
+      - 'packages/react-native-h3/third_party/**'
+      - 'packages/react-native-h3/nitrogen/generated/**'
+      - 'packages/react-native-h3/android/**'
+      - 'packages/react-native-h3/src/**'
+      - 'packages/react-native-h3/parity/**'
+      - 'packages/react-native-h3/*.podspec'
+      - 'packages/react-native-h3/nitro.json'
+      - 'apps/example/**'
+      - 'bun.lock'
+      - '.github/workflows/harness-android.yml'
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: harness-android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  harness_android:
+    name: Harness Android (${{ matrix.sanitizer.name }}, min-sdk ${{ matrix.min-sdk }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        # One value on purpose: the sanitizer axis stays separate from `build-android.yml`'s
+        # min-sdk 24 / 26 matrix, so this never becomes four jobs.
+        min-sdk: ['26']
+        sanitizer:
+          - name: Default
+            gradle_property: ''
+          - name: ASan
+            gradle_property: 'address'
+    env:
+      H3_SANITIZER: ${{ matrix.sanitizer.gradle_property }}
+      DEVICE_ARCH: x86_64
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14  # <-- pinned: `latest` turns an upstream release into a red build
+
+      - run: bun install --frozen-lockfile
+
+      # The emulator refuses to create its 6 GB userdata partition without 1.2x that free where
+      # the AVD lives, and the Android build plus the system image leaves a runner well short.
+      - name: Free runner disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/share/swift /usr/local/share/boost \
+            /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
+          sudo docker image prune --all --force
+          df -h /
+
+      - name: Set minSdk
+        run: sed -i "s/minSdkVersion = 24/minSdkVersion = ${{ matrix.min-sdk }}/g" apps/example/android/build.gradle
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: '17'
+
+      - name: Build the app
+        working-directory: apps/example/android
+        run: |
+          ./gradlew :app:assembleDebug --no-daemon --build-cache \
+            -PreactNativeArchitectures=${{ env.DEVICE_ARCH }} \
+            -Ph3Sanitizer=${{ matrix.sanitizer.gradle_property }} \
+            -PnitroSanitizer=${{ matrix.sanitizer.gradle_property }}
+
+      - name: Run Harness tests
+        uses: callstackincubator/react-native-harness@v1.4.1
+        with:
+          runner: android
+          projectRoot: apps/example
+          app: android/app/build/outputs/apk/debug/app-debug.apk
+          packageManager: bun
+          # A sanitizer report only ever reaches the device log, and the harness shuts the
+          # emulator down before the job ends, so the log is streamed to a file that outlives it.
+          preRunHook: |
+            nohup bash -c 'adb wait-for-device && adb logcat -v time > "${RUNNER_TEMP}/logcat.txt"' > /dev/null 2>&1 &
+
+      - name: Read the device log
+        if: failure()
+        run: |
+          [ -f "${RUNNER_TEMP}/logcat.txt" ] || exit 0
+          grep -a -i -E 'sanitizer|SUMMARY:|beginning of crash|Fatal signal|libNitroH3|H3Example|lowmemorykiller|Out of memory' \
+            "${RUNNER_TEMP}/logcat.txt" | tail -n 300 || true
+          echo '--- last 200 lines ---'
+          tail -n 200 "${RUNNER_TEMP}/logcat.txt" || true

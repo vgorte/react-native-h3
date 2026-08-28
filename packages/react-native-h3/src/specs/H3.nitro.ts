@@ -105,4 +105,21 @@ export interface H3 extends HybridObject<{ ios: 'c++'; android: 'c++' }> {
   // the one cell set whose elements are face numbers rather than indexes, so it crosses as
   // `std::vector<double>` rather than as a buffer.
   getIcosahedronFaces(cell: UInt64): number[]
+
+  // async twins of the four operations that can exceed Nitro's 50 ms rule of thumb; each dispatches
+  // the same `h3ops::` call its synchronous sibling makes, on a worker thread.
+  polygonToCellsAsync(rings: number[][][], res: number): Promise<ArrayBuffer>
+  polygonToCellsExperimentalAsync(
+    rings: number[][][],
+    res: number,
+    flags: number,
+  ): Promise<ArrayBuffer>
+  // a rejection carries `what()` alone, without the `H3.<method>(...): ` prefix a synchronous throw
+  // gets; the wrapper's regex in `src/H3Error.ts` tolerates both shapes.
+  cellsToMultiPolygonAsync(cells: ArrayBuffer): Promise<LatLng[][][]>
+  uncompactCellsAsync(cells: ArrayBuffer, res: number): Promise<ArrayBuffer>
+
+  // the cell ceiling crosses as a `number` because `Infinity` has to survive the trip; C++ maps it
+  // to the largest `int64_t` and owns the validation.
+  setMaxCellCount(maxCellCount: number): void
 }
