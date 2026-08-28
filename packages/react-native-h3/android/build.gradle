@@ -27,7 +27,9 @@ android {
   ndkVersion rootProject.ext.has("ndkVersion") ? rootProject.ext.ndkVersion : "27.1.12297006"
 
   defaultConfig {
-    minSdk 24
+    // follow the app's floor: Nitro builds its prefab from the same `ext`, and prefab rejects a
+    // dependency built above the module that links it
+    minSdk rootProject.ext.has("minSdkVersion") ? rootProject.ext.minSdkVersion : 24
     externalNativeBuild {
       cmake {
         cppFlags "-frtti -fexceptions -std=c++20"
