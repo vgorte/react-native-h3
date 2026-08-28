@@ -394,6 +394,7 @@ describe.skipIf(skipWithoutProbe)('parity: where a divergence would be easy to a
     expect(answer(`compactCells ${CELL},0`)).toEqual(h3.compactCells([CELL, '0']))
   })
 
+  // spawns a fresh bun process for h3-js, which can exceed bun's default 5 s timeout on a cold CI runner
   test('uncompactCells refuses an invalid member with a different code, and ignores 0 alike', () => {
     expect(refusal(`uncompactCells ${CELL},1 10`)).toBe('Cell argument was not valid (code: 5)')
     expect(askH3JsInAFreshProcess(`h3.uncompactCells(['${CELL}', '1'], 10)`)).toBe(
@@ -401,7 +402,7 @@ describe.skipIf(skipWithoutProbe)('parity: where a divergence would be easy to a
     )
 
     expect(answer(`uncompactCells ${CELL},0 10`)).toEqual(h3.uncompactCells([CELL, '0'], 10))
-  })
+  }, 30_000)
 })
 
 describe.skipIf(skipWithoutProbe)('parity: arithmetic away from a pole', () => {
