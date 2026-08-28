@@ -1,0 +1,14 @@
+{
+  "extends": "@react-native/typescript-config",
+  "compilerOptions": {
+    // Jest globals are unused here; `geojson` types MapLibre's props
+    "types": ["geojson"],
+    "baseUrl": ".",
+    // package sources, not `lib`, which is build output
+    "paths": {
+      "react-native-h3": ["../../packages/react-native-h3/src/index.ts"]
+    }
+  },
+  "include": ["**/*.ts", "**/*.tsx"],
+  "exclude": ["**/node_modules", "**/Pods", "src/**/*.test.ts"]
+}

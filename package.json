@@ -6,7 +6,7 @@
     "apps/*"
   ],
   "scripts": {
-    "typecheck": "bun run --cwd packages/react-native-h3 typecheck && bun run --cwd packages/react-native-h3 typecheck:tests && bun run --cwd apps/example typecheck && tsc --noEmit -p scripts",
+    "typecheck": "bun run --cwd packages/react-native-h3 typecheck && bun run --cwd packages/react-native-h3 typecheck:tests && bun run --cwd apps/example typecheck && bun run --cwd apps/showcase typecheck && tsc --noEmit -p scripts",
     "build": "bun run --cwd packages/react-native-h3 build",
     "specs": "bun run --cwd packages/react-native-h3 specs",
     "lint": "biome check .",
@@ -18,6 +18,9 @@
     "example": "bun run --cwd apps/example",
     "example:ios": "bun run --cwd apps/example ios",
     "example:android": "bun run --cwd apps/example android",
+    "showcase": "bun run --cwd apps/showcase",
+    "showcase:ios": "bun run --cwd apps/showcase ios",
+    "showcase:android": "bun run --cwd apps/showcase android",
     "release": "./scripts/release.sh"
   },
   "release-it": {

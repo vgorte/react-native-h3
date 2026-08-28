@@ -1,0 +1,11 @@
+{
+  "extends": "@react-native/typescript-config",
+  "compilerOptions": {
+    "types": ["bun", "geojson"],
+    "baseUrl": ".",
+    "paths": {
+      "react-native-h3": ["../../packages/react-native-h3/src/index.ts"]
+    }
+  },
+  "include": ["src/**/*.test.ts", "src/lib"]
+}

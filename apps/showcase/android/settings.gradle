@@ -1,0 +1,9 @@
+// Bun links workspace dependencies per package, so the plugin sits one level up
+pluginManagement {
+    includeBuild("../node_modules/@react-native/gradle-plugin")
+}
+plugins { id("com.facebook.react.settings") }
+extensions.configure(com.facebook.react.ReactSettingsExtension) { ex -> ex.autolinkLibrariesFromCommand() }
+rootProject.name = 'H3Showcase'
+include ':app'
+includeBuild('../node_modules/@react-native/gradle-plugin')
