@@ -28,3 +28,18 @@ jobs:
       # `__ops` is a smoke request for `parity_probe`; the gtest targets ignore stdin.
       - name: Run
         run: printf '__ops\n' | ./build/host/${{ matrix.target }}
+
+  benchmark:
+    name: Host benchmark (informational)
+    runs-on: ubuntu-latest
+    # Never a gate: a red build nobody can act on trains people to ignore red builds, and no
+    # benchmark gate in this ecosystem has a device story.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -S packages/react-native-h3/cpp/test -B build/bench -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build/bench --target benchmarks -j
+      - name: Run
+        run: ./build/bench/benchmarks | tee -a "$GITHUB_STEP_SUMMARY"

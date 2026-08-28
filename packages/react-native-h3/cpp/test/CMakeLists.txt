@@ -105,3 +105,10 @@ target_link_options(tests_asan PRIVATE -fsanitize=address,undefined)
 add_executable(parity_probe ${CMAKE_CURRENT_SOURCE_DIR}/ParityProbe.cpp)
 target_link_libraries(parity_probe PRIVATE nitro_free_core)
 target_compile_options(parity_probe PRIVATE -Wall -Wextra -Wpedantic -Werror)
+
+# Host benchmark
+# Informational only: never registered with ctest, never gates a build. Configure the build
+# directory as `Release`; a per-target flag cannot optimise the libraries this links against.
+add_executable(benchmarks ${CMAKE_CURRENT_SOURCE_DIR}/Benchmarks.cpp)
+target_link_libraries(benchmarks PRIVATE nitro_free_core)
+target_compile_options(benchmarks PRIVATE -Wall -Wextra -Wpedantic -Werror)
