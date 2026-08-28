@@ -84,3 +84,15 @@ jobs:
           projectRoot: apps/example
           app: android/app/build/outputs/apk/debug/app-debug.apk
           packageManager: bun
+          # A sanitizer report only ever reaches the device log, and the harness shuts the
+          # emulator down before the job ends, so the log is streamed to a file that outlives it.
+          preRunHook: |
+            nohup bash -c 'adb wait-for-device && adb logcat -v time > "${RUNNER_TEMP}/logcat.txt"' > /dev/null 2>&1 &
+
+      - name: Read the device log
+        if: failure()
+        run: |
+          grep -a -i -E 'sanitizer|SUMMARY:|beginning of crash|Fatal signal|libNitroH3|H3Example|lowmemorykiller|Out of memory' \
+            "${RUNNER_TEMP}/logcat.txt" | tail -n 300 || true
+          echo '--- last 200 lines ---'
+          tail -n 200 "${RUNNER_TEMP}/logcat.txt" || true
