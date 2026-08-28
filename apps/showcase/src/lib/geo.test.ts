@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import type { Ring } from 'react-native-h3'
 import {
+  boundsOfRing,
   emptyFeatureCollection,
   hasThreeDistinctPoints,
   latLngFromLngLat,
@@ -158,6 +159,30 @@ describe('pointFeature', () => {
 describe('emptyFeatureCollection', () => {
   test('has no features', () => {
     expect(emptyFeatureCollection().features).toEqual([])
+  })
+})
+
+describe('boundsOfRing', () => {
+  test('spans the ring in west, south, east, north order', () => {
+    expect(
+      boundsOfRing([
+        [52.0, 13.1],
+        [52.4, 13.0],
+        [52.2, 13.7],
+      ]),
+    ).toEqual([13.0, 52.0, 13.7, 52.4])
+  })
+
+  test('collapses onto a single point', () => {
+    expect(boundsOfRing([[52.52, 13.405]])).toEqual([13.405, 52.52, 13.405, 52.52])
+  })
+
+  test('spans Germany from the Alps to the Baltic coast', () => {
+    const [west, south, east, north] = boundsOfRing(GERMANY_RING)
+    expect(south).toBeLessThan(47.6)
+    expect(north).toBeGreaterThan(54.8)
+    expect(west).toBeLessThan(6.2)
+    expect(east).toBeGreaterThan(14.9)
   })
 })
 

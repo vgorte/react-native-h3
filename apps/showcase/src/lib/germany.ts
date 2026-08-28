@@ -1,7 +1,7 @@
 import type { Ring } from 'react-native-h3'
 
 /**
- * Outlines the VG250 land polygon of `Deutschland`, simplified to 363 vertices.
+ * Outlines the VG250 land polygon of `Deutschland`, simplified to 362 vertices.
  *
  * The ring is the largest of that polygon's 110 loops, so islands and exclaves lie outside it.
  * Written by `scripts/fetch-outline.ts`, not by hand.
@@ -373,5 +373,4 @@ export const GERMANY_RING: Ring = [
   [47.5372, 10.8902],
   [47.5139, 10.7776],
   [47.5584, 10.6912],
-  [47.5557, 10.4545],
 ]

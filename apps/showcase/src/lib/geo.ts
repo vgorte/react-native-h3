@@ -1,4 +1,4 @@
-import type { LngLat } from '@maplibre/maplibre-react-native'
+import type { LngLat, LngLatBounds } from '@maplibre/maplibre-react-native'
 import type {
   Feature,
   FeatureCollection,
@@ -33,6 +33,25 @@ export function latLngFromLngLat(lngLat: LngLat): LatLng {
 export function hasThreeDistinctPoints(ring: Ring): boolean {
   const distinct = new Set(ring.map(([lat, lng]) => `${lat},${lng}`))
   return distinct.size >= MIN_RING_POINTS
+}
+
+/**
+ * Returns the box a ring spans, in the `[west, south, east, north]` order MapLibre bounds use.
+ *
+ * @param ring A ring of at least one point, in H3's `[lat, lng]` order.
+ */
+export function boundsOfRing(ring: Ring): LngLatBounds {
+  let west = Number.POSITIVE_INFINITY
+  let south = Number.POSITIVE_INFINITY
+  let east = Number.NEGATIVE_INFINITY
+  let north = Number.NEGATIVE_INFINITY
+  for (const [lat, lng] of ring) {
+    west = Math.min(west, lng)
+    south = Math.min(south, lat)
+    east = Math.max(east, lng)
+    north = Math.max(north, lat)
+  }
+  return [west, south, east, north]
 }
 
 /**

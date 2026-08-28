@@ -4,9 +4,11 @@
  * The largest ring of the requested land polygon is simplified and written as a TypeScript module,
  * so the app carries the outline in its bundle instead of calling the service at runtime.
  *
- * Usage:
+ * Usage, one line per outline the app bundles:
  *   bun run scripts/fetch-outline.ts --name Deutschland --layer sta \
- *     --export GERMANY_RING --out apps/showcase/src/lib/germany.ts
+ *     --export GERMANY_RING --out apps/showcase/src/lib/germany.ts --tolerance 0.025
+ *   bun run scripts/fetch-outline.ts --name Berlin --layer lan \
+ *     --export BERLIN_RING --out apps/showcase/src/lib/berlin.ts --tolerance 0.007
  */
 
 import { writeFile } from 'node:fs/promises'
@@ -111,6 +113,15 @@ function simplify(points: Point[], tolerance: number): Point[] {
   return [...left.slice(0, -1), ...right]
 }
 
+/** Drops the closing vertex a source ring repeats, which a `Ring` leaves off. */
+function open(ring: Point[]): Point[] {
+  const first = ring[0]
+  const last = ring[ring.length - 1]
+  const closed =
+    first !== undefined && last !== undefined && first[0] === last[0] && first[1] === last[1]
+  return closed ? ring.slice(0, -1) : ring
+}
+
 /** Rounds to about one metre and drops the trailing zeros `toFixed` leaves behind. */
 function degrees(value: number): string {
   return String(Number(value.toFixed(5)))
@@ -124,12 +135,17 @@ function module(
   loops: number,
 ): string {
   const vertices = ring.map(([lat, lng]) => `  [${degrees(lat)}, ${degrees(lng)}],`).join('\n')
+  const provenance =
+    loops === 1
+      ? 'The polygon has one loop, which the ring follows in full.'
+      : `The ring is the largest of that polygon's ${loops} loops, ` +
+        'so islands and exclaves lie outside it.'
   return `import type { Ring } from 'react-native-h3'
 
 /**
  * Outlines the VG250 land polygon of \`${name}\`, simplified to ${ring.length} vertices.
  *
- * The ring is the largest of that polygon's ${loops} loops, so islands and exclaves lie outside it.
+ * ${provenance}
  * Written by \`scripts/fetch-outline.ts\`, not by hand.
  *
  * @see ${SERVICE} \`vg250:vg250_${layer}\`, \`gen='${name}' AND gf=${LAND}\`
@@ -178,7 +194,7 @@ async function main(): Promise<void> {
     throw new Error(`No land polygon for gen='${name}' in vg250_${layer}`)
   }
 
-  const ring = simplify(largest, tolerance)
+  const ring = open(simplify(largest, tolerance))
   const target = join(ROOT, out)
   await writeFile(target, module(name, exported, layer, ring, rings.length))
   console.log(
