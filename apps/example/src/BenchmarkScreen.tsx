@@ -187,6 +187,25 @@ function samePolygons(subject: LatLng[][][], reference: number[][][][]): boolean
   )
 }
 
+/**
+ * Carries the request to abandon a run to the workload boundaries.
+ */
+interface RunSignal {
+  cancelled: boolean
+}
+
+// The workloads are one uninterrupted block of synchronous JavaScript, so nothing the app has drawn,
+// the tab bar included, can react while a run is on. A macrotask between them lets the queued
+// presses through and gives the screen a chance to say the run is no longer wanted.
+async function pause(signal: RunSignal): Promise<boolean> {
+  await new Promise<void>((resolve) => {
+    setTimeout(() => {
+      resolve()
+    }, 0)
+  })
+  return signal.cancelled
+}
+
 function toRow(
   workload: string,
   runs: number,
@@ -207,7 +226,9 @@ function toRow(
   }
 }
 
-async function runBenchmark(): Promise<{ rows: Row[]; seconds: number }> {
+async function runBenchmark(
+  signal: RunSignal,
+): Promise<{ rows: Row[]; seconds: number } | undefined> {
   const started = now()
   const origin = latLngToCell(SAN_FRANCISCO.lat, SAN_FRANCISCO.lng, 9)
   const disk = gridDisk(origin, DISK_K)
@@ -242,6 +263,10 @@ async function runBenchmark(): Promise<{ rows: Row[]; seconds: number }> {
     ),
   )
 
+  if (await pause(signal)) {
+    return undefined
+  }
+
   const w2 = timeRuns(RUNS, () => {
     let last = disk
     for (let i = 0; i < 1_000; i++) {
@@ -267,6 +292,10 @@ async function runBenchmark(): Promise<{ rows: Row[]; seconds: number }> {
     ),
   )
 
+  if (await pause(signal)) {
+    return undefined
+  }
+
   const w3 = timeRuns(RUNS_W3, () => polygonToCells(SAN_FRANCISCO_POLYGON, 12))
   const w3Reference = timeRuns(RUNS_W3, () => h3.polygonToCells(SAN_FRANCISCO_POLYGON, 12))
   const w3Hex = sortedHex(w3.value)
@@ -281,6 +310,10 @@ async function runBenchmark(): Promise<{ rows: Row[]; seconds: number }> {
     ),
   )
 
+  if (await pause(signal)) {
+    return undefined
+  }
+
   const w3Async = await timeRunsAsync(RUNS_W3, () => polygonToCellsAsync(SAN_FRANCISCO_POLYGON, 12))
   rows.push(
     toRow(
@@ -292,6 +325,10 @@ async function runBenchmark(): Promise<{ rows: Row[]; seconds: number }> {
       `${w3Async.value.length} cells`,
     ),
   )
+
+  if (await pause(signal)) {
+    return undefined
+  }
 
   const w4 = timeRuns(RUNS, () => compactCells(disk))
   const w4Reference = timeRuns(RUNS, () => h3.compactCells(referenceDisk))
@@ -306,6 +343,10 @@ async function runBenchmark(): Promise<{ rows: Row[]; seconds: number }> {
     ),
   )
 
+  if (await pause(signal)) {
+    return undefined
+  }
+
   const w5 = timeRuns(RUNS, () => cellsToMultiPolygon(disk))
   const w5Reference = timeRuns(RUNS, () => h3.cellsToMultiPolygon(referenceDisk))
   rows.push(
@@ -318,6 +359,10 @@ async function runBenchmark(): Promise<{ rows: Row[]; seconds: number }> {
       `${w5.value.length} polygons`,
     ),
   )
+
+  if (await pause(signal)) {
+    return undefined
+  }
 
   const w6 = timeRuns(RUNS, () => {
     let last: LatLng = { lat: 0, lng: 0 }
@@ -346,6 +391,10 @@ async function runBenchmark(): Promise<{ rows: Row[]; seconds: number }> {
       `${CALLS} calls over ${cells.length} distinct cells`,
     ),
   )
+
+  if (await pause(signal)) {
+    return undefined
+  }
 
   const w7 = timeRuns(RUNS, () => {
     let last: LatLng[] = []
@@ -470,14 +519,30 @@ export function BenchmarkScreen(): React.JSX.Element {
     undefined,
   )
   const [running, setRunning] = React.useState(false)
+  const signal = React.useRef<RunSignal | undefined>(undefined)
+
+  // leaving the tab abandons the run, so the thread goes back to the app instead of finishing
+  // measurements nothing will read
+  React.useEffect(() => {
+    return () => {
+      if (signal.current != null) {
+        signal.current.cancelled = true
+      }
+    }
+  }, [])
 
   const run = React.useCallback(() => {
+    const current: RunSignal = { cancelled: false }
+    signal.current = current
     setRunning(true)
     setResult(undefined)
-    // a frame, so the spinner paints before the synchronous workloads block the thread
+    // a frame, so the spinner paints before the first workload takes the thread
     requestAnimationFrame(() => {
-      void runBenchmark()
+      void runBenchmark(current)
         .then((measured) => {
+          if (measured == null) {
+            return
+          }
           setResult(measured)
           console.log(toMarkdown(measured.rows, measured.seconds))
           logPayload(toPayload(measured.rows, measured.seconds))
@@ -493,8 +558,8 @@ export function BenchmarkScreen(): React.JSX.Element {
       <Text style={styles.title}>Benchmark</Text>
       <Text style={styles.note}>
         Run this in a Release build. Numbers from a Debug build must not go in the README. The run
-        takes several minutes and the app is unresponsive throughout: h3-js alone needs roughly 23
-        seconds for every one of its W3 passes.
+        takes several minutes and the app only answers between workloads: h3-js alone needs roughly
+        23 seconds for every one of its W3 passes. Leaving this tab abandons the run.
       </Text>
       <Pressable style={styles.button} onPress={run} disabled={running}>
         <Text style={styles.buttonLabel}>{running ? 'Running' : 'Run benchmark'}</Text>
