@@ -1,7 +1,7 @@
 <div align="center">
   <img src="https://raw.githubusercontent.com/vgorte/react-native-h3/main/img/logo.svg" alt="react-native-h3" width="132" height="132" />
   <h1>react-native-h3</h1>
-  <p><b>Uber's H3 geospatial grid for React Native, bound to the C library instead of a JavaScript port.</b></p>
+  <p><b>Uber's H3 geospatial grid for React Native, bound to the C library through Nitro Modules instead of a JavaScript port.</b></p>
   <p>
     <a href="https://www.npmjs.com/package/react-native-h3"><img src="https://img.shields.io/npm/v/react-native-h3.svg" alt="npm version" /></a>
     <a href="https://github.com/vgorte/react-native-h3/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT" /></a>
