@@ -31,6 +31,7 @@ export const ContainmentMode = Object.freeze({
   overlappingBbox: 3,
 } as const)
 
+/** Holds one of the numeric {@linkcode ContainmentMode} values. */
 export type ContainmentModeValue = (typeof ContainmentMode)[keyof typeof ContainmentMode]
 
 /** Names a containment mode the way h3-js's `POLYGON_TO_CELLS_FLAGS` does. */

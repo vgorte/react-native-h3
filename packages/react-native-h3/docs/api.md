@@ -6,399 +6,20 @@
 Every function throws [`H3Error`](#h3error) on failure. Cells are `bigint`; cell sets are
 `BigUint64Array` views over the buffer C++ produced, containing only real cells.
 
-## Errors
-
-### H3Error
-
-```ts
-class H3Error {
-  readonly code: number | undefined
-  constructor(message: string, code?: number) {
-    super(message)
-    this.name = 'H3Error'
-    this.code = code
-  }
-}
-```
-
-Represents a failure raised by any function in this package.
-
-It carries a message and, for a failure H3 itself reported, the numeric error code, exactly as
-h3-js does. The wording comes from H3's own `describeH3Error`, so it matches upstream
-documentation.
-
-## Async variants
-
-### cellsToMultiPolygonAsync
-
-```ts
-async function cellsToMultiPolygonAsync(cells: BigUint64Array): Promise<LatLng[][][]>
-```
-
-Finds the outline of a set of cells as {@linkcode cellsToMultiPolygon} does, off the JS thread.
-
-The buffer is copied natively before the work starts, so the caller may overwrite it as soon as
-this function returns.
-
-@param cells The cells to outline. They must all be valid, unique and of the same resolution.
-@returns One entry per disjoint outline.
-@throws {@linkcode H3Error} if the set is invalid, mixes resolutions or contains duplicates.
-
-### polygonToCellsAsync
-
-```ts
-async function polygonToCellsAsync(rings: Ring[], res: number): Promise<BigUint64Array>
-```
-
-Finds the cells covering a polygon as {@linkcode polygonToCells} does, off the JS thread.
-
-Worth the thread hop once the fill is long enough to drop frames: San Francisco at resolution
-`12` is 412,377 cells and about five frames of work, measured in
-https://github.com/vgorte/react-native-h3/blob/main/docs/benchmark.md. Below that the
-synchronous call is cheaper, because it has no hop at all.
-
-@param rings The outer ring first, then holes, as `[latitude, longitude]` degrees.
-@param res The resolution, `0` to `15`.
-@returns The cells covering the polygon, as a view onto the native buffer.
-@throws {@linkcode H3Error} if a point is not a finite `[latitude, longitude]` pair, the
-resolution is out of range, or the result would exceed the cell ceiling.
-
-### polygonToCellsExperimentalAsync
-
-```ts
-async function polygonToCellsExperimentalAsync( rings: Ring[], res: number, flags: ContainmentModeValue | ContainmentModeName, ): Promise<BigUint64Array>
-```
-
-Finds the cells covering a polygon as {@linkcode polygonToCellsExperimental} does, off the JS
-thread.
-
-The mode is resolved on the JS thread, by the helper the synchronous call uses, so the two take
-the same arguments and answer alike.
-
-@param rings The outer ring first, then holes, as `[latitude, longitude]` degrees.
-@param res The resolution, `0` to `15`.
-@param flags One of `ContainmentMode.center`, `.full`, `.overlapping` or `.overlappingBbox`, or
-the matching h3-js name such as `'containmentCenter'`.
-@returns The cells covering the polygon, as a view onto the native buffer.
-@throws {@linkcode H3Error} if the polygon, the resolution or the mode is invalid, or the result
-would exceed the cell ceiling.
-
-### uncompactCellsAsync
-
-```ts
-async function uncompactCellsAsync( cells: BigUint64Array, res: number, ): Promise<BigUint64Array>
-```
-
-Expands a compacted cell set as {@linkcode uncompactCells} does, off the JS thread.
-
-The buffer is copied natively before the work starts, so the caller may overwrite it as soon as
-this function returns.
-
-@param cells A compacted cell set.
-@param res The resolution to expand to, no finer than any cell in the set.
-@throws {@linkcode H3Error} if the set is invalid, the resolution is out of range, or the result
-would exceed the cell ceiling.
-
-## Configuration
-
-### configure
-
-```ts
-function configure(options: H3Config): void
-```
-
-Changes settings that apply to every later call.
-
-The ceiling is read where a call allocates, so it governs every cell-producing operation, the
-four `Async` variants included.
-
-@param options The settings to change. A field left out leaves that setting untouched.
-@throws {@linkcode H3Error} if `maxCellCount` is neither `Infinity` nor an integer of `1` or more.
-
-### H3Config
-
-```ts
-interface H3Config {
-  /**
-   * Caps how many cells one call may allocate, which guards against exhausting device memory.
-   *
-   * Defaults to `4_000_000` cells, 32 MB as a `BigUint64Array`. `Infinity` removes the ceiling
-   * altogether; any other value must be an integer of `1` or more.
-   */
-  maxCellCount?: number
-}
-```
-
-Holds the settings {@linkcode configure} accepts. Every field is optional.
-
-## Directed edges
-
-### areNeighborCells
-
-```ts
-function areNeighborCells(origin: bigint, destination: bigint): boolean
-```
-
-Reports whether two cells share an edge.
-
-Diverges from `h3-js`, which answers `false` for a malformed index instead of throwing.
-
-@param origin The first cell.
-@param destination The second cell, at the same resolution.
-@returns `true` when the two cells are adjacent.
-@throws {@linkcode H3Error} if either index is not a valid cell, or the resolutions differ.
-
-### cellsToDirectedEdge
-
-```ts
-function cellsToDirectedEdge(origin: bigint, destination: bigint): bigint
-```
-
-Builds the directed edge running from one cell to a neighbouring one.
-
-@param origin The cell the edge leaves.
-@param destination The neighbouring cell the edge enters.
-@returns The directed edge index.
-@throws {@linkcode H3Error} if either index is not a valid cell, or they are not neighbours.
-
-### directedEdgeToBoundary
-
-```ts
-function directedEdgeToBoundary(edge: bigint): LatLng[]
-```
-
-Finds the geometry of a directed edge, in degrees.
-
-Two points for an ordinary edge. An edge that crosses an icosahedron face returns three, because
-H3 inserts the crossing point.
-
-@param edge The directed edge.
-@returns The points along the edge.
-@throws {@linkcode H3Error} if the index is not a valid directed edge.
-
-### directedEdgeToCells
-
-```ts
-function directedEdgeToCells(edge: bigint): BigUint64Array
-```
-
-Reads the origin and the destination of a directed edge, in that order.
-
-@param edge The directed edge.
-@returns Always two cells, as a view onto the native buffer.
-@throws {@linkcode H3Error} if the index is not a valid directed edge.
-
-### edgeLengthKm
-
-```ts
-function edgeLengthKm(edge: bigint): number
-```
-
-Measures the exact length of a directed edge in kilometres.
-
-`h3-js` spells this `edgeLength(edge, 'km')`.
-
-@param edge The directed edge.
-@returns The length in kilometres.
-@throws {@linkcode H3Error} if the index is not a valid directed edge.
-
-### edgeLengthM
-
-```ts
-function edgeLengthM(edge: bigint): number
-```
-
-Measures the exact length of a directed edge in metres.
-
-@param edge The directed edge.
-@returns The length in metres.
-@throws {@linkcode H3Error} if the index is not a valid directed edge.
-
-### edgeLengthRads
-
-```ts
-function edgeLengthRads(edge: bigint): number
-```
-
-Measures the exact length of a directed edge in radians.
-
-@param edge The directed edge.
-@returns The length in radians on the unit sphere.
-@throws {@linkcode H3Error} if the index is not a valid directed edge.
-
-### getDirectedEdgeDestination
-
-```ts
-function getDirectedEdgeDestination(edge: bigint): bigint
-```
-
-Reads the cell a directed edge enters.
-
-@param edge The directed edge.
-@returns The destination cell.
-@throws {@linkcode H3Error} if the index is not a valid directed edge.
-
-### getDirectedEdgeOrigin
-
-```ts
-function getDirectedEdgeOrigin(edge: bigint): bigint
-```
-
-Reads the cell a directed edge leaves.
-
-Diverges from `h3-js`, which answers a cell for any index whose mode bits say directed edge.
-
-@param edge The directed edge.
-@returns The origin cell.
-@throws {@linkcode H3Error} if the index is not a valid directed edge.
-
-### originToDirectedEdges
-
-```ts
-function originToDirectedEdges(origin: bigint): BigUint64Array
-```
-
-Finds every directed edge leaving a cell.
-
-Six for a hexagon and five for a pentagon: the missing edge is removed natively rather than
-arriving as a hole.
-
-@param origin The cell the edges leave.
-@returns The edges, as a view onto the native buffer.
-@throws {@linkcode H3Error} if the index is not a valid cell.
-
-### reverseDirectedEdge
-
-```ts
-function reverseDirectedEdge(edge: bigint): bigint
-```
-
-Builds the edge running the other way between the same two cells.
-
-@param edge The directed edge.
-@returns The edge from this one's destination back to its origin.
-@throws {@linkcode H3Error} if the index is not a valid directed edge.
-
-## Hierarchy
-
-### cellToCenterChild
-
-```ts
-function cellToCenterChild(cell: bigint, res: number): bigint
-```
-
-Finds the centre child of a cell at a finer resolution.
-
-@param cell The cell.
-@param res The target resolution, no coarser than the cell's own.
-@returns The centre child, which is the first entry of {@linkcode cellToChildren}.
-@throws {@linkcode H3Error} if the cell is not valid, or `res` is coarser than the cell's.
-
-### cellToChildPos
-
-```ts
-function cellToChildPos(cell: bigint, parentRes: number): number
-```
-
-Finds the position of a cell within the ordered children of one of its ancestors.
-
-@param cell The cell.
-@param parentRes The ancestor's resolution.
-@returns The position, `0` to `cellToChildrenSize(ancestor, cell's resolution) - 1`.
-@throws {@linkcode H3Error} if the cell is not valid, or `parentRes` is finer than the cell's.
-
-### cellToChildren
-
-```ts
-function cellToChildren(cell: bigint, res: number): BigUint64Array
-```
-
-Lists every child of a cell at a finer resolution, in order.
-
-The result is a view onto the buffer C++ produced, not a copy, and holds exactly
-`cellToChildrenSize(cell, res)` entries, so it may be indexed by child position.
-
-@param cell The cell.
-@param res The target resolution.
-@returns The children, the centre child first.
-@throws {@linkcode H3Error} if the cell is not valid, or `res` is coarser than the cell's.
-
-### cellToChildrenSize
-
-```ts
-function cellToChildrenSize(cell: bigint, res: number): number
-```
-
-Counts the children a cell has at a finer resolution.
-
-The count is exact rather than an upper bound, and it is what {@linkcode cellToChildren}
-allocates. Pentagons have fewer children than hexagons, which this accounts for.
-
-@param cell The cell.
-@param res The target resolution.
-@returns The number of children.
-@throws {@linkcode H3Error} if the cell is not valid, or `res` is coarser than the cell's.
-
-### cellToParent
-
-```ts
-function cellToParent(cell: bigint, res: number): bigint
-```
-
-Finds the ancestor of a cell at a coarser resolution.
-
-@param cell The cell.
-@param res The target resolution, no finer than the cell's own.
-@returns The ancestor, or the cell itself when `res` is its own resolution.
-@throws {@linkcode H3Error} if the cell is not valid, or `res` is finer than the cell's.
-
-### childPosToCell
-
-```ts
-function childPosToCell(childPos: number, parent: bigint, childRes: number): bigint
-```
-
-Finds the child of a cell at a given position and resolution, inverting
-{@linkcode cellToChildPos}.
-
-@param childPos The position, `0` to `cellToChildrenSize(parent, childRes) - 1`.
-@param parent The ancestor cell.
-@param childRes The child's resolution.
-@returns The child cell.
-@throws {@linkcode H3Error} if the parent is not valid, or either number is out of range.
-
-### compactCells
-
-```ts
-function compactCells(cells: BigUint64Array): BigUint64Array
-```
-
-Reduces a set of cells to the smallest set covering the same area.
-
-Wherever all children of a cell are present they are replaced by that parent, recursively. The
-input must hold no duplicates and no cell twice over at different resolutions.
-
-Diverges from `h3-js`, which accepts a non-zero index that is not a cell instead of throwing.
-
-@param cells The cells to compact; a `0n` entry is skipped, as H3 skips it.
-@returns The compacted set, which is never longer than the input.
-@throws {@linkcode H3Error} if the input holds a duplicate or a cell that is not valid.
-
-### uncompactCells
-
-```ts
-function uncompactCells(cells: BigUint64Array, res: number): BigUint64Array
-```
-
-Expands a compacted set so that every cell sits at the given resolution.
-
-Diverges from `h3-js`, which accepts a non-zero index that is not a cell instead of throwing.
-
-@param cells The compacted cells, all at `res` or coarser; a `0n` entry is skipped, as H3 skips it.
-@param res The target resolution.
-@returns Every cell of the expanded set, in input order.
-@throws {@linkcode H3Error} if a cell is not valid or finer than `res`, or `res` is fractional
-or out of range.
+- [Indexing](#indexing)
+- [Inspection](#inspection)
+- [Traversal](#traversal)
+- [Hierarchy](#hierarchy)
+- [Regions](#regions)
+- [Directed edges](#directed-edges)
+- [Vertexes](#vertexes)
+- [Measurement](#measurement)
+- [Angle conversion](#angle-conversion)
+- [Miscellaneous](#miscellaneous)
+- [Async variants](#async-variants)
+- [Configuration](#configuration)
+- [Errors](#errors)
+- [Types](#types)
 
 ## Indexing
 
@@ -413,9 +34,11 @@ Finds the boundary of a cell, in degrees, counter-clockwise.
 Six points for a hexagon. Pentagons and cells that cross an icosahedron edge return more, up to
 ten, because H3 inserts the edge crossings.
 
-@param cell The cell.
-@returns The boundary vertices, whose first point is not repeated at the end.
-@throws {@linkcode H3Error} if the cell is not valid.
+- `cell`: The cell.
+
+Returns: The boundary vertices, whose first point is not repeated at the end.
+
+Throws: `H3Error` if the cell is not valid.
 
 ### cellToLatLng
 
@@ -425,9 +48,11 @@ function cellToLatLng(cell: bigint): LatLng
 
 Finds the centre of a cell, in degrees.
 
-@param cell The cell.
-@returns The centre coordinate.
-@throws {@linkcode H3Error} if the cell is not valid.
+- `cell`: The cell.
+
+Returns: The centre coordinate.
+
+Throws: `H3Error` if the cell is not valid.
 
 ### latLngToCell
 
@@ -437,11 +62,11 @@ function latLngToCell(lat: number, lng: number, res: number): bigint
 
 Finds the cell containing the given coordinate at the given resolution.
 
-@param lat Latitude in degrees.
-@param lng Longitude in degrees.
-@param res Resolution, `0` to `15`.
-@throws {@linkcode H3Error} if the coordinate is out of range, or the resolution is
-fractional or out of range.
+- `lat`: Latitude in degrees.
+- `lng`: Longitude in degrees.
+- `res`: Resolution, `0` to `15`.
+
+Throws: `H3Error` if the coordinate is out of range, or the resolution is fractional or out of range.
 
 ## Inspection
 
@@ -454,11 +79,13 @@ function cellFromString(text: string): bigint
 Parses a hexadecimal index of the kind h3-js produces.
 
 This decodes; it does not check. A string that parses to a nonsense index returns that index
-rather than throwing, so call {@linkcode isValidCell} if the input is not trusted.
+rather than throwing, so call `isValidCell` if the input is not trusted.
 
-@param text Up to sixteen hexadecimal digits, without a leading `0x`.
-@returns The index.
-@throws {@linkcode H3Error} if the string cannot be parsed at all.
+- `text`: Up to sixteen hexadecimal digits, without a leading `0x`.
+
+Returns: The index.
+
+Throws: `H3Error` if the string cannot be parsed at all.
 
 ### cellToString
 
@@ -468,8 +95,9 @@ function cellToString(cell: bigint): string
 
 Writes an index in the canonical lowercase hexadecimal form h3-js and the H3 documentation use.
 
-@param cell A cell, directed edge or vertex.
-@returns The index as up to sixteen hexadecimal digits, without a leading `0x`.
+- `cell`: A cell, directed edge or vertex.
+
+Returns: The index as up to sixteen hexadecimal digits, without a leading `0x`.
 
 ### constructCell
 
@@ -483,12 +111,13 @@ The argument order follows h3-js rather than the C library, whose order is
 `(res, baseCellNumber, digits)`. Putting the array between the two numbers means a transposition
 is a type error rather than a runtime surprise.
 
-@param baseCellNumber The base cell, `0` to `121`.
-@param digits Exactly `res` child digits, each `0` to `6`. Empty for resolution `0`.
-@param res The resolution, `0` to `15`.
-@returns The cell.
-@throws {@linkcode H3Error} if any argument is out of range, or `digits` does not have length
-`res`.
+- `baseCellNumber`: The base cell, `0` to `121`.
+- `digits`: Exactly `res` child digits, each `0` to `6`. Empty for resolution `0`.
+- `res`: The resolution, `0` to `15`.
+
+Returns: The cell.
+
+Throws: `H3Error` if any argument is out of range, or `digits` does not have length `res`.
 
 ### getBaseCellNumber
 
@@ -499,11 +128,12 @@ function getBaseCellNumber(cell: bigint): number
 Reads the base cell number, `0` to `121`.
 
 Works on directed edges too, where it answers the base cell of the origin. Unlike
-{@linkcode getResolution}, it does not validate its argument, so an invalid index yields an
+`getResolution`, it does not validate its argument, so an invalid index yields an
 arbitrary number rather than a sentinel.
 
-@param cell A cell or a directed edge.
-@returns The base cell number.
+- `cell`: A cell or a directed edge.
+
+Returns: The base cell number.
 
 ### getIndexDigit
 
@@ -516,10 +146,12 @@ Reads the indexing digit at the given position.
 Digits are 1-indexed: digit `1` is the child digit for resolution `1`. Resolution `0` has no
 digit, because it is given by the base cell number.
 
-@param cell The cell.
-@param digit Which digit to read, `1` to `15`.
-@returns The digit, `0` to `6`, or `7` for a position beyond the cell's resolution.
-@throws {@linkcode H3Error} if the cell is not valid, or `digit` is outside `1` to `15`.
+- `cell`: The cell.
+- `digit`: Which digit to read, `1` to `15`.
+
+Returns: The digit, `0` to `6`, or `7` for a position beyond the cell's resolution.
+
+Throws: `H3Error` if the cell is not valid, or `digit` is outside `1` to `15`.
 
 ### getResolution
 
@@ -530,10 +162,11 @@ function getResolution(index: bigint): number
 Reads the resolution of a cell, `0` to `15`.
 
 Answers `-1` for anything that is not a valid cell, as h3-js does. That guard is
-{@linkcode isValidCell} alone, so a valid directed edge and a valid vertex answer `-1` as well.
+`isValidCell` alone, so a valid directed edge and a valid vertex answer `-1` as well.
 
-@param index The index to read.
-@returns The resolution, or `-1` if `index` is not a valid cell.
+- `index`: The index to read.
+
+Returns: The resolution, or `-1` if `index` is not a valid cell.
 
 ### isPentagon
 
@@ -543,8 +176,9 @@ function isPentagon(cell: bigint): boolean
 
 Reports whether the cell is one of the twelve pentagons at its resolution.
 
-@param cell The cell.
-@returns `true` for a pentagon.
+- `cell`: The cell.
+
+Returns: `true` for a pentagon.
 
 ### isResClassIII
 
@@ -554,8 +188,9 @@ function isResClassIII(cell: bigint): boolean
 
 Reports whether the cell's resolution uses Class III orientation.
 
-@param cell The cell.
-@returns `true` for the odd resolutions, which are rotated against their parents.
+- `cell`: The cell.
+
+Returns: `true` for the odd resolutions, which are rotated against their parents.
 
 ### isValidCell
 
@@ -565,8 +200,9 @@ function isValidCell(cell: bigint): boolean
 
 Reports whether the index is a valid cell.
 
-@param cell The index to check.
-@returns `true` for a well-formed cell of any resolution.
+- `cell`: The index to check.
+
+Returns: `true` for a well-formed cell of any resolution.
 
 ### isValidDirectedEdge
 
@@ -576,8 +212,9 @@ function isValidDirectedEdge(edge: bigint): boolean
 
 Reports whether the index is a valid directed edge.
 
-@param edge The index to check.
-@returns `true` for a well-formed directed edge.
+- `edge`: The index to check.
+
+Returns: `true` for a well-formed directed edge.
 
 ### isValidIndex
 
@@ -587,8 +224,9 @@ function isValidIndex(index: bigint): boolean
 
 Reports whether the index is valid as anything: a cell, a directed edge or a vertex.
 
-@param index The index to check.
-@returns `true` if any of the three modes accepts it.
+- `index`: The index to check.
+
+Returns: `true` if any of the three modes accepts it.
 
 ### isValidVertex
 
@@ -598,256 +236,9 @@ function isValidVertex(vertex: bigint): boolean
 
 Reports whether the index is a valid vertex.
 
-@param vertex The index to check.
-@returns `true` for a well-formed vertex.
+- `vertex`: The index to check.
 
-## Measurement
-
-### cellAreaKm2
-
-```ts
-function cellAreaKm2(cell: bigint): number
-```
-
-Measures the exact area of a cell in square kilometres.
-
-h3-js spells this `cellArea(cell, 'km2')`. Here the unit is part of the name, so nothing about the
-unit crosses the bridge at call time.
-
-@param cell The cell.
-@returns The area in square kilometres.
-@throws {@linkcode H3Error} if the cell is not valid.
-
-### cellAreaM2
-
-```ts
-function cellAreaM2(cell: bigint): number
-```
-
-Measures the exact area of a cell in square metres.
-
-@param cell The cell.
-@returns The area in square metres.
-@throws {@linkcode H3Error} if the cell is not valid.
-
-### cellAreaRads2
-
-```ts
-function cellAreaRads2(cell: bigint): number
-```
-
-Measures the exact area of a cell in square radians.
-
-@param cell The cell.
-@returns The area in square radians, on the unit sphere.
-@throws {@linkcode H3Error} if the cell is not valid.
-
-### greatCircleDistanceKm
-
-```ts
-function greatCircleDistanceKm( lat1: number, lng1: number, lat2: number, lng2: number, ): number
-```
-
-Measures the great-circle distance between two coordinates in kilometres.
-
-@param lat1 Latitude of the first point in degrees.
-@param lng1 Longitude of the first point in degrees.
-@param lat2 Latitude of the second point in degrees.
-@param lng2 Longitude of the second point in degrees.
-@returns The distance in kilometres.
-
-### greatCircleDistanceM
-
-```ts
-function greatCircleDistanceM( lat1: number, lng1: number, lat2: number, lng2: number, ): number
-```
-
-Measures the great-circle distance between two coordinates in metres.
-
-@param lat1 Latitude of the first point in degrees.
-@param lng1 Longitude of the first point in degrees.
-@param lat2 Latitude of the second point in degrees.
-@param lng2 Longitude of the second point in degrees.
-@returns The distance in metres.
-
-### greatCircleDistanceRads
-
-```ts
-function greatCircleDistanceRads( lat1: number, lng1: number, lat2: number, lng2: number, ): number
-```
-
-Measures the great-circle distance between two coordinates in radians.
-
-@param lat1 Latitude of the first point in degrees.
-@param lng1 Longitude of the first point in degrees.
-@param lat2 Latitude of the second point in degrees.
-@param lng2 Longitude of the second point in degrees.
-@returns The distance in radians, on the unit sphere.
-
-## Miscellaneous
-
-### getHexagonAreaAvgKm2
-
-```ts
-function getHexagonAreaAvgKm2(res: number): number
-```
-
-Reads the average area of a cell at a resolution, in square kilometres.
-
-@param res The resolution, `0` to `15`.
-@returns The average area in square kilometres.
-@throws {@linkcode H3Error} if the resolution is fractional or out of range.
-
-### getHexagonAreaAvgM2
-
-```ts
-function getHexagonAreaAvgM2(res: number): number
-```
-
-Reads the average area of a cell at a resolution, in square metres.
-
-@param res The resolution, `0` to `15`.
-@returns The average area in square metres.
-@throws {@linkcode H3Error} if the resolution is fractional or out of range.
-
-### getHexagonEdgeLengthAvgKm
-
-```ts
-function getHexagonEdgeLengthAvgKm(res: number): number
-```
-
-Reads the average edge length of a cell at a resolution, in kilometres.
-
-@param res The resolution, `0` to `15`.
-@returns The average edge length in kilometres.
-@throws {@linkcode H3Error} if the resolution is fractional or out of range.
-
-### getHexagonEdgeLengthAvgM
-
-```ts
-function getHexagonEdgeLengthAvgM(res: number): number
-```
-
-Reads the average edge length of a cell at a resolution, in metres.
-
-@param res The resolution, `0` to `15`.
-@returns The average edge length in metres.
-@throws {@linkcode H3Error} if the resolution is fractional or out of range.
-
-### getIcosahedronFaces
-
-```ts
-function getIcosahedronFaces(cell: bigint): number[]
-```
-
-Reads the icosahedron faces a cell intersects, as numbers from `0` to `19`.
-
-One or two for a hexagon, five for a pentagon. H3's `-1` padding is dropped, so every entry is a
-real face and `0` among them means face zero.
-
-@param cell The cell.
-@returns The faces the cell touches.
-@throws {@linkcode H3Error} if the cell is not valid.
-
-### getNumCells
-
-```ts
-function getNumCells(res: number): number
-```
-
-Counts the cells at a resolution.
-
-The largest value, at resolution `15`, is `569707381193162`, which a JavaScript number represents
-exactly, so this returns `number` rather than `bigint`.
-
-@param res The resolution, `0` to `15`.
-@returns The number of cells.
-@throws {@linkcode H3Error} if the resolution is fractional or out of range.
-
-### getPentagons
-
-```ts
-function getPentagons(res: number): BigUint64Array
-```
-
-Lists the twelve pentagons at a resolution.
-
-There are exactly twelve at every resolution. They are why cell sets are ragged: a disk or ring
-touching one holds fewer cells than the formula suggests.
-
-@param res The resolution, `0` to `15`.
-@returns The twelve pentagons.
-@throws {@linkcode H3Error} if the resolution is fractional or out of range.
-
-### getRes0Cells
-
-```ts
-function getRes0Cells(): BigUint64Array
-```
-
-Lists all `122` resolution `0` cells.
-
-These are the roots of the H3 hierarchy: every cell at every resolution descends from one of
-them, and twelve of them are pentagons.
-
-@returns The `122` base cells.
-
-## Regions
-
-### cellsToMultiPolygon
-
-```ts
-function cellsToMultiPolygon(cells: BigUint64Array): LatLng[][][]
-```
-
-Finds the outline of a set of cells, as GeoJSON-shaped polygons.
-
-The result nests polygons, then loops, then points. The first loop of each polygon is its outer
-ring and any further loops are holes; no loop repeats its first point at the end.
-
-@param cells The cells to outline. They must all be valid, unique and of the same resolution.
-@returns One entry per disjoint outline.
-@throws {@linkcode H3Error} if the set is invalid, mixes resolutions or contains duplicates.
-
-### polygonToCells
-
-```ts
-function polygonToCells(rings: Ring[], res: number): BigUint64Array
-```
-
-Finds every cell whose centre falls inside a polygon.
-
-The polygon is GeoJSON-shaped: the first ring is the outer boundary, any further rings are holes,
-and each point is a `[latitude, longitude]` pair in degrees. Note the order, which GeoJSON itself
-reverses; a ring is not closed, so its first point is not repeated at the end.
-
-@param rings The outer ring first, then holes. An empty polygon yields no cells.
-@param res The resolution, `0` to `15`.
-@returns The cells covering the polygon, as a view onto the native buffer.
-@throws {@linkcode H3Error} if a point is not a finite `[latitude, longitude]` pair, the
-resolution is out of range, or the result would exceed the cell ceiling, `4,000,000` cells until
-{@linkcode configure} changes it.
-
-### polygonToCellsExperimental
-
-```ts
-function polygonToCellsExperimental( rings: Ring[], res: number, flags: ContainmentModeValue | ContainmentModeName, ): BigUint64Array
-```
-
-Finds the cells covering a polygon as {@linkcode polygonToCells} does, with a choice of
-containment rule.
-
-The mode is either a {@linkcode ContainmentMode} constant or the h3-js name for it; the constants
-are cheaper and are what this package recommends. This is an experimental H3 API and may change
-behaviour in a minor version of the underlying C library.
-
-@param rings The outer ring first, then holes, as `[latitude, longitude]` degrees.
-@param res The resolution, `0` to `15`.
-@param flags One of `ContainmentMode.center`, `.full`, `.overlapping` or `.overlappingBbox`, or
-the matching h3-js name such as `'containmentCenter'`.
-@returns The cells covering the polygon, as a view onto the native buffer.
-@throws {@linkcode H3Error} if the polygon, the resolution or the mode is invalid, or the result
-would exceed the cell ceiling, `4,000,000` cells until {@linkcode configure} changes it.
+Returns: `true` for a well-formed vertex.
 
 ## Traversal
 
@@ -862,11 +253,12 @@ Finds the local IJ coordinates of a cell relative to an origin.
 This is not a serialization format: H3 does not guarantee these coordinates across its own
 versions, so do not store them or send them between systems that may run different versions.
 
-@param origin The anchoring cell.
-@param cell The cell to locate, at the same resolution and near enough to `origin`.
-@returns The coordinates, comparable only against others from the same origin.
-@throws {@linkcode H3Error} if either cell is not valid, the resolutions differ, or the cells are
-too far apart.
+- `origin`: The anchoring cell.
+- `cell`: The cell to locate, at the same resolution and near enough to `origin`.
+
+Returns: The coordinates, comparable only against others from the same origin.
+
+Throws: `H3Error` if either cell is not valid, the resolutions differ, or the cells are too far apart.
 
 ### gridDisk
 
@@ -882,7 +274,7 @@ buffer crosses. Expect fewer than `1 + 3k(k + 1)` entries near a pentagon.
 
 Diverges from `h3-js`, which returns cells derived from a nonsense origin instead of throwing.
 
-@throws {@linkcode H3Error} if the origin is not a valid cell or `k` is negative.
+Throws: `H3Error` if the origin is not a valid cell or `k` is negative.
 
 ### gridDiskDistances
 
@@ -896,10 +288,12 @@ The result always has `k + 1` entries, so the index is always the grid distance:
 only the origin. A ring near a pentagon may be shorter than `6 * i`, or even empty, and is still
 present.
 
-@param origin The centre cell.
-@param k The grid distance, `0` or more.
-@returns One view per ring, ordered by distance from the origin.
-@throws {@linkcode H3Error} if the origin is not a valid cell or `k` is negative.
+- `origin`: The centre cell.
+- `k`: The grid distance, `0` or more.
+
+Returns: One view per ring, ordered by distance from the origin.
+
+Throws: `H3Error` if the origin is not a valid cell or `k` is negative.
 
 ### gridDistance
 
@@ -911,11 +305,12 @@ Measures the grid distance between two cells: the number of steps from one to th
 
 Diverges from `h3-js`, which answers `0` for two copies of the same nonsense index.
 
-@param origin The first cell.
-@param destination The second cell, at the same resolution.
-@returns The number of steps.
-@throws {@linkcode H3Error} if either cell is not valid, the resolutions differ, or the cells are
-too far apart for H3 to compute a distance.
+- `origin`: The first cell.
+- `destination`: The second cell, at the same resolution.
+
+Returns: The number of steps.
+
+Throws: `H3Error` if either cell is not valid, the resolutions differ, or the cells are too far apart for H3 to compute a distance.
 
 ### gridPathCells
 
@@ -927,11 +322,12 @@ Finds the cells along a line between two cells, inclusive of both ends.
 
 Diverges from `h3-js`, which drops the error check on the size query at this one call site.
 
-@param start The first cell.
-@param end The last cell, at the same resolution as `start`.
-@returns The path, starting at `start` and ending at `end`.
-@throws {@linkcode H3Error} if either cell is not valid, the resolutions differ, or the line
-crosses a pentagon in a way H3 cannot express.
+- `start`: The first cell.
+- `end`: The last cell, at the same resolution as `start`.
+
+Returns: The path, starting at `start` and ending at `end`.
+
+Throws: `H3Error` if either cell is not valid, the resolutions differ, or the line crosses a pentagon in a way H3 cannot express.
 
 ### gridRing
 
@@ -942,12 +338,14 @@ function gridRing(origin: bigint, k: number): BigUint64Array
 Finds the hollow ring of cells at exactly grid distance `k` from the origin.
 
 Safe near pentagons: where the ring is distorted the affected cells are simply absent, so a ring
-may hold fewer than `6 * k` entries. Use {@linkcode gridRingUnsafe} to be told instead.
+may hold fewer than `6 * k` entries. Use `gridRingUnsafe` to be told instead.
 
-@param origin The centre cell.
-@param k The grid distance, `0` or more. A `k` of `0` returns just the origin.
-@returns The cells at that distance, as a view onto the native buffer.
-@throws {@linkcode H3Error} if the origin is not a valid cell or `k` is negative.
+- `origin`: The centre cell.
+- `k`: The grid distance, `0` or more. A `k` of `0` returns just the origin.
+
+Returns: The cells at that distance, as a view onto the native buffer.
+
+Throws: `H3Error` if the origin is not a valid cell or `k` is negative.
 
 ### gridRingUnsafe
 
@@ -955,14 +353,14 @@ may hold fewer than `6 * k` entries. Use {@linkcode gridRingUnsafe} to be told i
 function gridRingUnsafe(origin: bigint, k: number): BigUint64Array
 ```
 
-Finds the ring as {@linkcode gridRing} does, but throws when a pentagon distorts it.
+Finds the ring as `gridRing` does, but throws when a pentagon distorts it.
 
-@param origin The centre cell.
-@param k The grid distance, `0` or more.
-@returns The cells at that distance, as a view onto the native buffer.
-@throws {@linkcode H3Error} with `code` `9` and the message
-`"Pentagon distortion was encountered (code: 9)"` if the ring touches a pentagon, and for an
-invalid origin or a negative `k`.
+- `origin`: The centre cell.
+- `k`: The grid distance, `0` or more.
+
+Returns: The cells at that distance, as a view onto the native buffer.
+
+Throws: `H3Error` with `code` `9` and the message `"Pentagon distortion was encountered (code: 9)"` if the ring touches a pentagon, and for an invalid origin or a negative `k`.
 
 ### localIjToCell
 
@@ -971,14 +369,807 @@ function localIjToCell(origin: bigint, i: number, j: number): bigint
 ```
 
 Finds the cell at local IJ coordinates relative to an origin, inverting
-{@linkcode cellToLocalIj}.
+`cellToLocalIj`.
 
-@param origin The anchoring cell.
-@param i The `i` coordinate, which must be an integer.
-@param j The `j` coordinate, which must be an integer.
-@returns The cell at those coordinates.
-@throws {@linkcode H3Error} if the origin is not valid, a coordinate is fractional, or the
-coordinates do not name a cell.
+- `origin`: The anchoring cell.
+- `i`: The `i` coordinate, which must be an integer.
+- `j`: The `j` coordinate, which must be an integer.
+
+Returns: The cell at those coordinates.
+
+Throws: `H3Error` if the origin is not valid, a coordinate is fractional, or the coordinates do not name a cell.
+
+## Hierarchy
+
+### cellToCenterChild
+
+```ts
+function cellToCenterChild(cell: bigint, res: number): bigint
+```
+
+Finds the centre child of a cell at a finer resolution.
+
+- `cell`: The cell.
+- `res`: The target resolution, no coarser than the cell's own.
+
+Returns: The centre child, which is the first entry of `cellToChildren`.
+
+Throws: `H3Error` if the cell is not valid, or `res` is coarser than the cell's.
+
+### cellToChildPos
+
+```ts
+function cellToChildPos(cell: bigint, parentRes: number): number
+```
+
+Finds the position of a cell within the ordered children of one of its ancestors.
+
+- `cell`: The cell.
+- `parentRes`: The ancestor's resolution.
+
+Returns: The position, `0` to `cellToChildrenSize(ancestor, cell's resolution) - 1`.
+
+Throws: `H3Error` if the cell is not valid, or `parentRes` is finer than the cell's.
+
+### cellToChildren
+
+```ts
+function cellToChildren(cell: bigint, res: number): BigUint64Array
+```
+
+Lists every child of a cell at a finer resolution, in order.
+
+The result is a view onto the buffer C++ produced, not a copy, and holds exactly
+`cellToChildrenSize(cell, res)` entries, so it may be indexed by child position.
+
+- `cell`: The cell.
+- `res`: The target resolution.
+
+Returns: The children, the centre child first.
+
+Throws: `H3Error` if the cell is not valid, or `res` is coarser than the cell's.
+
+### cellToChildrenSize
+
+```ts
+function cellToChildrenSize(cell: bigint, res: number): number
+```
+
+Counts the children a cell has at a finer resolution.
+
+The count is exact rather than an upper bound, and it is what `cellToChildren`
+allocates. Pentagons have fewer children than hexagons, which this accounts for.
+
+- `cell`: The cell.
+- `res`: The target resolution.
+
+Returns: The number of children.
+
+Throws: `H3Error` if the cell is not valid, or `res` is coarser than the cell's.
+
+### cellToParent
+
+```ts
+function cellToParent(cell: bigint, res: number): bigint
+```
+
+Finds the ancestor of a cell at a coarser resolution.
+
+- `cell`: The cell.
+- `res`: The target resolution, no finer than the cell's own.
+
+Returns: The ancestor, or the cell itself when `res` is its own resolution.
+
+Throws: `H3Error` if the cell is not valid, or `res` is finer than the cell's.
+
+### childPosToCell
+
+```ts
+function childPosToCell(childPos: number, parent: bigint, childRes: number): bigint
+```
+
+Finds the child of a cell at a given position and resolution, inverting
+`cellToChildPos`.
+
+- `childPos`: The position, `0` to `cellToChildrenSize(parent, childRes) - 1`.
+- `parent`: The ancestor cell.
+- `childRes`: The child's resolution.
+
+Returns: The child cell.
+
+Throws: `H3Error` if the parent is not valid, or either number is out of range.
+
+### compactCells
+
+```ts
+function compactCells(cells: BigUint64Array): BigUint64Array
+```
+
+Reduces a set of cells to the smallest set covering the same area.
+
+Wherever all children of a cell are present they are replaced by that parent, recursively. The
+input must hold no duplicates and no cell twice over at different resolutions.
+
+Diverges from `h3-js`, which accepts a non-zero index that is not a cell instead of throwing.
+
+- `cells`: The cells to compact; a `0n` entry is skipped, as H3 skips it.
+
+Returns: The compacted set, which is never longer than the input.
+
+Throws: `H3Error` if the input holds a duplicate or a cell that is not valid.
+
+### uncompactCells
+
+```ts
+function uncompactCells(cells: BigUint64Array, res: number): BigUint64Array
+```
+
+Expands a compacted set so that every cell sits at the given resolution.
+
+Diverges from `h3-js`, which accepts a non-zero index that is not a cell instead of throwing.
+
+- `cells`: The compacted cells, all at `res` or coarser; a `0n` entry is skipped, as H3 skips it.
+- `res`: The target resolution.
+
+Returns: Every cell of the expanded set, in input order.
+
+Throws: `H3Error` if a cell is not valid or finer than `res`, or `res` is fractional or out of range.
+
+## Regions
+
+### cellsToMultiPolygon
+
+```ts
+function cellsToMultiPolygon(cells: BigUint64Array): LatLng[][][]
+```
+
+Finds the outline of a set of cells, as GeoJSON-shaped polygons.
+
+The result nests polygons, then loops, then points. The first loop of each polygon is its outer
+ring and any further loops are holes; no loop repeats its first point at the end.
+
+- `cells`: The cells to outline. They must all be valid, unique and of the same resolution.
+
+Returns: One entry per disjoint outline.
+
+Throws: `H3Error` if the set is invalid, mixes resolutions or contains duplicates.
+
+### polygonToCells
+
+```ts
+function polygonToCells(rings: Ring[], res: number): BigUint64Array
+```
+
+Finds every cell whose centre falls inside a polygon.
+
+The polygon is GeoJSON-shaped: the first ring is the outer boundary, any further rings are holes,
+and each point is a `[latitude, longitude]` pair in degrees. Note the order, which GeoJSON itself
+reverses; a ring is not closed, so its first point is not repeated at the end.
+
+- `rings`: The outer ring first, then holes. An empty polygon yields no cells.
+- `res`: The resolution, `0` to `15`.
+
+Returns: The cells covering the polygon, as a view onto the native buffer.
+
+Throws: `H3Error` if a point is not a finite `[latitude, longitude]` pair, the resolution is out of range, or the result would exceed the cell ceiling, `4,000,000` cells until `configure` changes it.
+
+### polygonToCellsExperimental
+
+```ts
+function polygonToCellsExperimental(
+  rings: Ring[],
+  res: number,
+  flags: ContainmentModeValue | ContainmentModeName,
+): BigUint64Array
+```
+
+Finds the cells covering a polygon as `polygonToCells` does, with a choice of
+containment rule.
+
+The mode is either a `ContainmentMode` constant or the h3-js name for it; the constants
+are cheaper and are what this package recommends. This is an experimental H3 API and may change
+behaviour in a minor version of the underlying C library.
+
+- `rings`: The outer ring first, then holes, as `[latitude, longitude]` degrees.
+- `res`: The resolution, `0` to `15`.
+- `flags`: One of `ContainmentMode.center`, `.full`, `.overlapping` or `.overlappingBbox`, or the matching h3-js name such as `'containmentCenter'`.
+
+Returns: The cells covering the polygon, as a view onto the native buffer.
+
+Throws: `H3Error` if the polygon, the resolution or the mode is invalid, or the result would exceed the cell ceiling, `4,000,000` cells until `configure` changes it.
+
+## Directed edges
+
+### areNeighborCells
+
+```ts
+function areNeighborCells(origin: bigint, destination: bigint): boolean
+```
+
+Reports whether two cells share an edge.
+
+Diverges from `h3-js`, which answers `false` for a malformed index instead of throwing.
+
+- `origin`: The first cell.
+- `destination`: The second cell, at the same resolution.
+
+Returns: `true` when the two cells are adjacent.
+
+Throws: `H3Error` if either index is not a valid cell, or the resolutions differ.
+
+### cellsToDirectedEdge
+
+```ts
+function cellsToDirectedEdge(origin: bigint, destination: bigint): bigint
+```
+
+Builds the directed edge running from one cell to a neighbouring one.
+
+- `origin`: The cell the edge leaves.
+- `destination`: The neighbouring cell the edge enters.
+
+Returns: The directed edge index.
+
+Throws: `H3Error` if either index is not a valid cell, or they are not neighbours.
+
+### directedEdgeToBoundary
+
+```ts
+function directedEdgeToBoundary(edge: bigint): LatLng[]
+```
+
+Finds the geometry of a directed edge, in degrees.
+
+Two points for an ordinary edge. An edge that crosses an icosahedron face returns three, because
+H3 inserts the crossing point.
+
+- `edge`: The directed edge.
+
+Returns: The points along the edge.
+
+Throws: `H3Error` if the index is not a valid directed edge.
+
+### directedEdgeToCells
+
+```ts
+function directedEdgeToCells(edge: bigint): BigUint64Array
+```
+
+Reads the origin and the destination of a directed edge, in that order.
+
+- `edge`: The directed edge.
+
+Returns: Always two cells, as a view onto the native buffer.
+
+Throws: `H3Error` if the index is not a valid directed edge.
+
+### edgeLengthKm
+
+```ts
+function edgeLengthKm(edge: bigint): number
+```
+
+Measures the exact length of a directed edge in kilometres.
+
+`h3-js` spells this `edgeLength(edge, 'km')`.
+
+- `edge`: The directed edge.
+
+Returns: The length in kilometres.
+
+Throws: `H3Error` if the index is not a valid directed edge.
+
+### edgeLengthM
+
+```ts
+function edgeLengthM(edge: bigint): number
+```
+
+Measures the exact length of a directed edge in metres.
+
+- `edge`: The directed edge.
+
+Returns: The length in metres.
+
+Throws: `H3Error` if the index is not a valid directed edge.
+
+### edgeLengthRads
+
+```ts
+function edgeLengthRads(edge: bigint): number
+```
+
+Measures the exact length of a directed edge in radians.
+
+- `edge`: The directed edge.
+
+Returns: The length in radians on the unit sphere.
+
+Throws: `H3Error` if the index is not a valid directed edge.
+
+### getDirectedEdgeDestination
+
+```ts
+function getDirectedEdgeDestination(edge: bigint): bigint
+```
+
+Reads the cell a directed edge enters.
+
+- `edge`: The directed edge.
+
+Returns: The destination cell.
+
+Throws: `H3Error` if the index is not a valid directed edge.
+
+### getDirectedEdgeOrigin
+
+```ts
+function getDirectedEdgeOrigin(edge: bigint): bigint
+```
+
+Reads the cell a directed edge leaves.
+
+Diverges from `h3-js`, which answers a cell for any index whose mode bits say directed edge.
+
+- `edge`: The directed edge.
+
+Returns: The origin cell.
+
+Throws: `H3Error` if the index is not a valid directed edge.
+
+### originToDirectedEdges
+
+```ts
+function originToDirectedEdges(origin: bigint): BigUint64Array
+```
+
+Finds every directed edge leaving a cell.
+
+Six for a hexagon and five for a pentagon: the missing edge is removed natively rather than
+arriving as a hole.
+
+- `origin`: The cell the edges leave.
+
+Returns: The edges, as a view onto the native buffer.
+
+Throws: `H3Error` if the index is not a valid cell.
+
+### reverseDirectedEdge
+
+```ts
+function reverseDirectedEdge(edge: bigint): bigint
+```
+
+Builds the edge running the other way between the same two cells.
+
+- `edge`: The directed edge.
+
+Returns: The edge from this one's destination back to its origin.
+
+Throws: `H3Error` if the index is not a valid directed edge.
+
+## Vertexes
+
+### cellToVertex
+
+```ts
+function cellToVertex(cell: bigint, vertexNum: number): bigint
+```
+
+Finds one vertex of a cell, by number.
+
+Vertex numbers run `0` to `5` counter-clockwise. A pentagon has five, so `5` is out of range
+there.
+
+- `cell`: The cell.
+- `vertexNum`: The vertex number, an integer from `0` to `5`.
+
+Returns: The vertex index.
+
+Throws: `H3Error` if the cell is not valid, or the vertex number is fractional or out of range.
+
+### cellToVertexes
+
+```ts
+function cellToVertexes(cell: bigint): BigUint64Array
+```
+
+Finds every vertex of a cell.
+
+Six for a hexagon and five for a pentagon: the missing vertex is removed natively rather than
+arriving as a hole.
+
+- `cell`: The cell.
+
+Returns: The vertexes, as a view onto the native buffer.
+
+Throws: `H3Error` if the index is not a valid cell.
+
+### vertexToLatLng
+
+```ts
+function vertexToLatLng(vertex: bigint): LatLng
+```
+
+Reads the coordinate of a vertex, in degrees.
+
+Diverges from `h3-js`, which measures any index it is handed, a cell included.
+
+- `vertex`: The vertex.
+
+Returns: The point the vertex sits on.
+
+Throws: `H3Error` if the index is not a valid vertex.
+
+## Measurement
+
+### cellAreaKm2
+
+```ts
+function cellAreaKm2(cell: bigint): number
+```
+
+Measures the exact area of a cell in square kilometres.
+
+h3-js spells this `cellArea(cell, 'km2')`. Here the unit is part of the name, so nothing about the
+unit crosses the bridge at call time.
+
+- `cell`: The cell.
+
+Returns: The area in square kilometres.
+
+Throws: `H3Error` if the cell is not valid.
+
+### cellAreaM2
+
+```ts
+function cellAreaM2(cell: bigint): number
+```
+
+Measures the exact area of a cell in square metres.
+
+- `cell`: The cell.
+
+Returns: The area in square metres.
+
+Throws: `H3Error` if the cell is not valid.
+
+### cellAreaRads2
+
+```ts
+function cellAreaRads2(cell: bigint): number
+```
+
+Measures the exact area of a cell in square radians.
+
+- `cell`: The cell.
+
+Returns: The area in square radians, on the unit sphere.
+
+Throws: `H3Error` if the cell is not valid.
+
+### greatCircleDistanceKm
+
+```ts
+function greatCircleDistanceKm(lat1: number, lng1: number, lat2: number, lng2: number): number
+```
+
+Measures the great-circle distance between two coordinates in kilometres.
+
+- `lat1`: Latitude of the first point in degrees.
+- `lng1`: Longitude of the first point in degrees.
+- `lat2`: Latitude of the second point in degrees.
+- `lng2`: Longitude of the second point in degrees.
+
+Returns: The distance in kilometres.
+
+### greatCircleDistanceM
+
+```ts
+function greatCircleDistanceM(lat1: number, lng1: number, lat2: number, lng2: number): number
+```
+
+Measures the great-circle distance between two coordinates in metres.
+
+- `lat1`: Latitude of the first point in degrees.
+- `lng1`: Longitude of the first point in degrees.
+- `lat2`: Latitude of the second point in degrees.
+- `lng2`: Longitude of the second point in degrees.
+
+Returns: The distance in metres.
+
+### greatCircleDistanceRads
+
+```ts
+function greatCircleDistanceRads(lat1: number, lng1: number, lat2: number, lng2: number): number
+```
+
+Measures the great-circle distance between two coordinates in radians.
+
+- `lat1`: Latitude of the first point in degrees.
+- `lng1`: Longitude of the first point in degrees.
+- `lat2`: Latitude of the second point in degrees.
+- `lng2`: Longitude of the second point in degrees.
+
+Returns: The distance in radians, on the unit sphere.
+
+## Angle conversion
+
+### degsToRads
+
+```ts
+function degsToRads(degrees: number): number
+```
+
+Converts degrees to radians.
+
+- `degrees`: An angle in degrees.
+
+Returns: The same angle in radians.
+
+### radsToDegs
+
+```ts
+function radsToDegs(radians: number): number
+```
+
+Converts radians to degrees.
+
+- `radians`: An angle in radians.
+
+Returns: The same angle in degrees.
+
+## Miscellaneous
+
+### getHexagonAreaAvgKm2
+
+```ts
+function getHexagonAreaAvgKm2(res: number): number
+```
+
+Reads the average area of a cell at a resolution, in square kilometres.
+
+- `res`: The resolution, `0` to `15`.
+
+Returns: The average area in square kilometres.
+
+Throws: `H3Error` if the resolution is fractional or out of range.
+
+### getHexagonAreaAvgM2
+
+```ts
+function getHexagonAreaAvgM2(res: number): number
+```
+
+Reads the average area of a cell at a resolution, in square metres.
+
+- `res`: The resolution, `0` to `15`.
+
+Returns: The average area in square metres.
+
+Throws: `H3Error` if the resolution is fractional or out of range.
+
+### getHexagonEdgeLengthAvgKm
+
+```ts
+function getHexagonEdgeLengthAvgKm(res: number): number
+```
+
+Reads the average edge length of a cell at a resolution, in kilometres.
+
+- `res`: The resolution, `0` to `15`.
+
+Returns: The average edge length in kilometres.
+
+Throws: `H3Error` if the resolution is fractional or out of range.
+
+### getHexagonEdgeLengthAvgM
+
+```ts
+function getHexagonEdgeLengthAvgM(res: number): number
+```
+
+Reads the average edge length of a cell at a resolution, in metres.
+
+- `res`: The resolution, `0` to `15`.
+
+Returns: The average edge length in metres.
+
+Throws: `H3Error` if the resolution is fractional or out of range.
+
+### getIcosahedronFaces
+
+```ts
+function getIcosahedronFaces(cell: bigint): number[]
+```
+
+Reads the icosahedron faces a cell intersects, as numbers from `0` to `19`.
+
+One or two for a hexagon, five for a pentagon. H3's `-1` padding is dropped, so every entry is a
+real face and `0` among them means face zero.
+
+- `cell`: The cell.
+
+Returns: The faces the cell touches.
+
+Throws: `H3Error` if the cell is not valid.
+
+### getNumCells
+
+```ts
+function getNumCells(res: number): number
+```
+
+Counts the cells at a resolution.
+
+The largest value, at resolution `15`, is `569707381193162`, which a JavaScript number represents
+exactly, so this returns `number` rather than `bigint`.
+
+- `res`: The resolution, `0` to `15`.
+
+Returns: The number of cells.
+
+Throws: `H3Error` if the resolution is fractional or out of range.
+
+### getPentagons
+
+```ts
+function getPentagons(res: number): BigUint64Array
+```
+
+Lists the twelve pentagons at a resolution.
+
+There are exactly twelve at every resolution. They are why cell sets are ragged: a disk or ring
+touching one holds fewer cells than the formula suggests.
+
+- `res`: The resolution, `0` to `15`.
+
+Returns: The twelve pentagons.
+
+Throws: `H3Error` if the resolution is fractional or out of range.
+
+### getRes0Cells
+
+```ts
+function getRes0Cells(): BigUint64Array
+```
+
+Lists all `122` resolution `0` cells.
+
+These are the roots of the H3 hierarchy: every cell at every resolution descends from one of
+them, and twelve of them are pentagons.
+
+Returns: The `122` base cells.
+
+## Async variants
+
+### cellsToMultiPolygonAsync
+
+```ts
+async function cellsToMultiPolygonAsync(cells: BigUint64Array): Promise<LatLng[][][]>
+```
+
+Finds the outline of a set of cells as `cellsToMultiPolygon` does, off the JS thread.
+
+The buffer is copied natively before the work starts, so the caller may overwrite it as soon as
+this function returns.
+
+- `cells`: The cells to outline. They must all be valid, unique and of the same resolution.
+
+Returns: One entry per disjoint outline.
+
+Throws: `H3Error` if the set is invalid, mixes resolutions or contains duplicates.
+
+### polygonToCellsAsync
+
+```ts
+async function polygonToCellsAsync(rings: Ring[], res: number): Promise<BigUint64Array>
+```
+
+Finds the cells covering a polygon as `polygonToCells` does, off the JS thread.
+
+Worth the thread hop once the fill is long enough to drop frames: San Francisco at resolution
+`12` is 412,377 cells and about five frames of work, measured in
+https://github.com/vgorte/react-native-h3/blob/main/docs/benchmark.md. Below that the
+synchronous call is cheaper, because it has no hop at all.
+
+- `rings`: The outer ring first, then holes, as `[latitude, longitude]` degrees.
+- `res`: The resolution, `0` to `15`.
+
+Returns: The cells covering the polygon, as a view onto the native buffer.
+
+Throws: `H3Error` if a point is not a finite `[latitude, longitude]` pair, the resolution is out of range, or the result would exceed the cell ceiling.
+
+### polygonToCellsExperimentalAsync
+
+```ts
+async function polygonToCellsExperimentalAsync(
+  rings: Ring[],
+  res: number,
+  flags: ContainmentModeValue | ContainmentModeName,
+): Promise<BigUint64Array>
+```
+
+Finds the cells covering a polygon as `polygonToCellsExperimental` does, off the JS
+thread.
+
+The mode is resolved on the JS thread, by the helper the synchronous call uses, so the two take
+the same arguments and answer alike.
+
+- `rings`: The outer ring first, then holes, as `[latitude, longitude]` degrees.
+- `res`: The resolution, `0` to `15`.
+- `flags`: One of `ContainmentMode.center`, `.full`, `.overlapping` or `.overlappingBbox`, or the matching h3-js name such as `'containmentCenter'`.
+
+Returns: The cells covering the polygon, as a view onto the native buffer.
+
+Throws: `H3Error` if the polygon, the resolution or the mode is invalid, or the result would exceed the cell ceiling.
+
+### uncompactCellsAsync
+
+```ts
+async function uncompactCellsAsync(cells: BigUint64Array, res: number): Promise<BigUint64Array>
+```
+
+Expands a compacted cell set as `uncompactCells` does, off the JS thread.
+
+The buffer is copied natively before the work starts, so the caller may overwrite it as soon as
+this function returns.
+
+- `cells`: A compacted cell set.
+- `res`: The resolution to expand to, no finer than any cell in the set.
+
+Throws: `H3Error` if the set is invalid, the resolution is out of range, or the result would exceed the cell ceiling.
+
+## Configuration
+
+### configure
+
+```ts
+function configure(options: H3Config): void
+```
+
+Changes settings that apply to every later call.
+
+The ceiling is read where a call allocates, so it governs every cell-producing operation, the
+four `Async` variants included.
+
+- `options`: The settings to change. A field left out leaves that setting untouched.
+
+Throws: `H3Error` if `maxCellCount` is neither `Infinity` nor an integer of `1` or more.
+
+### H3Config
+
+```ts
+interface H3Config {
+  /**
+   * Caps how many cells one call may allocate, which guards against exhausting device memory.
+   *
+   * Defaults to `4_000_000` cells, 32 MB as a `BigUint64Array`. `Infinity` removes the ceiling
+   * altogether; any other value must be an integer of `1` or more.
+   */
+  maxCellCount?: number
+}
+```
+
+Holds the settings `configure` accepts. Every field is optional.
+
+## Errors
+
+### H3Error
+
+```ts
+class H3Error extends Error {
+  /** Holds the H3 error code, or `undefined` when the failure is this package's own. */
+  readonly code: number | undefined
+  constructor(message: string, code?: number)
+}
+```
+
+Represents a failure raised by any function in this package.
+
+It carries a message and, for a failure H3 itself reported, the numeric error code, exactly as
+h3-js does. The wording comes from H3's own `describeH3Error`, so it matches upstream
+documentation.
 
 ## Types
 
@@ -1021,6 +1212,8 @@ Names a containment mode the way h3-js's `POLYGON_TO_CELLS_FLAGS` does.
 type ContainmentModeValue = (typeof ContainmentMode)[keyof typeof ContainmentMode]
 ```
 
+Holds one of the numeric `ContainmentMode` values.
+
 ### CoordIJ
 
 ```ts
@@ -1050,77 +1243,5 @@ type Ring = [lat: number, lng: number][]
 ```
 
 Represents a ring of `[latitude, longitude]` pairs in degrees, whose first point is not repeated at the end.
-
-## Angle conversion
-
-### degsToRads
-
-```ts
-function degsToRads(degrees: number): number
-```
-
-Converts degrees to radians.
-
-@param degrees An angle in degrees.
-@returns The same angle in radians.
-
-### radsToDegs
-
-```ts
-function radsToDegs(radians: number): number
-```
-
-Converts radians to degrees.
-
-@param radians An angle in radians.
-@returns The same angle in degrees.
-
-## Vertexes
-
-### cellToVertex
-
-```ts
-function cellToVertex(cell: bigint, vertexNum: number): bigint
-```
-
-Finds one vertex of a cell, by number.
-
-Vertex numbers run `0` to `5` counter-clockwise. A pentagon has five, so `5` is out of range
-there.
-
-@param cell The cell.
-@param vertexNum The vertex number, an integer from `0` to `5`.
-@returns The vertex index.
-@throws {@linkcode H3Error} if the cell is not valid, or the vertex number is fractional or out
-of range.
-
-### cellToVertexes
-
-```ts
-function cellToVertexes(cell: bigint): BigUint64Array
-```
-
-Finds every vertex of a cell.
-
-Six for a hexagon and five for a pentagon: the missing vertex is removed natively rather than
-arriving as a hole.
-
-@param cell The cell.
-@returns The vertexes, as a view onto the native buffer.
-@throws {@linkcode H3Error} if the index is not a valid cell.
-
-### vertexToLatLng
-
-```ts
-function vertexToLatLng(vertex: bigint): LatLng
-```
-
-Reads the coordinate of a vertex, in degrees.
-
-Diverges from `h3-js`, which measures any index it is handed, a cell included.
-
-@param vertex The vertex.
-@returns The point the vertex sits on.
-@throws {@linkcode H3Error} if the index is not a valid vertex.
 
 <!-- 77 exported symbols -->
