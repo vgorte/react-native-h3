@@ -1,84 +1,116 @@
-# Releasing
+# 🚀 Release Guide
 
-One command, `bun release <version>`, and it is dispatched from CI rather than run by hand.
-Everything below is what has to be true before that, and how to rehearse it locally without writing
-anything.
+Releasing `react-native-h3` is designed to be fully automated. A single command, dispatched from
+CI, handles the entire process. Everything documented below outlines the pre-flight requirements,
+how to safely rehearse a release locally, and how the internal pipeline works.
 
-The workspace splits the work in two. The package publishes itself to npm and does nothing else; the
-root owns the version bump commit, the tag, the changelog and the GitHub release. The version is
-passed explicitly because both halves would otherwise compute an increment of their own, and only an
-explicit argument guarantees that the tarball on npm and the tag on GitHub carry the same number.
+> **⚠️ Golden Rule:** Never run a live publish from your local machine. Releases are strictly
+> dispatched from GitHub Actions to guarantee npm provenance attestations.
 
-## Before the release
+## 🏗️ Workspace Architecture
 
-1. `main` is green. Seven workflows run on every push to `main`: `CI`, `Nitrogen drift`,
-   `Lint C++`, `C++ tests`, `Parity`, `Build Android` and `Harness Android`. Five of them carry
-   path filters, but those apply to pull requests only, so the last push to `main` reports all
-   seven.
+The workspace strictly splits release responsibilities into two halves. An explicit version number
+must be passed (e.g., `bun release 1.0.0`) so both halves stay perfectly in sync without computing
+increments independently.
 
-2. Run the iOS checks no workflow covers. There are no macOS jobs, so these are the only proof that
-   iOS still builds and still runs the harness suite clean:
+- **The Package (`packages/react-native-h3`):** Strictly responsible for publishing the tarball to
+  npm. It does absolutely no git operations.
+- **The Root:** Strictly handles repository management. It owns the version bump commit, updates
+  the package manifests and lockfiles, creates the git tag, generates the changelog, and creates
+  the GitHub Release.
 
-   ```sh
-   scripts/device-ios.sh default
-   scripts/device-ios.sh asan
-   scripts/device-ios.sh tsan
-   scripts/build-ios-variants.sh
-   ```
+## 🚦 Pre-Flight Checklist
 
-   The three device runs use the `iPhone 17 Pro` simulator on iOS 26.5. `build-ios-variants.sh`
-   builds the example app twice, with static frameworks on and off, because a podspec that only
-   works one way is a failure a consumer discovers and the maintainer does not. It refuses to start
-   while `apps/example/ios` has uncommitted changes, because it restores that directory with a hard
-   `git checkout` at the end.
+Before triggering a release, ensure all local and remote states are perfectly clean.
 
-   Each run keeps its own derived-data tree under `apps/example/ios/build`, which is roughly 1.5 GB
-   per sanitizer flavor and 0.8 GB per framework variant, about 6 GB once all five have run. Delete
-   the directory when the release is out.
+### 1. Verify CI is Green
 
-3. Regenerate the benchmark if any of the numbers could have moved. CI does not produce these
-   figures and cannot.
+The `main` branch must be completely green. Path filters apply to pull requests only, so the last
+push to `main` reports the true status of all seven core workflows: `CI`, `Nitrogen drift`,
+`Lint C++`, `C++ tests`, `Parity`, `Build Android`, and `Harness Android`.
 
-   The steps live in
-   [Regenerating the Benchmarks](https://github.com/vgorte/react-native-h3/blob/main/docs/benchmark.md#-regenerating-the-benchmarks)
-   and are not repeated here. Two things are specific to a release run: build `apps/example` in
-   **Release** on the `iPhone 17 Pro` simulator (iOS 26.5) or on the `afterglow_pixel` emulator,
-   never on a physical device, and read the chunked payload off the log. On iOS in Release those
-   lines are only visible at debug level:
+### 2. Local iOS Validation (Pre-Public Repo)
 
-   ```sh
-   xcrun simctl spawn booted log stream --level debug \
-     --predicate 'eventMessage CONTAINS "BENCHMARK_JSON"'
-   ```
+Because macOS CI minutes are expensive on private repositories, iOS validation is currently run
+locally prior to release.
 
-   On the emulator the same lines come out of `adb logcat`.
+Run the three device checks (targeting the `iPhone 17 Pro` simulator, iOS 26.5) to guarantee the
+harness suite runs clean across all sanitizer flavors:
 
-4. The generated documents match their sources:
+```sh
+scripts/device-ios.sh default
+scripts/device-ios.sh asan
+scripts/device-ios.sh tsan
+```
 
-   ```sh
-   bun run docs:api --check   # packages/react-native-h3/docs/api.md is up to date
-   bun run icons --check      # 17 app icons match img/logo.svg
-   bun run vendor:h3 --check  # third_party/h3 matches upstream v4.5.0
-   ```
+Next, verify framework linking. This builds the app twice (with static frameworks ON and OFF)
+because a podspec that only works one way is a silent failure for consumers:
 
-   If the vendored H3 version changed, say so in the release notes and name
-   `third_party/h3/H3_VERSION`.
+```sh
+scripts/build-ios-variants.sh
+```
 
-5. The tarball carries everything a consumer's native build needs:
+> **Note:** `build-ios-variants.sh` refuses to start while `apps/example/ios` has uncommitted
+> changes, because it restores that directory with a hard `git checkout` at the end.
 
-   ```sh
-   bun run build
-   cd packages/react-native-h3 && npm pack --dry-run
-   ```
+> **🧹 Cleanup Tip:** Each run keeps its own derived-data tree under `apps/example/ios/build`
+> (~1.5 GB per sanitizer flavor, ~0.8 GB per framework variant). Once the release is out, delete
+> this directory to reclaim ~6 GB of space.
 
-   The `prepack` guard runs first and prints `Pack list OK: 215 files`, then npm lists every file
-   it would put in the tarball. `bun run build` comes first because `lib/` is build output and is
-   not in git, so the guard reports `lib/index.js` and `lib/index.d.ts` as missing without it. If
-   it still reports them after a build, delete
-   `packages/react-native-h3/tsconfig.tsbuildinfo` and build again: the compiler is incremental and
-   considers an emit it has already recorded to be done.
+### 3. Regenerate Benchmarks (If required)
 
-## Rehearsing
+If performance characteristics might have shifted, regenerate the benchmarks. CI does not produce
+these figures and cannot.
+
+> **Hardware Rule:** Run strictly on a Simulator (`iPhone 17 Pro`, iOS 26.5) or Emulator
+> (`afterglow_pixel`) in **Release** mode. Never use a physical device.
+
+**Extracting logs:** Follow the steps in
+[Regenerating the Benchmarks](https://github.com/vgorte/react-native-h3/blob/main/docs/benchmark.md#-regenerating-the-benchmarks).
+On iOS in Release mode, the chunked payload is only visible at the debug level:
+
+```sh
+xcrun simctl spawn booted log stream --level debug \
+  --predicate 'eventMessage CONTAINS "BENCHMARK_JSON"'
+```
+
+(On Android, use `adb logcat` to extract the payload.)
+
+### 4. Verify Docs, Icons & Vendored C-Core
+
+Ensure all generated assets match their source of truth:
+
+```sh
+bun run docs:api --check   # packages/react-native-h3/docs/api.md is up to date
+bun run icons --check      # 17 app icons match img/logo.svg
+bun run vendor:h3 --check  # third_party/h3 matches upstream v4.5.0
+```
+
+> **Note:** If the vendored H3 version changed, highlight this in the release notes and reference
+> `packages/react-native-h3/third_party/h3/H3_VERSION`.
+
+### 5. Dry-Run the Tarball
+
+Verify that the published tarball contains exactly what a consumer's native build needs:
+
+```sh
+bun run build
+cd packages/react-native-h3
+npm pack --dry-run
+```
+
+The `prepack` guard runs first. Expect it to print `Pack list OK: 215 files` before npm lists the
+simulated tarball contents.
+
+> **🛠️ Troubleshooting `lib/` errors:** `lib/` contains build outputs ignored by git, which is why
+> `bun run build` comes first. If the `prepack` guard still reports `lib/index.js` missing after a
+> build, delete `packages/react-native-h3/tsconfig.tsbuildinfo` and build again to clear the
+> incremental compiler cache.
+
+## 🎭 Rehearsing a Release (Dry Run)
+
+You can safely simulate the entire release process locally without writing a single tag or
+publishing to npm.
 
 ```sh
 bun install
@@ -86,64 +118,109 @@ bun run build
 bun release --dry-run --ci
 ```
 
-The verification gate runs first, in full: install, lint, typecheck, build, specs, the host test
-suite, then the parity probe is compiled and the parity suite is run against it. The two release-it
-invocations follow, and neither writes: the package prints the version and the `npm publish` it
-would perform, and the root prints the changelog it would generate from the conventional commits,
-the bump commit, the tag and the GitHub release it would create.
+### 1. The Verification Gate
 
-Without an npm login the run stops at `Not authenticated with npm`, which is release-it's
-`npm whoami` pre-flight check and not a property of the release. To rehearse past it:
+Before simulating the publish, the script strictly enforces the verification gate. It runs:
+install, lint, typecheck, build, specs, and the host test suite. Finally, it compiles the parity
+probe and executes the parity suite against it.
 
-```sh
-bun release --dry-run --ci --npm.skipChecks
-```
+### 2. Simulated Outputs
 
-That is the same option the trusted publishing route sets permanently, because under OIDC there is
-no identity to report until the publish itself exchanges the token.
+Because this is a dry run, release-it modifies nothing.
 
-Three things the output does not show. release-it does not echo what `npm publish --dry-run` prints,
-so the pack list comes from step 5 above rather than from here. Hooks are listed but not executed in
-a dry run, which is why the root hook's `pod install` does not touch `apps/example/ios`. And
-`Writing changelog to undefined` is expected: no changelog file is kept in the repository, the entry
-goes into the GitHub release body.
+- **The Package** prints the version and the `npm publish` command it would perform.
+- **The Root** prints the changelog it would generate from conventional commits, along with the
+  bump commit, tag, and GitHub Release details.
 
-Confirm afterwards that nothing was written:
+> **🔑 Bypassing the npm Auth Check:** If you are not logged into npm locally, the run will abort
+> with `Not authenticated with npm` (release-it's `npm whoami` pre-flight check, not a property of
+> the release). To rehearse past this, use:
+>
+> ```sh
+> bun release --dry-run --ci --npm.skipChecks
+> ```
+>
+> This is the same option the trusted publishing route sets permanently, because under OIDC there
+> is no identity to report until the publish step exchanges the token.
+
+### 3. Expected CLI Quirks
+
+Do not be alarmed by these three omissions in the dry-run output:
+
+- release-it does not echo what `npm publish --dry-run` prints (refer to Step 5 of the Pre-Flight
+  Checklist for the pack list).
+- Hooks are listed but not executed. Consequently, the root hook's `pod install` will not touch
+  `apps/example/ios`.
+- `Writing changelog to undefined` is expected behavior. We do not keep a `CHANGELOG.md` file in
+  the repository; the changelog goes directly into the GitHub Release body.
+
+### 4. Post-Rehearsal Verification
+
+Confirm that your repository remains pristine and no tags were created:
 
 ```sh
 git status --short
 git tag --list
 ```
 
-## What `bun release <version>` does
+## ⚙️ Under the Hood: What `bun release <version>` does
 
-`bun release` is `scripts/release.sh`. It runs the verification gate first, before anything is
-published, because the root release-it's own `before:release` hook would fire after the tarball is
-already on npm. The gate compiles the parity probe and sets `H3_PARITY_REQUIRED`, since the parity
-suite skips itself when the probe is missing and a gate that skips is not a gate.
+Underneath, `bun release` maps directly to `scripts/release.sh`. It executes the release in three
+strict phases:
 
-It then releases each package in `packages/`, which is npm publish only with no git operations, and
-finally runs the root release-it, which owns the version bump commit, the tag, the changelog and the
-GitHub release. The root run also bumps the version in `packages/react-native-h3/package.json` and
-`apps/example/package.json`, refreshes both lockfiles and stages them.
+1. **The Verification Gate (Enforced Parity):** The gate runs before anything is published. (If we
+   relied on the root release-it's `before:release` hook, it would fire too late, after the tarball
+   was already on npm.) The gate explicitly compiles the parity probe and exports
+   `H3_PARITY_REQUIRED`. This guarantees the parity suite runs in strict mode and cannot silently
+   skip itself if the probe is missing.
+2. **Package Publishing (`packages/react-native-h3`):** Executes a pure `npm publish` for the
+   package, strictly without any git operations.
+3. **Root Finalization:** Runs the root release-it. This phase owns the version bump commit, the
+   git tag, generating the changelog, and creating the GitHub Release. It also bumps the version in
+   `packages/react-native-h3/package.json` and `apps/example/package.json`, refreshes both
+   lockfiles, and stages them for the commit.
 
-## Publishing
+## 🚀 Publishing (Production Release)
 
-`bun release` is never run against npm from a laptop. The `Release` workflow is dispatched by hand
-from the Actions tab with the version as its input, and it is the only thing that publishes, because
-provenance attestations are produced only by a supported CI runner and only for a public repository.
-That workflow arrives with the first public release; until then `bun release --dry-run --ci` is the
-only invocation there is.
+> **🛑 Strict Policy:** `bun release` is never run against npm from a developer's laptop.
 
-## After the first public release
+The production release is exclusively dispatched manually via the GitHub Actions tab (using the
+`Release` workflow with the target version as its input).
 
-- Verify the README on GitHub and on npm. The logo, the benchmark chart and the badges are absolute
-  `raw.githubusercontent.com` and `shields.io` URLs, and a private repository serves none of them.
-  The npm version badge stays blank until the package exists on the registry.
-- Add the iOS workflows. An iOS harness workflow covering the three flavors of
-  `scripts/device-ios.sh`, and a build workflow covering the two framework variants, are absent by
-  decision: macOS runner minutes bill at ten times the Linux rate on a private repository, which is
-  what step 2 above replaces. Once the repository is public and the minutes are free, adding both is
-  the first CI task.
-- Add the branch ruleset on `main`. There is none while the repository is private, and a public
-  repository without one is a repository anyone with write access can force-push.
+**Why? npm Provenance.** Cryptographic provenance attestations are only produced by a supported CI
+runner, and only for a public repository. Triggering the release via CI is the only way to
+guarantee this supply-chain security.
+
+> **Note:** The `Release` workflow arrives with the first public release. Until the repository is
+> made public and that release happens, `bun release --dry-run --ci` remains the only valid way to
+> run this script.
+
+## 🌅 Post-Launch: The "First Public Release" Checklist
+
+Once the repository is switched from Private to Public, these three tasks must be completed
+immediately:
+
+### 1. Verify Assets & Badges
+
+Verify the README renders correctly on both GitHub and npm.
+
+- The logo and the benchmark chart are absolute `raw.githubusercontent.com` URLs pointing at
+  `main`, which a private repository serves only with a token; they render once the repository is
+  public.
+- The npm version and downloads badges (`shields.io`) report "package not found" until the first
+  tarball is actually published to the registry.
+
+### 2. Enable macOS / iOS CI Workflows
+
+Currently, the iOS harness workflow (covering the three flavors of `scripts/device-ios.sh`) and the
+build workflow (covering the two framework variants) are intentionally omitted from CI.
+
+- **The Reason:** macOS runner minutes bill at 10× the Linux rate on private repositories.
+- **The Action:** Once the repository is public, these minutes become free for open-source
+  projects. Adding both workflows to the automated CI pipeline is the first CI task.
+
+### 3. Enforce Branch Protection on `main`
+
+Add a strict branch ruleset on `main`. While the repository is private, this isn't strictly
+necessary, but a public repository without branch protection allows anyone with write access to
+accidentally (or maliciously) force-push over the commit history.
