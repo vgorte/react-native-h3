@@ -98,7 +98,7 @@ Expo Go cannot load native modules; `prebuild` produces the development build yo
 
 > **Compatibility:** Requires React Native 0.75+. The New Architecture is not required (React Native
 > 0.75 to 0.81 may still run the Legacy Architecture). For minimum OS versions, see
-> [Requirements](#-requirements).
+> [Requirements](#️-requirements).
 
 ## 📖 Usage
 
