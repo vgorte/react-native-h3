@@ -35,7 +35,7 @@ const SAN_FRANCISCO_POLYGON: Ring[] = [
 ]
 
 const RUNS = 20
-// one `polygonToCells` costs h3-js over twenty seconds, so W3 gets far fewer runs
+// one `polygonToCells` costs `h3-js` over twenty seconds, so W3 gets far fewer runs
 const RUNS_W3 = 3
 const CALLS = 100_000
 const DISK_K = 20
@@ -103,7 +103,7 @@ function statsOf(samples: number[]): Stats {
   const last = sorted.length - 1
   // the median takes the upper of the two middle samples on an even count
   const median = sorted[Math.min(last, Math.floor(0.5 * sorted.length))] as number
-  // nearest rank, so 20 runs put the p95 on the nineteenth sample rather than on the maximum
+  // nearest rank, so `p95` is the nineteenth of 20 samples, not the maximum
   const rank = Math.min(last, Math.max(0, Math.ceil(0.95 * sorted.length) - 1))
   return {
     median,
@@ -447,10 +447,8 @@ function toPayload(rows: Row[], seconds: number): Payload {
   }
 }
 
-// os_log drops everything past about a kilobyte, so the payload leaves in numbered chunks. The bars
-// around each one are not decoration: the log trims a line's outer whitespace, which once ate the
-// space off a chunk boundary and silently corrupted a workload name. Quoting instead of bracketing
-// would not help, because the log rewrites a backslash as `\134`.
+// `os_log` trims a line's outer whitespace and rewrites a backslash, so neither a raw nor a quoted
+// chunk survives intact; the bars pin both edges.
 function logPayload(payload: Payload): void {
   const text = JSON.stringify(payload)
   const total = Math.ceil(text.length / CHUNK)

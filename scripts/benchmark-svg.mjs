@@ -24,16 +24,16 @@ const TITLE = 'react-native-h3 vs h3-js, speedup per workload'
 // no external resources: a system stack, resolved by the viewer
 const FONT = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
 
-// No single colour clears 4.5:1 on white and on GitHub's #0d1117 at once; 4.35:1 is the arithmetic
-// ceiling. The base pair sits on it, and the media queries lift each theme past 4.5:1 wherever the
-// renderer honours them.
+// No single colour clears 4.5:1 on white and on GitHub's `#0d1117` at once; 4.35:1 is the
+// arithmetic ceiling. The base pair sits on it, and the media queries lift each theme past 4.5:1
+// wherever the renderer honours them.
 const TEXT_BASE = '#727a84'
 const TEXT_LIGHT = '#57606a'
 const TEXT_DARK = '#8b949e'
 const VALUE_BASE = '#2f78dc'
 const VALUE_LIGHT = '#1f6feb'
 const VALUE_DARK = '#58a6ff'
-// a bar is not text, so 3:1 is the bar to clear: 3.68:1 on white, 5.15:1 on #0d1117
+// a bar is not text, so 3:1 is the bar to clear: 3.68:1 on white, 5.15:1 on `#0d1117`
 const BAR_COLOR = '#3b82f6'
 
 const WIDTH = 840
@@ -121,7 +121,7 @@ function readPayload() {
 function toBars(rows) {
   const bars = []
   for (const row of rows) {
-    // a row with no h3-js counterpart has no factor; that is expected, not a defect
+    // a row with no `h3-js` counterpart has no factor; that is expected, not a defect
     if (row.referenceMillis === null) {
       continue
     }
@@ -149,11 +149,9 @@ function axisMax(bars) {
   return Math.max(10, 10 ** (Math.floor(Math.log10(widest)) + 1))
 }
 
-// The headline is deliberately not the widest bar. W4's factor is h3-js marshalling 1,261
-// hexadecimal strings in and 163 out against about 13 microseconds of C, which says more about the
-// reference than about this package, and any future micro-row would outrank the real work the same
-// way. So the headline takes the widest factor among rows that spend at least a millisecond of
-// react-native-h3's own time, then rounds down to the nearest ten so the figure never flatters.
+// Rows under a millisecond of `react-native-h3` time are left out: their factor is dominated by
+// `h3-js` string marshalling, not by the work. The headline is the largest factor among the rest,
+// rounded down to the nearest ten.
 const HEADLINE_MIN_MILLIS = 1
 
 function headline(bars) {
