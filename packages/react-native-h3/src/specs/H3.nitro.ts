@@ -120,6 +120,6 @@ export interface H3 extends HybridObject<{ ios: 'c++'; android: 'c++' }> {
   uncompactCellsAsync(cells: ArrayBuffer, res: number): Promise<ArrayBuffer>
 
   // the cell ceiling crosses as a `number` because `Infinity` has to survive the trip; C++ maps it
-  // to the largest `int64_t` and owns the validation.
+  // to the no-limit sentinel it starts with, and owns the validation.
   setMaxCellCount(maxCellCount: number): void
 }

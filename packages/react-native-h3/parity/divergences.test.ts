@@ -224,11 +224,25 @@ describe.skipIf(skipWithoutProbe)('divergence: an argument that is not an intege
   })
 })
 
-describe.skipIf(skipWithoutProbe)('divergence: the cell ceiling', () => {
-  test('a request above four million cells is refused where h3-js allocates it', () => {
-    // `3 * 1155 * 1156 + 1` is 4,005,541 cells, the first `k` past the ceiling
-    expect(refusal(`gridDisk ${CELL} 1155`)).toBe(
-      'The requested result of 4005541 cells exceeds the cell limit of 4000000, which guards against exhausting device memory. Raise it with configure({ maxCellCount })',
+describe.skipIf(skipWithoutProbe)('divergence: the opt-in cell ceiling', () => {
+  test('no ceiling applies until one is set', () => {
+    // `__maxCellCount` is what `configure` reaches, so the two requests share one process
+    const [before, , after] = callMany([
+      `gridDisk ${CELL} 1`,
+      '__maxCellCount 3',
+      `gridDisk ${CELL} 1`,
+    ])
+    expect(before).toHaveLength(7)
+    expect((after as Error).message).toBe(
+      'The requested result of 7 cells exceeds the cell limit of 3 set with configure({ maxCellCount }). Raise or remove the limit to allow it.',
+    )
+  })
+
+  test('a ceiling refuses a request h3-js allocates', () => {
+    // `3 * 1155 * 1156 + 1` is 4,005,541 cells, the first `k` past a ceiling of four million
+    const [, refused] = callMany(['__maxCellCount 4000000', `gridDisk ${CELL} 1155`])
+    expect((refused as Error).message).toBe(
+      'The requested result of 4005541 cells exceeds the cell limit of 4000000 set with configure({ maxCellCount }). Raise or remove the limit to allow it.',
     )
     expect(h3.gridDisk(CELL, 1155)).toHaveLength(4005541)
   })

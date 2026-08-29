@@ -4,10 +4,11 @@ import { native } from './native'
 /** Holds the settings {@linkcode configure} accepts. Every field is optional. */
 export interface H3Config {
   /**
-   * Caps how many cells one call may allocate, which guards against exhausting device memory.
+   * Caps how many cells one call may allocate, once you set it.
    *
-   * Defaults to `4_000_000` cells, 32 MB as a `BigUint64Array`. `Infinity` removes the ceiling
-   * altogether; any other value must be an integer of `1` or more.
+   * There is no cap until then, so a call returns whatever it is asked for; a cell costs 8 bytes,
+   * so `4_000_000` is a 32 MB `BigUint64Array`. `Infinity` removes a cap set earlier, and any
+   * other value must be an integer of `1` or more.
    */
   maxCellCount?: number
 }

@@ -33,8 +33,8 @@ machine-code execution on iOS and Android for maximum performance.
   C++ buffer handed over to JavaScript without a single memory copy.
 - ⏱️ **Sync by Default:** Designed for speed with synchronous calls, alongside async variants for
   the four specific operations heavy enough to drop frames.
-- 🛡️ **Memory Safe (Cell Ceiling):** Unlike a WASM heap, oversized results won't silently kill your
-  app. Exceeding the Cell Ceiling safely throws a catchable `H3Error`.
+- 🛡️ **Optional Cell Ceiling:** Off by default, so a call returns whatever you ask for. Set
+  one and an oversized result throws a catchable `H3Error` instead of allocating.
 - 🐛 **Native Error Handling:** Error messages are forwarded directly from the H3 C library
   (`describeH3Error`) and include the exact same numeric codes as `h3-js`.
 - 🏗️ **Architecture Agnostic:** Full support for iOS and Android; the New Architecture is not
@@ -166,45 +166,40 @@ async function fillGrid(): Promise<BigUint64Array> {
 > background thread. The buffer you pass in is immediately yours to reuse the moment the function
 > returns, while yielding the exact same results as its synchronous sibling.
 
-## 🛡️ Memory Safety: The Cell Ceiling
+## 🛡️ The Cell Ceiling (Opt-In)
 
-On a server, an oversized H3 result just means a slow request. On a mobile device, allocating too
-much memory in C++ results in a silent process kill that your JavaScript `try/catch` cannot
-intercept.
+There is no cell limit until you set one: a call returns whatever you ask for, exactly as
+`h3-js` does. Sizes grow fast, and a cell costs 8 bytes in the returned `BigUint64Array`.
+`gridDisk(cell, k)` returns `1 + 3k(k+1)` cells, so `k` of 1,155 is 4,005,541 cells or 32 MB, and
+`polygonToCells` over San Francisco at resolution 12 is 412,377.
 
-To prevent this, `react-native-h3` implements a **Cell Ceiling**. Every cell-producing function
-queries the required size before allocating anything. If the result exceeds the ceiling, it
-instantly throws a catchable `H3Error` instead of crashing your app:
-
-```text
-The requested result of 4005541 cells exceeds the cell limit of 4000000, which guards against exhausting device memory. Raise it with configure({ maxCellCount })
-```
-
-### Configuring the Ceiling
-
-The default limit is **4,000,000 cells** (which translates to exactly 32 MB at 8 bytes per cell,
-allocated as a zero-copy `BigUint64Array`).
-
-The ceiling is a default, not a law. You can adjust it globally at runtime:
+A request keeps growing from there: `gridDisk(cell, 4000)` is 48,012,001 cells, 384 MB packed, and a
+polygon covering a country at resolution 15 reports far more. On a mobile device an allocation at
+that scale is not a slow call. It is a silent process kill that your JavaScript `try/catch` cannot
+intercept. Set a **Cell Ceiling** and the request is refused before anything is allocated:
 
 ```ts
 import { configure } from 'react-native-h3'
 
-// Raise the limit if your target devices can handle it
-configure({ maxCellCount: 20_000_000 })
-
-// Or disable it entirely (the memory is yours to manage)
-configure({ maxCellCount: Infinity })
+// 4,000,000 cells is exactly 32 MB at 8 bytes per cell
+configure({ maxCellCount: 4_000_000 })
 ```
 
-> **💡 How it compares to h3-js:** `h3-js` has no equivalent ceiling; it only bounds its WebAssembly
-> allocation at a massive 2 GB. A heavy call there will just execute: `gridDisk(cell, 1155)`
-> allocates all 4,005,541 cells,
-> [measured on a desktop machine in docs/benchmark.md](https://github.com/vgorte/react-native-h3/blob/main/docs/benchmark.md#-the-cost-of-unbounded-requests-why-the-cell-ceiling-exists).
-> In `react-native-h3`, the ceiling ensures you stay strictly in control of the native heap.
+Every cell-producing function then queries the required size first and throws a catchable `H3Error`
+when the answer is over the ceiling:
 
-*(Note: `maxCellCount` applies to all sync and async cell-producing functions from the moment it is
-set. It must be a positive integer or `Infinity`.)*
+```text
+The requested result of 4005541 cells exceeds the cell limit of 4000000 set with configure({ maxCellCount }). Raise or remove the limit to allow it.
+```
+
+`configure({ maxCellCount: Infinity })` removes a ceiling set earlier. The value must be a
+positive integer or `Infinity`, and it applies to every sync and async cell-producing function from
+the moment it is set.
+
+> **💡 How it compares to h3-js:** `h3-js` offers no equivalent setting; it only bounds its
+> WebAssembly allocation at a massive 2 GB. A heavy call there will just execute: `gridDisk(cell, 1155)`
+> allocates all 4,005,541 cells,
+> [measured on a desktop machine in docs/benchmark.md](https://github.com/vgorte/react-native-h3/blob/main/docs/benchmark.md#-the-cost-of-unbounded-requests-what-the-cell-ceiling-guards).
 
 ## 🚨 Error Handling
 
@@ -231,8 +226,8 @@ try {
 - **Native Codes:** Standard H3 errors append `(code: N)` to the message and expose the `.code`
   property.
 - **Binding Exceptions:** Errors this package raises itself, before the call reaches the H3 C
-  library (argument validation such as a non-integer resolution, or a breach of the Cell Ceiling),
-  also throw `H3Error`, but leave the `.code` property `undefined`.
+  library (argument validation such as a non-integer resolution, or a breach of a configured Cell
+  Ceiling), also throw `H3Error`, but leave the `.code` property `undefined`.
 - **Async Parity:** Async variants throw the exact same errors and messages as their synchronous
   siblings.
 
@@ -270,8 +265,8 @@ Because this library binds directly to C++, it is intentionally stricter than `h
 2. **Strict Validation:** Supplying an invalid cell, directed edge, or vertex throws an `H3Error` at
    the C++ boundary, where `h3-js` reads the bits and answers anyway. Nine functions have no error
    channel and are exempt, such as `isValidCell` or `getResolution`.
-3. **Memory Guard:** Requests exceeding the Cell Ceiling are refused with an `H3Error`, a limit no
-   other H3 binding imposes.
+3. **Memory Guard:** Once you set a Cell Ceiling, requests exceeding it are refused with an
+   `H3Error`, a setting no other H3 binding offers.
 4. **Accurate Error Messages:** Messages come straight from the H3 C library's `describeH3Error`;
    two of the nineteen H3 texts have drifted in `h3-js`'s own table.
 

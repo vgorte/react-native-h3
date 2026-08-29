@@ -51,7 +51,7 @@ describe('H3Error', () => {
     try {
       rethrowAsH3Error(
         new Error(
-          'The requested result of 4005541 cells exceeds the cell limit of 4000000, which guards against exhausting device memory. Raise it with configure({ maxCellCount })',
+          'The requested result of 4005541 cells exceeds the cell limit of 4000000 set with configure({ maxCellCount }). Raise or remove the limit to allow it.',
         ),
       )
     } catch (error) {

@@ -3,10 +3,10 @@
 h3-js 4.5.0 bundles exactly the H3 C library this package vendors, so it is an oracle rather than an
 approximation, and `parity/` compares the two over all 122 resolution 0 cells, all sixteen
 resolutions, all 192 pentagons with their neighbourhoods, the poles, the antimeridian and seeded
-random coordinates. Every row below is proved by a test in `parity/divergences.test.ts`, which
-asserts both sides; the two type-surface rows are proved there for h3-js at run time and for this
-package by `tsc`, because the probe the suite drives speaks JSON. Everything not listed here is
-identical.
+random coordinates. Every row and section below is proved by a test in
+`parity/divergences.test.ts`, which asserts both sides; the two type-surface rows are proved there
+for h3-js at run time and for this package by `tsc`, because the probe the suite drives speaks JSON.
+Everything not listed here is identical.
 
 ## Input this package refuses and h3-js answers
 
@@ -19,7 +19,6 @@ identical.
 | A resolution that is not an integer, where h3-js validates in JavaScript (`getHexagonAreaAvg*`, `getHexagonEdgeLengthAvg*`, `getNumCells`) | throws `Resolution must be an integer between 0 and 15`, with no `code` | throws `E_RES_DOMAIN` (code 4) with `, value: 1.5` appended | H3 never sees the argument, so there is no H3 error to report. |
 | A polygon point that is not a `[lat, lng]` pair | throws `Each polygon point must be a [latitude, longitude] pair` | throws `E_FAILED` (code 1) | Saying what a point has to be is more useful than a generic failure. |
 | A polygon coordinate that is not finite | throws `Polygon coordinates must be finite numbers` | throws `E_FAILED` (code 1) | As above. |
-| A request for more cells than the ceiling allows, such as `gridDisk(cell, 1155)` | throws `The requested result of 4005541 cells exceeds the cell limit of 4000000, which guards against exhausting device memory. Raise it with configure({ maxCellCount })`, with no `code` | allocates all 4,005,541 | A phone has less memory than a browser tab, and the allocation happens in the app's own heap. The ceiling defaults to 4,000,000 cells and is moved or removed with `configure({ maxCellCount })`. |
 | `compactCells` over a set with an invalid member | throws `E_CELL_INVALID` (code 5) | throws `E_RES_MISMATCH` (code 12), because H3 reads the invalid member as another resolution | The boundary check runs before H3 sees the set. |
 | `uncompactCells` over a set with an invalid member | throws `E_CELL_INVALID` (code 5) | throws `E_MEMORY_BOUNDS` (code 14) after sizing the output from the invalid member, an allocation that leaves its emscripten heap unusable for the rest of the process | As above. |
 | `constructCell` with a digit count that is not the resolution | throws `constructCell needs exactly res digits`, with no `code` | throws `E_DIGIT_DOMAIN` (code 18) with `, value: 3` | H3 never sees the digit count, so it cannot report on it. |
@@ -30,6 +29,16 @@ The nine exemptions have no error channel and answer for any input, exactly as h
 `-1` for an index that is not a valid cell, which is what h3-js answers too. `cellFromString` takes
 text rather than a cell index, so it converts whatever parses and leaves the verdict to the
 operation the result is passed to.
+
+## The optional cell ceiling
+
+`configure({ maxCellCount })` caps how many cells one call may allocate. Nothing is capped until a
+call sets a ceiling, so by default a request is answered at whatever size H3 reports, as h3-js
+answers it. With a ceiling of 4,000,000 in force, `gridDisk(cell, 1155)` throws
+`The requested result of 4005541 cells exceeds the cell limit of 4000000 set with configure({ maxCellCount }). Raise or remove the limit to allow it.`
+with no `code`, where h3-js allocates all 4,005,541 cells and has no such control. Every
+cell-producing call sizes its result before allocating anything, which is what makes the refusal
+possible at all.
 
 ## Wording
 
