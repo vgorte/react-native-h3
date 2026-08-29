@@ -28,5 +28,3 @@ jobs:
         run: bun run vendor:h3 --check
       - name: App icons match the logo
         run: bun run icons --check
-      - name: Showcase coordinate sample matches the generator
-        run: bun run showcase:points:check

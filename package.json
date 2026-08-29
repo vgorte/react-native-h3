@@ -15,8 +15,6 @@
     "benchmark:svg": "bun scripts/benchmark-svg.mjs",
     "vendor:h3": "bun run scripts/vendor-h3.ts",
     "icons": "bun run scripts/generate-app-icons.ts",
-    "showcase:points": "bun run scripts/generate-showcase-points.ts",
-    "showcase:points:check": "bun run scripts/generate-showcase-points.ts --check",
     "docs:api": "bun run scripts/gen-api-docs.ts",
     "example": "bun run --cwd apps/example",
     "example:ios": "bun run --cwd apps/example ios",
