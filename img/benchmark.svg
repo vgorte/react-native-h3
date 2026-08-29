@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="800" height="334" viewBox="0 0 800 334" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" role="img" aria-label="react-native-h3 against h3-js, median milliseconds per workload">
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="414" viewBox="0 0 800 414" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" role="img" aria-label="react-native-h3 against h3-js, median milliseconds per workload">
 <title>react-native-h3 against h3-js, median milliseconds per workload</title>
 <style>
 text { fill: #727a84 }
@@ -22,25 +22,32 @@ text { fill: #8b949e }
 <text class="strong" x="24" y="32" font-size="17" font-weight="600">react-native-h3 against h3-js, median milliseconds per workload</text>
 <text class="strong" x="24" y="62" font-size="14" font-weight="600">latLngToCell x 100,000</text>
 <text x="144" y="83" font-size="12" text-anchor="end">react-native-h3</text>
-<rect x="154" y="70" width="24" height="18" rx="3" fill="#3b82f6"/>
-<text x="186" y="83" font-size="12" font-weight="600"><tspan class="strong">33.0 ms</tspan><tspan class="factor" dx="10">21× faster</tspan></text>
+<rect x="154" y="70" width="42" height="18" rx="3" fill="#3b82f6"/>
+<text x="204" y="83" font-size="12" font-weight="600"><tspan class="strong">76.3 ms</tspan><tspan class="factor" dx="10">12× faster</tspan></text>
 <text x="144" y="107" font-size="12" text-anchor="end">h3-js</text>
 <rect class="reference" x="154" y="94" width="512" height="18" rx="3" fill="#7d8590"/>
-<text class="strong" x="674" y="107" font-size="12" font-weight="600">700.5 ms</text>
+<text class="strong" x="674" y="107" font-size="12" font-weight="600">937.0 ms</text>
 <text class="strong" x="24" y="142" font-size="14" font-weight="600">polygonToCells, SF, res 12</text>
 <text x="144" y="163" font-size="12" text-anchor="end">react-native-h3</text>
-<rect x="154" y="150" width="2" height="18" rx="3" fill="#3b82f6"/>
-<text x="164" y="163" font-size="12" font-weight="600"><tspan class="strong">76.1 ms</tspan><tspan class="factor" dx="10">269× faster</tspan></text>
+<rect x="154" y="150" width="4" height="18" rx="3" fill="#3b82f6"/>
+<text x="166" y="163" font-size="12" font-weight="600"><tspan class="strong">231.8 ms</tspan><tspan class="factor" dx="10">134× faster</tspan></text>
 <text x="144" y="187" font-size="12" text-anchor="end">h3-js</text>
 <rect class="reference" x="154" y="174" width="512" height="18" rx="3" fill="#7d8590"/>
-<text class="strong" x="674" y="187" font-size="12" font-weight="600">20,444.3 ms</text>
-<text class="strong" x="24" y="222" font-size="14" font-weight="600">cellToBoundary x 100,000</text>
+<text class="strong" x="674" y="187" font-size="12" font-weight="600">31,179.7 ms</text>
+<text class="strong" x="24" y="222" font-size="14" font-weight="600">compactCells of a k=20 disk</text>
 <text x="144" y="243" font-size="12" text-anchor="end">react-native-h3</text>
-<rect x="154" y="230" width="50" height="18" rx="3" fill="#3b82f6"/>
-<text x="212" y="243" font-size="12" font-weight="600"><tspan class="strong">110.3 ms</tspan><tspan class="factor" dx="10">10× faster</tspan></text>
+<rect x="154" y="230" width="2" height="18" rx="3" fill="#3b82f6"/>
+<text x="164" y="243" font-size="12" font-weight="600"><tspan class="strong">0.085 ms</tspan><tspan class="factor" dx="10">376× faster</tspan></text>
 <text x="144" y="267" font-size="12" text-anchor="end">h3-js</text>
 <rect class="reference" x="154" y="254" width="512" height="18" rx="3" fill="#7d8590"/>
-<text class="strong" x="674" y="267" font-size="12" font-weight="600">1,138.6 ms</text>
-<text x="24" y="302" font-size="11">Measured on iOS 26.5, Release build, react-native 0.87.0, against h3-js 4.5.0, 2026-08-28.</text>
-<text x="24" y="320" font-size="11">Median of 20 runs (3 for polygonToCells) after one warm-up. Bars are scaled per workload.</text>
+<text class="strong" x="674" y="267" font-size="12" font-weight="600">31.9 ms</text>
+<text class="strong" x="24" y="302" font-size="14" font-weight="600">cellToBoundary x 100,000</text>
+<text x="144" y="323" font-size="12" text-anchor="end">react-native-h3</text>
+<rect x="154" y="310" width="88" height="18" rx="3" fill="#3b82f6"/>
+<text x="250" y="323" font-size="12" font-weight="600"><tspan class="strong">346.6 ms</tspan><tspan class="factor" dx="10">6× faster</tspan></text>
+<text x="144" y="347" font-size="12" text-anchor="end">h3-js</text>
+<rect class="reference" x="154" y="334" width="512" height="18" rx="3" fill="#7d8590"/>
+<text class="strong" x="674" y="347" font-size="12" font-weight="600">2,020.8 ms</text>
+<text x="24" y="382" font-size="11">Measured on Android API 36, Release build, react-native 0.87.0, against h3-js 4.5.0, 2026-08-29.</text>
+<text x="24" y="400" font-size="11">Median of 20 runs (3 for polygonToCells) after one warm-up. Bars are scaled per workload.</text>
 </svg>

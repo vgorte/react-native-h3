@@ -1,7 +1,7 @@
 /**
- * Renders `apps/example/benchmark.json` as paired horizontal bars: for each of the three README
- * workloads a `react-native-h3` bar above an `h3-js` bar, scaled per pair so that the `h3-js` median
- * spans the full width and the shorter bar reads as the share of the time it takes.
+ * Renders `apps/example/benchmark.json` as paired horizontal bars: for each README workload a
+ * `react-native-h3` bar above an `h3-js` bar, scaled per pair so that the `h3-js` median spans the
+ * full width and the shorter bar reads as the share of the time it takes.
  *
  * The JSON is the `BENCHMARK_JSON` line the example app's benchmark screen logs on a Release build,
  * reassembled from its chunks, pretty-printed and committed. Rows without an `h3-js` reference carry
@@ -25,7 +25,7 @@ const TITLE = 'react-native-h3 against h3-js, median milliseconds per workload'
 const FONT = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
 
 // the workload ids the README table shows, in the order it shows them
-const CHART_IDS = ['W1', 'W3', 'W7']
+const CHART_IDS = ['W1', 'W3', 'W4', 'W7']
 
 // No single colour clears 4.5:1 on white and on GitHub's `#0d1117` at once; 4.35:1 is the
 // arithmetic ceiling. The base values sit on it, and the media queries lift each theme past 4.5:1
@@ -71,9 +71,10 @@ function escapeXml(text) {
     .replace(/"/g, '&quot;')
 }
 
-// one decimal and grouped thousands, matching the README table; no ICU dependency
+// One decimal and grouped thousands, matching the README table, and no ICU dependency. A median
+// under a millisecond gets three, where one decimal would round it into a different number.
 function formatMillis(millis) {
-  const [whole, fraction] = millis.toFixed(1).split('.')
+  const [whole, fraction] = millis.toFixed(millis < 1 ? 3 : 1).split('.')
   return `${whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}.${fraction}`
 }
 
@@ -162,6 +163,7 @@ function toBars(rows) {
       id: workloadId(row.workload),
       workload: row.workload,
       subject: workloadSubject(row.workload),
+      runs: row.runs,
       millis: row.millis,
       referenceMillis: row.referenceMillis,
       factor: row.referenceMillis / row.millis,
@@ -187,42 +189,24 @@ function chartBars(bars) {
   })
 }
 
-// Rows under a millisecond of `react-native-h3` time are left out: their factor is dominated by
-// `h3-js` string marshalling, not by the work. The headline is the largest factor among the rest,
-// rounded down to the nearest ten.
-const HEADLINE_MIN_MILLIS = 1
-
+// The widest measured factor, named with the workload it belongs to. The published figure is a
+// measurement, not a rounded claim, so the number is passed on as the payload carries it.
 function headline(bars) {
-  const eligible = bars.filter((bar) => bar.millis >= HEADLINE_MIN_MILLIS)
-  if (eligible.length === 0) {
-    return undefined
-  }
-  const widest = eligible.reduce((best, bar) => (bar.factor > best.factor ? bar : best))
-  return {
-    workload: widest.workload,
-    subject: widest.subject,
-    factor: Math.floor(widest.factor / 10) * 10,
-  }
+  const widest = bars.reduce((best, bar) => (bar.factor > best.factor ? bar : best))
+  return { workload: widest.workload, factor: widest.factor }
 }
 
-// the run count is not assumed: it is read back off the rows, naming whichever ones differ
-function runCounts(rows) {
+// The caption annotates the bars, so the run count is read back off the charted rows and not off
+// the payload, which carries rows at other sample counts that no bar shows.
+function runCounts(bars) {
   const tally = new Map()
-  for (const row of rows) {
-    tally.set(row.runs, (tally.get(row.runs) ?? 0) + 1)
+  for (const bar of bars) {
+    tally.set(bar.runs, (tally.get(bar.runs) ?? 0) + 1)
   }
   const [common] = [...tally.entries()].sort((a, b) => b[1] - a[1])[0]
-  const exceptions = []
-  const named = new Set()
-  for (const row of rows) {
-    // variants of one workload share an id and are named once
-    const id = workloadId(row.workload)
-    if (row.runs === common || named.has(id)) {
-      continue
-    }
-    named.add(id)
-    exceptions.push(`${row.runs} for ${workloadSubject(row.workload).split(/[ ,]/)[0]}`)
-  }
+  const exceptions = bars
+    .filter((bar) => bar.runs !== common)
+    .map((bar) => `${bar.runs} for ${bar.subject.split(/[ ,]/)[0]}`)
   return exceptions.length === 0 ? `${common} runs` : `${common} runs (${exceptions.join(', ')})`
 }
 
@@ -237,14 +221,20 @@ function platformName(platform) {
   return PLATFORM_NAMES[platform] ?? platform
 }
 
+// `Platform.Version` is the API level on Android, not the version a reader knows the OS by
+function platformVersion(platform, osVersion) {
+  return platform === 'android' ? `API ${osVersion}` : osVersion
+}
+
 // two lines, split on the sentence: all three would run past the canvas at this font size
-function caption(payload) {
+function caption(payload, groups) {
   const { platform, osVersion, build, reactNative, h3js, date, warmupRuns } = payload.measuredOn
   return [
-    `Measured on ${platformName(platform)} ${osVersion}, ${build} build, ` +
+    `Measured on ${platformName(platform)} ${platformVersion(platform, osVersion)}, ` +
+      `${build} build, ` +
       `react-native ${reactNative}, ` +
       `against h3-js ${h3js}, ${date}.`,
-    `Median of ${runCounts(payload.rows)} after ${warmUps(warmupRuns)}. ` +
+    `Median of ${runCounts(groups)} after ${warmUps(warmupRuns)}. ` +
       'Bars are scaled per workload.',
   ]
 }
@@ -324,7 +314,7 @@ function render(payload) {
     lines.push(...renderGroup(bar, CHART_TOP + index * GROUP_STEP))
   })
 
-  const [first, second] = caption(payload)
+  const [first, second] = caption(payload, groups)
   lines.push(
     `<text x="${MARGIN}" y="${chartBottom + CAPTION_FIRST}" font-size="11">` +
       `${escapeXml(first)}</text>`,
@@ -341,6 +331,4 @@ console.log(`Wrote ${OUTPUT}`)
 
 // one line the README task can copy verbatim
 const hero = headline(toBars(payload.rows))
-if (hero != null) {
-  console.log(`HEADLINE up to ${hero.factor}× faster than h3-js (${hero.workload})`)
-}
+console.log(`HEADLINE ${hero.factor.toFixed(1)}× faster than h3-js (${hero.workload})`)

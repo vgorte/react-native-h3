@@ -48,20 +48,22 @@ copy.
 
 ![react-native-h3 against h3-js, median milliseconds per workload](img/benchmark.svg)
 
-**Up to 260× faster than `h3-js`**, on `polygonToCells` over San Francisco at resolution 12,
-412,377 cells, with the result verified identical to `h3-js`'s.
+The widest gap measured on a Samsung Galaxy S23 on 2026-08-29 is **375.6× on `compactCells`**, over
+a `k=20` disk of 1,261 cells, with every result verified identical to `h3-js`'s.
 
 | Workload | react-native-h3 | h3-js | Speedup |
 |---|---:|---:|---:|
-| `latLngToCell` x 100,000 | 33.0 ms | 700.5 ms | 21× |
-| `polygonToCells`, San Francisco, res 12 | 76.1 ms | 20,444.3 ms | 269× |
-| `cellToBoundary` x 100,000 | 110.3 ms | 1,138.6 ms | 10× |
+| `latLngToCell` x 100,000 | 76.3 ms | 937.0 ms | 12.3× |
+| `polygonToCells`, San Francisco, res 12 | 231.8 ms | 31,179.7 ms | 134.5× |
+| `compactCells`, `k=20` disk | 0.085 ms | 31.9 ms | 375.6× |
+| `cellToBoundary` x 100,000 | 346.6 ms | 2,020.8 ms | 5.8× |
 
-> **Methodology:** Measured on an `iPhone 17 Pro` simulator (iOS 26.5) hosted on an Apple M5 Pro, in
-> a Release build, React Native 0.87.0 with Hermes 250829098.0.16, against `h3-js` 4.5.0, on
-> 2026-08-28: both libraries in the same app and the same Hermes instance, medians of 20 runs, three
-> for `polygonToCells`, after one warm-up, every result compared for equivalence. Full data and
-> method:
+> **Methodology:** Measured on a Samsung Galaxy S23 (`SM-S911U1`, Android 16, API 36) in a Release
+> build, React Native 0.87.0 with Hermes 250829098.0.16, against `h3-js` 4.5.0, on 2026-08-29: both
+> libraries in the same app and the same Hermes instance, medians of 20 runs, three for
+> `polygonToCells`, after one warm-up, every result compared for equivalence. One run on one device,
+> which reaches light thermal throttling partway through, so read a factor as an order of magnitude
+> rather than a constant. Full data and method:
 > [docs/benchmark.md](https://github.com/vgorte/react-native-h3/blob/main/docs/benchmark.md).
 
 ## 📦 Installation
