@@ -19,8 +19,25 @@ import { deflateSync, inflateSync } from 'node:zlib'
 const HERE = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(HERE, '..')
 const LOGO = join(ROOT, 'img', 'logo.svg')
-const IOS_ICONSET = 'apps/example/ios/H3Example/Images.xcassets/AppIcon.appiconset'
-const ANDROID_RES = 'apps/example/android/app/src/main/res'
+/** Names one app's two icon destinations, relative to the repository root. */
+type AppTarget = {
+  name: string
+  iosIconset: string
+  androidRes: string
+}
+
+const APPS: AppTarget[] = [
+  {
+    name: 'example',
+    iosIconset: 'apps/example/ios/H3Example/Images.xcassets/AppIcon.appiconset',
+    androidRes: 'apps/example/android/app/src/main/res',
+  },
+  {
+    name: 'showcase',
+    iosIconset: 'apps/showcase/ios/H3Showcase/Images.xcassets/AppIcon.appiconset',
+    androidRes: 'apps/showcase/android/app/src/main/res',
+  },
+]
 
 // The mark sits on an opaque ground: iOS rejects alpha outright, and the dark outer hexagon
 // is what carries the silhouette on a light surface.
@@ -385,7 +402,7 @@ ${paths}
 type Generated = { files: string[]; markShare: number }
 
 /** Writes every icon below `root` and returns their paths relative to it. */
-async function generate(root: string): Promise<Generated> {
+async function generate(root: string, app: AppTarget): Promise<Generated> {
   const svg = await readFile(LOGO, 'utf8')
   if (svg.includes('transform=')) {
     throw new Error('The logo carries a transform; this renderer projects raw coordinates only')
@@ -413,11 +430,11 @@ async function generate(root: string): Promise<Generated> {
 
   // iOS: one universal 1024 slot, opaque, the viewBox filling the canvas.
   await write(
-    join(IOS_ICONSET, 'AppIcon.png'),
+    join(app.iosIconset, 'AppIcon.png'),
     encodePng(render(polygons, viewBox, { size: 1024, contentScale: 1 }), 1024, false),
   )
   await write(
-    join(IOS_ICONSET, 'Contents.json'),
+    join(app.iosIconset, 'Contents.json'),
     `${JSON.stringify(
       {
         images: [
@@ -432,7 +449,7 @@ async function generate(root: string): Promise<Generated> {
 
   // Android: PNGs for API 24 and 25, which predate the adaptive icon.
   for (const [density, size] of Object.entries(LEGACY_DENSITIES)) {
-    const directory = join(ANDROID_RES, `mipmap-${density}`)
+    const directory = join(app.androidRes, `mipmap-${density}`)
     const contentScale = fill(LEGACY_FILL)
     await write(
       join(directory, 'ic_launcher.png'),
@@ -451,7 +468,7 @@ async function generate(root: string): Promise<Generated> {
       return `    <path android:fillColor="${polygon.fill}" android:pathData="${path}" />`
     })
     .join('\n')
-  const drawable = join(ANDROID_RES, 'drawable')
+  const drawable = join(app.androidRes, 'drawable')
   await write(join(drawable, 'ic_launcher_foreground.xml'), vectorDrawable(foreground))
 
   // The themed icon is the outer hexagon with the seven children punched out, so the system
@@ -466,7 +483,7 @@ async function generate(root: string): Promise<Generated> {
     ),
   )
 
-  const anydpi = join(ANDROID_RES, 'mipmap-anydpi-v26')
+  const anydpi = join(app.androidRes, 'mipmap-anydpi-v26')
   const adaptive = `<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
     <background android:drawable="@color/ic_launcher_background" />
     <foreground android:drawable="@drawable/ic_launcher_foreground" />
@@ -477,7 +494,7 @@ async function generate(root: string): Promise<Generated> {
   await write(join(anydpi, 'ic_launcher_round.xml'), adaptive)
 
   await write(
-    join(ANDROID_RES, 'values', 'ic_launcher_background.xml'),
+    join(app.androidRes, 'values', 'ic_launcher_background.xml'),
     `<resources>
     <color name="ic_launcher_background">${BACKGROUND}</color>
 </resources>
@@ -513,11 +530,15 @@ async function differs(committed: string, generated: string): Promise<boolean> {
 async function check(): Promise<void> {
   const scratch = await mkdtemp(join(tmpdir(), 'app-icons-'))
   try {
-    const { files } = await generate(scratch)
     const differing: string[] = []
-    for (const relative of files) {
-      if (await differs(join(ROOT, relative), join(scratch, relative))) {
-        differing.push(relative)
+    let checked = 0
+    for (const app of APPS) {
+      const { files } = await generate(scratch, app)
+      checked += files.length
+      for (const relative of files) {
+        if (await differs(join(ROOT, relative), join(scratch, relative))) {
+          differing.push(relative)
+        }
       }
     }
     if (differing.length > 0) {
@@ -527,7 +548,7 @@ async function check(): Promise<void> {
       }
       process.exit(1)
     }
-    process.stdout.write(`${files.length} app icons match img/logo.svg\n`)
+    process.stdout.write(`${checked} app icons match img/logo.svg\n`)
   } finally {
     await rm(scratch, { recursive: true, force: true })
   }
@@ -539,10 +560,16 @@ async function main(): Promise<void> {
     return
   }
 
-  const { files, markShare } = await generate(ROOT)
-  console.log(
-    `Wrote the iOS icon, ${Object.keys(LEGACY_DENSITIES).length * 2} legacy PNGs and the adaptive icon (${files.length} files).`,
-  )
+  let markShare = 0
+  for (const app of APPS) {
+    const generated = await generate(ROOT, app)
+    markShare = generated.markShare
+    console.log(
+      `${app.name}: wrote the iOS icon, ${Object.keys(LEGACY_DENSITIES).length * 2} legacy PNGs ` +
+        `and the adaptive icon (${generated.files.length} files).`,
+    )
+  }
+  // the geometry is the same for every app, so it is reported once
   console.log(
     `Mark spans ${markShare * 100}% of the iOS canvas and ` +
       `${ADAPTIVE_SAFE_DIAMETER}dp of the ${ADAPTIVE_CANVAS}dp adaptive canvas.`,
