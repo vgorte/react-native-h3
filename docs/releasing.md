@@ -62,19 +62,24 @@ scripts/build-ios-variants.sh
 If performance characteristics might have shifted, regenerate the benchmarks. CI does not produce
 these figures and cannot.
 
-> **Hardware Rule:** Run strictly on a Simulator (`iPhone 17 Pro`, iOS 26.5) or Emulator
-> (`afterglow_pixel`) in **Release** mode. Never use a physical device.
+> **Hardware Rule:** The published payload comes from an Android **Release** build on a physical
+> Samsung Galaxy S23. A run on a simulator or an emulator serves for comparison only and is not
+> published; that holds until iOS figures are published in their own right.
 
 **Extracting logs:** Follow the steps in
 [Regenerating the Benchmarks](https://github.com/vgorte/react-native-h3/blob/main/docs/benchmark.md#-regenerating-the-benchmarks).
+On Android, `adb logcat` prints the chunked payload:
+
+```sh
+adb logcat | grep BENCHMARK_JSON
+```
+
 On iOS in Release mode, the chunked payload is only visible at the debug level:
 
 ```sh
 xcrun simctl spawn booted log stream --level debug \
   --predicate 'eventMessage CONTAINS "BENCHMARK_JSON"'
 ```
-
-(On Android, use `adb logcat` to extract the payload.)
 
 ### 4. Verify Docs, Icons & Vendored C-Core
 
