@@ -8,14 +8,10 @@ export const H3_VERSION = '4.5.0'
 
 export const REPOSITORY_URL = 'https://github.com/vgorte/react-native-h3'
 
-export const BASEMAP_ATTRIBUTION = '© GeoBasis-DE / BKG (2026) CC BY 4.0'
+/** Credits the basemap tiles in the wording OpenFreeMap asks for. Pinned by `about.test.ts`. */
+export const BASEMAP_ATTRIBUTION = 'OpenFreeMap © OpenMapTiles Data from OpenStreetMap'
 
-export const BASEMAP_LICENCE_URL = 'https://creativecommons.org/licenses/by/4.0/'
-
-/** Credits the TopPlusOpen raster fallback in the wording the BKG prescribes for online use. */
-export const RASTER_ATTRIBUTION =
-  'Kartendarstellung: © BKG (2026) dl-de/by-2-0, Datenquellen: ' +
-  'https://sgx.geodatenzentrum.de/web_public/gdz/datenquellen/datenquellen_topplusopen.html'
+export const BASEMAP_LICENCE_URL = 'https://www.openstreetmap.org/copyright'
 
 /** Credits the administrative boundary the Geofence screen ships, as its licence requires. */
 export const BOUNDARY_ATTRIBUTION =

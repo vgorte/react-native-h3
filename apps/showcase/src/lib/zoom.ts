@@ -34,7 +34,7 @@ const MIN_LATITUDE_COSINE = 0.01
  * Maps a map zoom level onto the H3 resolution that keeps cells about a finger wide.
  *
  * Germany fills the screen at zoom 6 and one city from zoom 10, so the bands are chosen against
- * that basemap rather than against a global one.
+ * the region the app samples rather than against a whole globe.
  */
 export function zoomToResolution(zoom: number): number {
   if (zoom < COUNTRY_ZOOM) return AUTO_RESOLUTION_MIN
