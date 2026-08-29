@@ -12,7 +12,9 @@ output file: `apps/example/benchmark.json`.
 - The visual chart (`img/benchmark.svg`) is automatically rendered from this data by running
   `bun run benchmark:svg`.
 - Every figure, median, and percentile in this document is read off that file; the chart is the only
-  artefact generated from it.
+  artefact generated from it. The run conditions under Test Environment & Conditions are the
+  exception: they are recorded from the device during the run, because the payload does not carry
+  them.
 
 ## 🔬 Methodology
 
@@ -165,7 +167,7 @@ Two conditions are worth naming because they shape the numbers above:
   table lists them.
 - **First workload:** `W0` runs first, on a phone that had been idle for those 13 minutes, and it
   times a single call rather than a pass. Both of its medians, the native one and the `h3-js` one,
-  came out higher than in a run that started warm, so its 7.7× is a conservative figure.
+  are single-sample figures measured from that state.
 
 ## 💥 The Cost of Unbounded Requests (What the Cell Ceiling Guards)
 
