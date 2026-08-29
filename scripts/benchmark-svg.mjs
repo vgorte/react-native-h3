@@ -282,7 +282,7 @@ function renderGroup(bar, top) {
       `fill="${BAR_ACCENT}"/>`,
     `<text x="${BAR_LEFT + fastLength + 8}" y="${textBaseline(fastTop)}" font-size="12" ` +
       `font-weight="600"><tspan class="strong">${escapeXml(`${formatMillis(bar.millis)} ms`)}` +
-      `</tspan><tspan class="factor" dx="10">${Math.round(bar.factor)}× faster</tspan></text>`,
+      `</tspan><tspan class="factor" dx="10">${bar.factor.toFixed(1)}× faster</tspan></text>`,
     `<text x="${BAR_LEFT - 10}" y="${textBaseline(slowTop)}" font-size="12" text-anchor="end">` +
       'h3-js</text>',
     `<rect class="reference" x="${BAR_LEFT}" y="${slowTop}" width="${BAR_MAX}" ` +
