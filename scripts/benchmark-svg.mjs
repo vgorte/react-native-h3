@@ -121,6 +121,10 @@ function validate(payload) {
   for (const field of ['platform', 'osVersion', 'build', 'reactNative', 'h3js', 'date']) {
     requireString(measuredOn[field], `measuredOn.${field}`)
   }
+  // the model is Android-only, so a payload without it stays valid
+  if (measuredOn.device !== undefined) {
+    requireString(measuredOn.device, 'measuredOn.device')
+  }
   if (!Number.isInteger(measuredOn.warmupRuns) || measuredOn.warmupRuns < 0) {
     fail('measuredOn.warmupRuns', 'must be an integer of 0 or more')
   }
