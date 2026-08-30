@@ -15,6 +15,7 @@
 
 #include "core/GeoPolygonBuilder.hpp"
 #include "ops/Regions.hpp"
+#include "shapes/CellSetCall.hpp"
 
 extern "C" {
 #include "h3api.h"
@@ -232,12 +233,22 @@ TEST(RegionsOps, PolygonToCellsExperimentalLeavesTheModeRangeToH3) {
   });
 }
 
-TEST(RegionsOps, PolygonToCellsRefusesAnUnaffordableRequest) {
-  // a whole-globe polygon at resolution `15` is what the ceiling exists for: without it,
+/**
+ * Sets a ceiling for the case and restores the sentinel after, because it is process-global and
+ * other suites read it.
+ */
+class RegionsOpsCeiling : public ::testing::Test {
+protected:
+  void SetUp() override { h3shapes::setMaxCellCount(4000000); }
+  void TearDown() override { h3shapes::setMaxCellCount(h3shapes::kNoCellLimit); }
+};
+
+TEST_F(RegionsOpsCeiling, PolygonToCellsRefusesAnUnaffordableRequest) {
+  // a whole-globe polygon at resolution `15` is what a ceiling exists for: without one,
   // `maxPolygonToCellsSize` reports a number that would exhaust the device.
   const Rings globe = {{{89.0, -180.0}, {89.0, 0.0}, {-89.0, 0.0}, {-89.0, -180.0}}};
-  const std::string breach = " cells exceeds the cell limit of 4000000, which guards against exhausting "
-                             "device memory. Raise it with configure({ maxCellCount })";
+  const std::string breach = " cells exceeds the cell limit of 4000000 set with configure({ maxCellCount }). "
+                             "Raise or remove the limit to allow it.";
   expectMessageEnding("the globe at resolution 15", breach, [&globe] { h3ops::polygonToCells(globe, 15); });
   expectMessageEnding("the globe at resolution 15, experimental", breach,
                       [&globe] { h3ops::polygonToCellsExperimental(globe, 15, 0); });

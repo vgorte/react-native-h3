@@ -551,7 +551,7 @@ reverses; a ring is not closed, so its first point is not repeated at the end.
 
 Returns: The cells covering the polygon, as a view onto the native buffer.
 
-Throws: `H3Error` if a point is not a finite `[latitude, longitude]` pair, the resolution is out of range, or the result would exceed the cell ceiling, `4,000,000` cells until `configure` changes it.
+Throws: `H3Error` if a point is not a finite `[latitude, longitude]` pair, the resolution is out of range, or the result would exceed a cell ceiling set with `configure`.
 
 ### polygonToCellsExperimental
 
@@ -576,7 +576,7 @@ behaviour in a minor version of the underlying C library.
 
 Returns: The cells covering the polygon, as a view onto the native buffer.
 
-Throws: `H3Error` if the polygon, the resolution or the mode is invalid, or the result would exceed the cell ceiling, `4,000,000` cells until `configure` changes it.
+Throws: `H3Error` if the polygon, the resolution or the mode is invalid, or the result would exceed a cell ceiling set with `configure`.
 
 ## Directed edges
 
@@ -1078,7 +1078,7 @@ synchronous call is cheaper, because it has no hop at all.
 
 Returns: The cells covering the polygon, as a view onto the native buffer.
 
-Throws: `H3Error` if a point is not a finite `[latitude, longitude]` pair, the resolution is out of range, or the result would exceed the cell ceiling.
+Throws: `H3Error` if a point is not a finite `[latitude, longitude]` pair, the resolution is out of range, or the result would exceed a cell ceiling set with `configure`.
 
 ### polygonToCellsExperimentalAsync
 
@@ -1102,7 +1102,7 @@ the same arguments and answer alike.
 
 Returns: The cells covering the polygon, as a view onto the native buffer.
 
-Throws: `H3Error` if the polygon, the resolution or the mode is invalid, or the result would exceed the cell ceiling.
+Throws: `H3Error` if the polygon, the resolution or the mode is invalid, or the result would exceed a cell ceiling set with `configure`.
 
 ### uncompactCellsAsync
 
@@ -1118,7 +1118,7 @@ this function returns.
 - `cells`: A compacted cell set.
 - `res`: The resolution to expand to, no finer than any cell in the set.
 
-Throws: `H3Error` if the set is invalid, the resolution is out of range, or the result would exceed the cell ceiling.
+Throws: `H3Error` if the set is invalid, the resolution is out of range, or the result would exceed a cell ceiling set with `configure`.
 
 ## Configuration
 
@@ -1142,10 +1142,11 @@ Throws: `H3Error` if `maxCellCount` is neither `Infinity` nor an integer of `1` 
 ```ts
 interface H3Config {
   /**
-   * Caps how many cells one call may allocate, which guards against exhausting device memory.
+   * Caps how many cells one call may allocate, once you set it.
    *
-   * Defaults to `4_000_000` cells, 32 MB as a `BigUint64Array`. `Infinity` removes the ceiling
-   * altogether; any other value must be an integer of `1` or more.
+   * There is no cap until then, so a call returns whatever it is asked for; a cell costs 8 bytes,
+   * so `4_000_000` is a 32 MB `BigUint64Array`. `Infinity` removes a cap set earlier, and any
+   * other value must be an integer of `1` or more.
    */
   maxCellCount?: number
 }

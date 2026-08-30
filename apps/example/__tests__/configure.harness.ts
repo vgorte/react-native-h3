@@ -1,7 +1,6 @@
 import { configure, gridDisk, H3Error, latLngToCell, polygonToCellsAsync } from 'react-native-h3'
 import { afterEach, describe, expect, test } from 'react-native-harness'
 
-const DEFAULT_MAX_CELL_COUNT = 4_000_000
 const SAN_FRANCISCO_BOX: [lat: number, lng: number][][] = [
   [
     [37.8, -122.45],
@@ -11,9 +10,15 @@ const SAN_FRANCISCO_BOX: [lat: number, lng: number][][] = [
   ],
 ]
 
-describe('the configurable cell ceiling', () => {
+describe('the opt-in cell ceiling', () => {
   afterEach(() => {
-    configure({ maxCellCount: DEFAULT_MAX_CELL_COUNT })
+    configure({ maxCellCount: Infinity })
+  })
+
+  test('a fill runs with no configure call at all', () => {
+    // the ceiling that proves the new default is 4,000,001 cells, too much to allocate here, so
+    // `CellSetCallCeiling.StartsWithNoLimit` in `cpp/test` carries that half
+    expect(gridDisk(latLngToCell(37.7749, -122.4194, 9), 10).length).toBe(331)
   })
 
   test('a lowered ceiling refuses a synchronous fill, in the message the C++ layer words', () => {
@@ -28,7 +33,7 @@ describe('the configurable cell ceiling', () => {
     }
     expect(thrown).toBeInstanceOf(H3Error)
     expect((thrown as H3Error).message).toBe(
-      'The requested result of 331 cells exceeds the cell limit of 100, which guards against exhausting device memory. Raise it with configure({ maxCellCount })',
+      'The requested result of 331 cells exceeds the cell limit of 100 set with configure({ maxCellCount }). Raise or remove the limit to allow it.',
     )
     expect((thrown as H3Error).code).toBeUndefined()
   })
@@ -45,11 +50,11 @@ describe('the configurable cell ceiling', () => {
     expect(thrown).toBeInstanceOf(H3Error)
     // `maxPolygonToCellsSize` over-estimates, so only the limit half of the wording is fixed
     expect((thrown as H3Error).message).toContain(
-      'exceeds the cell limit of 100, which guards against exhausting device memory. Raise it with configure({ maxCellCount })',
+      'exceeds the cell limit of 100 set with configure({ maxCellCount }). Raise or remove the limit to allow it.',
     )
   })
 
-  test('Infinity removes the ceiling, and the refused call then succeeds', async () => {
+  test('Infinity restores the default, and the refused call then succeeds', async () => {
     const origin = latLngToCell(37.7749, -122.4194, 9)
     configure({ maxCellCount: 100 })
     expect(() => gridDisk(origin, 10)).toThrow(H3Error)

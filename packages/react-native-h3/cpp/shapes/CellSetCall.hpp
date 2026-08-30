@@ -9,6 +9,7 @@
 
 #include <atomic>
 #include <cstdint>
+#include <limits>
 #include <string>
 #include <utility>
 
@@ -18,22 +19,23 @@
 namespace h3shapes {
 
 /**
- * The cell ceiling one call may allocate, at 4,000,000 cells or 32 MB by default.
+ * The sentinel for no ceiling, and the value a process starts with: every request is allocated at
+ * the size H3 reports, as h3-js does.
  *
  * `maxPolygonToCellsSize` returns an `int64_t` with no upper bound of its own, and a large polygon
  * at resolution 15 reports a number that would exhaust device memory, where the process is killed
- * long before `std::bad_alloc` could reach the caller. An application that knows its device can
- * afford more raises it, so the default is conservative rather than final.
+ * long before `std::bad_alloc` could reach the caller. An application that wants that refused
+ * instead of fatal sets a ceiling of its own.
  */
-inline constexpr int64_t kDefaultMaxCellCount = 4000000;
+inline constexpr int64_t kNoCellLimit = std::numeric_limits<int64_t>::max();
 
 /**
  * The ceiling in force. Atomic because a worker thread reads it while JavaScript may be setting it;
  * relaxed ordering is enough, since the value publishes nothing but itself.
  */
-inline std::atomic<int64_t> gMaxCellCount{kDefaultMaxCellCount};
+inline std::atomic<int64_t> gMaxCellCount{kNoCellLimit};
 
-/** Replaces the ceiling. `std::numeric_limits<int64_t>::max()` is how a caller switches it off. */
+/** Replaces the ceiling. `kNoCellLimit` is how a caller switches an earlier one off. */
 inline void setMaxCellCount(int64_t limit) {
   gMaxCellCount.store(limit, std::memory_order_relaxed);
 }
@@ -61,8 +63,7 @@ template <typename SizeQuery> h3core::CellBuffer allocateFor(SizeQuery&& sizeQue
     // not `E_MEMORY_ALLOC`'s wording: nothing has been allocated, so that would misdirect a reader
     const std::string message = "The requested result of " + std::to_string(size) +
                                 " cells exceeds the cell limit of " + std::to_string(limit) +
-                                ", which guards against exhausting device memory. Raise it with configure({ "
-                                "maxCellCount })";
+                                " set with configure({ maxCellCount }). Raise or remove the limit to allow it.";
     h3core::throwInvalidArgument(message.c_str());
   }
   return h3core::CellBuffer(size);

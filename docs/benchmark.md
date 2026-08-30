@@ -108,11 +108,13 @@ figures: an emulator on a shared runner says nothing about a phone.
 - **Duration:** 171.1 seconds (total run time)
 - **Passes:** 1 warm-up pass, followed by 20 timed runs per workload (3 for the two `W3` rows)
 
-## 💥 The Cost of Unbounded Requests (Why the Cell Ceiling Exists)
+## 💥 The Cost of Unbounded Requests (What the Cell Ceiling Guards)
 
-The Cell Ceiling this package applies has no counterpart in `h3-js`. `h3-js` bounds only its own
-WebAssembly allocation at 2 GB, building JavaScript arrays of hexadecimal strings on top of it
-without a bound.
+Neither library caps a request by default. `h3-js` bounds only its own WebAssembly allocation at
+2 GB, building JavaScript arrays of hexadecimal strings on top of it without a bound, and it offers
+no setting to change that. `react-native-h3` allocates whatever is asked for too, until
+`configure({ maxCellCount })` sets a Cell Ceiling; from then on an oversized request is refused
+before anything is allocated.
 
 To show what an unbounded request costs, the numbers below come from hardware far larger than a
 phone (Apple M5 Pro, 24 GB RAM, macOS 26.5.2, bun 1.3.14, from
@@ -130,8 +132,9 @@ the array of strings it builds forces even an M5 Pro into swap.
 
 > **⚠️ The Mobile Reality:** A phone has neither that memory nor those seconds to spare, and the
 > allocation happens inside the app's own heap. When it fails, the OS kills the process; no
-> JavaScript `try/catch` sees it. That is exactly why `react-native-h3` sizes every result up front
-> and enforces a Cell Ceiling.
+> JavaScript `try/catch` sees it. That is exactly what a Cell Ceiling guards against:
+> `react-native-h3` sizes every result up front, so a ceiling can refuse the request with a
+> catchable `H3Error`.
 
 ## 🔄 Regenerating the Benchmarks
 

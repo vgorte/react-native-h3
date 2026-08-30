@@ -9,7 +9,6 @@
 
 #include <cmath>
 #include <cstdint>
-#include <limits>
 #include <memory>
 #include <string>
 #include <utility>
@@ -317,10 +316,10 @@ std::vector<double> HybridH3::getIcosahedronFaces(uint64_t cell) {
 
 void HybridH3::setMaxCellCount(double maxCellCount) {
   static constexpr const char* kMessage = "maxCellCount must be a positive integer or Infinity";
-  // `Infinity` is how a caller switches the ceiling off, and `h3core::toInt64` rejects it, so it is
+  // `Infinity` is how a caller restores the default, and `h3core::toInt64` rejects it, so it is
   // mapped before the narrowing rather than after.
   if (std::isinf(maxCellCount) && maxCellCount > 0.0) {
-    h3shapes::setMaxCellCount(std::numeric_limits<int64_t>::max());
+    h3shapes::setMaxCellCount(h3shapes::kNoCellLimit);
     return;
   }
   const int64_t limit = h3core::toInt64(maxCellCount, kMessage);
