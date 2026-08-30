@@ -65,6 +65,13 @@ inline void requireWithinCellLimit(int64_t size) {
   }
 }
 
+/**
+ * Runs the size query, rejects an impossible or unaffordable answer, and allocates.
+ *
+ * Public because the ceiling is a property of the binding rather than of one template:
+ * `gridDiskDistances` allocates a parallel distance array of its own and so cannot use either fill
+ * below, but must still meet the same limit and report it in the same words.
+ */
 template <typename SizeQuery> h3core::CellBuffer allocateFor(SizeQuery&& sizeQuery) {
   const int64_t size = sizeQuery();
   requireWithinCellLimit(size);
