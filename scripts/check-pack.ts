@@ -14,7 +14,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
-const PACKAGE = join(HERE, '..', 'packages', 'react-native-h3')
+const PACKAGE = join(HERE, '..', 'packages', 'react-native-nitro-h3')
 
 const ALWAYS_REQUIRED = [
   'package.json',

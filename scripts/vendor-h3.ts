@@ -1,5 +1,5 @@
 /**
- * Vendors the upstream H3 C library into `packages/react-native-h3/third_party/h3`.
+ * Vendors the upstream H3 C library into `packages/react-native-nitro-h3/third_party/h3`.
  *
  * A git submodule is silently dangerous at publish time: `npm pack` takes what is on disk, and an
  * uninitialised submodule publishes an empty directory without error, breaking the consumer's
@@ -21,7 +21,7 @@ const H3_TAG = 'v4.5.0'
 const H3_TARBALL = `https://github.com/uber/h3/archive/refs/tags/${H3_TAG}.tar.gz`
 
 const HERE = dirname(fileURLToPath(import.meta.url))
-const VENDOR = join(HERE, '..', 'packages', 'react-native-h3', 'third_party', 'h3')
+const VENDOR = join(HERE, '..', 'packages', 'react-native-nitro-h3', 'third_party', 'h3')
 
 async function download(into: string): Promise<string> {
   const response = await fetch(H3_TARBALL)

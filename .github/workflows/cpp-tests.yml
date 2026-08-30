@@ -3,8 +3,8 @@ name: C++ tests
 on:
   pull_request:
     paths:
-      - 'packages/react-native-h3/cpp/**'
-      - 'packages/react-native-h3/third_party/**'
+      - 'packages/react-native-nitro-h3/cpp/**'
+      - 'packages/react-native-nitro-h3/third_party/**'
       - '.github/workflows/cpp-tests.yml'
   push:
     branches: [main]
@@ -22,7 +22,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Configure
-        run: cmake -S packages/react-native-h3/cpp/test -B build/host -DCMAKE_BUILD_TYPE=Debug
+        run: cmake -S packages/react-native-nitro-h3/cpp/test -B build/host -DCMAKE_BUILD_TYPE=Debug
       - name: Build
         run: cmake --build build/host --target ${{ matrix.target }} -j
       # `__ops` is a smoke request for `parity_probe`; the gtest targets ignore stdin.
@@ -38,7 +38,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Configure
-        run: cmake -S packages/react-native-h3/cpp/test -B build/bench -DCMAKE_BUILD_TYPE=Release
+        run: cmake -S packages/react-native-nitro-h3/cpp/test -B build/bench -DCMAKE_BUILD_TYPE=Release
       - name: Build
         run: cmake --build build/bench --target benchmarks -j
       - name: Run

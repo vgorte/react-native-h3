@@ -1,3 +1,4 @@
+import { expect, test } from 'react-native-harness'
 import {
   ContainmentMode,
   cellsToMultiPolygon,
@@ -8,8 +9,7 @@ import {
   H3Error,
   latLngToCell,
   polygonToCellsExperimental,
-} from 'react-native-h3'
-import { expect, test } from 'react-native-harness'
+} from 'react-native-nitro-h3'
 
 const SAN_FRANCISCO_RES_9 = 0x89283082803ffffn
 const PENTAGON_RES_1 = 0x81083ffffffffffn

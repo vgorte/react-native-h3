@@ -1,6 +1,6 @@
 # Contributing
 
-The repository is a bun workspace: the package lives in `packages/react-native-h3`, the app that
+The repository is a bun workspace: the package lives in `packages/react-native-nitro-h3`, the app that
 exercises it in `apps/example`.
 
 ```sh
@@ -14,13 +14,13 @@ bun test
 The host C++ tests and the h3-js parity suite build outside the app and are not run by `bun test`:
 
 ```sh
-cmake -S packages/react-native-h3/cpp/test -B build/host -DCMAKE_BUILD_TYPE=Release
+cmake -S packages/react-native-nitro-h3/cpp/test -B build/host -DCMAKE_BUILD_TYPE=Release
 cmake --build build/host --target tests -j
 ./build/host/tests
 
-cmake -S packages/react-native-h3/cpp/test -B build/parity -DCMAKE_BUILD_TYPE=Release
+cmake -S packages/react-native-nitro-h3/cpp/test -B build/parity -DCMAKE_BUILD_TYPE=Release
 cmake --build build/parity --target parity_probe -j
-H3_PARITY_PROBE="$PWD/build/parity/parity_probe" bun run --cwd packages/react-native-h3 parity
+H3_PARITY_PROBE="$PWD/build/parity/parity_probe" bun run --cwd packages/react-native-nitro-h3 parity
 ```
 
 The parity suite drives a host executable over the same Nitro-free operations layer the app calls,
@@ -35,9 +35,9 @@ bun run example:android -- --deviceId emulator-5554
 ```
 
 Benchmark figures come from the app's Benchmark screen in a Release build, never from a Debug build.
-[docs/benchmark.md](https://github.com/vgorte/react-native-h3/blob/main/docs/benchmark.md) holds the
+[docs/benchmark.md](https://github.com/vgorte/react-native-nitro-h3/blob/main/docs/benchmark.md) holds the
 method and the reproduction steps. The release process is in
-[docs/releasing.md](https://github.com/vgorte/react-native-h3/blob/main/docs/releasing.md).
+[docs/releasing.md](https://github.com/vgorte/react-native-nitro-h3/blob/main/docs/releasing.md).
 
 ## Adding an operation
 
@@ -60,7 +60,7 @@ of them fails a gate rather than merely leaving a gap.
    against `docs/h3-function-table.md`. Both files gain the new name.
 7. **`parity/corpus.ts`** and `cpp/test/ParityProbe.cpp` add the operation to the h3-js comparison,
    unless it has no h3-js counterpart, in which case
-   `packages/react-native-h3/docs/h3-js-divergences.md` says why.
+   `packages/react-native-nitro-h3/docs/h3-js-divergences.md` says why.
 
 ## Conventions
 

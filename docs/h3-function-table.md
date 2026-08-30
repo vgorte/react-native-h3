@@ -1,4 +1,4 @@
-# react-native-h3: authoritative H3 function table (derived from upstream v4.5.0)
+# react-native-nitro-h3: authoritative H3 function table (derived from upstream v4.5.0)
 
 > Research artifact, generated 2026-08-26 while preparing the implementation plans, by reading
 > `uber/h3` at tag `v4.5.0` (commit `1b536c34`) and `h3-js` v4.5.0. Referenced by design section

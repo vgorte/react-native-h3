@@ -1,5 +1,5 @@
 import h3 from 'h3-js'
-import type { LatLng, Ring } from 'react-native-h3'
+import type { LatLng, Ring } from 'react-native-nitro-h3'
 import {
   cellsToMultiPolygon,
   cellToBoundary,
@@ -15,7 +15,7 @@ import {
   polygonToCellsAsync,
   uncompactCells,
   uncompactCellsAsync,
-} from 'react-native-h3'
+} from 'react-native-nitro-h3'
 
 const SAN_FRANCISCO = { lat: 37.7749, lng: -122.4194 }
 const BERLIN = { lat: 52.52, lng: 13.405 }
@@ -63,7 +63,7 @@ const PATH_RES = 9
 // the benchmark's own budget, 32 MB packed, so `W8` cannot exhaust the phone's heap
 const UNCOMPACT_BUDGET = 4_000_000
 
-const OWN = 'react-native-h3'
+const OWN = 'react-native-nitro-h3'
 const REFERENCE = 'h3-js'
 const BASELINE = 'empty-body baseline'
 

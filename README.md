@@ -1,1 +1,1 @@
-packages/react-native-h3/README.md
+packages/react-native-nitro-h3/README.md

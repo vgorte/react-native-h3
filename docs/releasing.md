@@ -1,8 +1,8 @@
 # 🚀 Release Guide
 
-Releasing `react-native-h3` is designed to be fully automated. A single command, dispatched from
-CI, handles the entire process. Everything documented below outlines the pre-flight requirements,
-how to safely rehearse a release locally, and how the internal pipeline works.
+Releasing `react-native-nitro-h3` is designed to be fully automated. A single command, dispatched
+from CI, handles the entire process. Everything documented below outlines the pre-flight
+requirements, how to safely rehearse a release locally, and how the internal pipeline works.
 
 > **⚠️ Golden Rule:** Never run a live publish from your local machine. Releases are strictly
 > dispatched from GitHub Actions to guarantee npm provenance attestations. The very first release
@@ -14,7 +14,7 @@ The workspace strictly splits release responsibilities into two halves. An expli
 must be passed (e.g., `bun release 1.0.0`) so both halves stay perfectly in sync without computing
 increments independently.
 
-- **The Package (`packages/react-native-h3`):** Strictly responsible for publishing the tarball to
+- **The Package (`packages/react-native-nitro-h3`):** Strictly responsible for publishing the tarball to
   npm. It does absolutely no git operations.
 - **The Root:** Strictly handles repository management. It owns the version bump commit, updates
   the package manifests and lockfiles, creates the git tag, generates the changelog, and creates
@@ -68,7 +68,7 @@ these figures and cannot.
 > published; that holds until iOS figures are published in their own right.
 
 **Extracting logs:** Follow the steps in
-[Regenerating the Benchmarks](https://github.com/vgorte/react-native-h3/blob/main/docs/benchmark.md#-regenerating-the-benchmarks).
+[Regenerating the Benchmarks](https://github.com/vgorte/react-native-nitro-h3/blob/main/docs/benchmark.md#-regenerating-the-benchmarks).
 On Android, `adb logcat` prints the chunked payload:
 
 ```sh
@@ -87,13 +87,13 @@ xcrun simctl spawn booted log stream --level debug \
 Ensure all generated assets match their source of truth:
 
 ```sh
-bun run docs:api --check   # packages/react-native-h3/docs/api.md is up to date
+bun run docs:api --check   # packages/react-native-nitro-h3/docs/api.md is up to date
 bun run icons --check      # 17 app icons match img/logo.svg
 bun run vendor:h3 --check  # third_party/h3 matches upstream v4.5.0
 ```
 
 > **Note:** If the vendored H3 version changed, highlight this in the release notes and reference
-> `packages/react-native-h3/third_party/h3/H3_VERSION`.
+> `packages/react-native-nitro-h3/third_party/h3/H3_VERSION`.
 
 ### 5. Dry-Run the Tarball
 
@@ -101,7 +101,7 @@ Verify that the published tarball contains exactly what a consumer's native buil
 
 ```sh
 bun run build
-cd packages/react-native-h3
+cd packages/react-native-nitro-h3
 npm pack --dry-run
 ```
 
@@ -171,14 +171,14 @@ strict phases:
    was already on npm.) The gate explicitly compiles the parity probe and exports
    `H3_PARITY_REQUIRED`. This guarantees the parity suite runs in strict mode and cannot silently
    skip itself if the probe is missing. The root hook still runs its own
-   `H3_PARITY_REQUIRED=1 bun run --cwd packages/react-native-h3 parity` afterwards, relying on
+   `H3_PARITY_REQUIRED=1 bun run --cwd packages/react-native-nitro-h3 parity` afterwards, relying on
    `H3_PARITY_PROBE` already being exported by the gate; it is a cheap last check that the
    published code still matches h3-js, not a repeat of the full gate.
-2. **Package Publishing (`packages/react-native-h3`):** Executes a pure `npm publish` for the
+2. **Package Publishing (`packages/react-native-nitro-h3`):** Executes a pure `npm publish` for the
    package, strictly without any git operations.
 3. **Root Finalization:** Runs the root release-it. This phase owns the version bump commit, the
    git tag, generating the changelog, and creating the GitHub Release. It also bumps the version in
-   `packages/react-native-h3/package.json` and `apps/example/package.json`, refreshes both
+   `packages/react-native-nitro-h3/package.json` and `apps/example/package.json`, refreshes both
    lockfiles, and stages them for the commit.
 
 ## 🚀 Publishing (Production Release)
@@ -221,13 +221,13 @@ Authentication is npm Trusted Publishing. No `NPM_TOKEN` exists anywhere in this
 none is needed: the job's `id-token: write` permission is the entire credential. Configure the
 counterpart once on npmjs.com:
 
-1. Open the package page for `react-native-h3` and go to **Settings → Publishing access**.
+1. Open the package page for `react-native-nitro-h3` and go to **Settings → Publishing access**.
 2. Add a **GitHub Actions** trusted publisher.
-3. Organization or repository owner: `vgorte`. Repository: `react-native-h3`. Workflow filename:
+3. Organization or repository owner: `vgorte`. Repository: `react-native-nitro-h3`. Workflow filename:
    `release.yml`. Set the environment field to `npm`, matching the job.
 
 `--provenance` is passed explicitly through `npm.publishArgs` in
-`packages/react-native-h3/package.json`, because release-it 21 has no provenance option of its own.
+`packages/react-native-nitro-h3/package.json`, because release-it 21 has no provenance option of its own.
 npm skips attestation generation entirely under `--dry-run`, so the flag stays inert during every
 rehearsal, local ones included.
 
@@ -242,7 +242,7 @@ rehearsal, local ones included.
 >
 > `--npm.publishArgs=` drops `--provenance` for this one run, because npm refuses to generate an
 > attestation outside a supported CI runner. `--npm.allowSameVersion` is needed because
-> `packages/react-native-h3/package.json` already carries `0.1.0`. That first release therefore
+> `packages/react-native-nitro-h3/package.json` already carries `0.1.0`. That first release therefore
 > ships without a provenance attestation. Configure the trusted publisher immediately afterwards;
 > every release from `v0.1.1` onwards goes through the workflow and is attested.
 

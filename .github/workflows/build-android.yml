@@ -4,10 +4,10 @@ on:
   workflow_dispatch:
   pull_request:
     paths:
-      - 'packages/react-native-h3/cpp/**'
-      - 'packages/react-native-h3/third_party/**'
-      - 'packages/react-native-h3/nitrogen/generated/**'
-      - 'packages/react-native-h3/android/**'
+      - 'packages/react-native-nitro-h3/cpp/**'
+      - 'packages/react-native-nitro-h3/third_party/**'
+      - 'packages/react-native-nitro-h3/nitrogen/generated/**'
+      - 'packages/react-native-nitro-h3/android/**'
       - 'apps/example/android/**'
       - 'bun.lock'
       - '.github/workflows/build-android.yml'

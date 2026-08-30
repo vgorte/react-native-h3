@@ -1,7 +1,7 @@
 /**
  * Renders `apps/example/benchmark.json` as paired horizontal bars: for each README workload a
- * `react-native-h3` bar above an `h3-js` bar, scaled per pair so that the `h3-js` median spans the
- * full width and the shorter bar reads as the share of the time it takes.
+ * `react-native-nitro-h3` bar above an `h3-js` bar, scaled per pair so that the `h3-js` median
+ * spans the full width and the shorter bar reads as the share of the time it takes.
  *
  * The JSON is the `BENCHMARK_JSON` line the example app's benchmark screen logs on a Release build,
  * reassembled from its chunks, pretty-printed and committed. Rows without an `h3-js` reference carry
@@ -20,7 +20,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const INPUT = join(ROOT, 'apps', 'example', 'benchmark.json')
 const OUTPUT = join(ROOT, 'img', 'benchmark.svg')
 
-const TITLE = 'react-native-h3 against h3-js, median milliseconds per workload'
+const TITLE = 'react-native-nitro-h3 against h3-js, median milliseconds per workload'
 // no external resources: a system stack, resolved by the viewer
 const FONT = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
 
@@ -281,7 +281,7 @@ function renderGroup(bar, top) {
     `<text class="strong" x="${MARGIN}" y="${subjectBaseline}" font-size="14" font-weight="600">` +
       `${escapeXml(bar.subject)}</text>`,
     `<text x="${BAR_LEFT - 10}" y="${textBaseline(fastTop)}" font-size="12" text-anchor="end">` +
-      'react-native-h3</text>',
+      'react-native-nitro-h3</text>',
     `<rect x="${BAR_LEFT}" y="${fastTop}" width="${fastLength}" height="${BAR_HEIGHT}" rx="3" ` +
       `fill="${BAR_ACCENT}"/>`,
     `<text x="${BAR_LEFT + fastLength + 8}" y="${textBaseline(fastTop)}" font-size="12" ` +

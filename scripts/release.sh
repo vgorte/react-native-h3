@@ -37,11 +37,11 @@ bun run specs
 bun test
 
 # without its probe the parity suite skips itself; build it and make a miss fatal
-cmake -S packages/react-native-h3/cpp/test -B build/host -DCMAKE_BUILD_TYPE=Release
+cmake -S packages/react-native-nitro-h3/cpp/test -B build/host -DCMAKE_BUILD_TYPE=Release
 cmake --build build/host --target parity_probe -j
 export H3_PARITY_PROBE="${ROOT}/build/host/parity_probe"
 export H3_PARITY_REQUIRED=1
-bun run --cwd packages/react-native-h3 parity
+bun run --cwd packages/react-native-nitro-h3 parity
 
 # Packages: `npm publish` only, no git operations
 for pkg in packages/*; do

@@ -10,7 +10,7 @@ if (h3Sanitizer != '' && h3SanitizerRuntime == null) {
     throw new GradleException("Unsupported h3Sanitizer: ${h3Sanitizer}. The only supported value is 'address'.")
 }
 
-// mirrors `packages/react-native-h3/android/build.gradle`'s helper of the same name
+// mirrors `packages/react-native-nitro-h3/android/build.gradle`'s helper of the same name
 def reactNativeArchitectures() {
     def value = rootProject.getProperties().get("reactNativeArchitectures")
     // `as List`: intersect below rejects a String[] operand

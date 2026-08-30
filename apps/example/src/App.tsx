@@ -1,6 +1,6 @@
 import React from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
-import { gridDisk, H3Error, latLngToCell } from 'react-native-h3'
+import { gridDisk, H3Error, latLngToCell } from 'react-native-nitro-h3'
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 import { BenchmarkScreen } from './BenchmarkScreen'
 
@@ -39,7 +39,7 @@ function SmokeScreen(): React.JSX.Element {
   const results = useResults()
   return (
     <ScrollView contentContainerStyle={styles.content}>
-      <Text style={styles.title}>react-native-h3</Text>
+      <Text style={styles.title}>react-native-nitro-h3</Text>
       <View style={styles.results}>
         {results.map((line) => (
           <Text key={line} style={styles.line}>

@@ -1,5 +1,11 @@
-import { configure, gridDisk, H3Error, latLngToCell, polygonToCellsAsync } from 'react-native-h3'
 import { afterEach, describe, expect, test } from 'react-native-harness'
+import {
+  configure,
+  gridDisk,
+  H3Error,
+  latLngToCell,
+  polygonToCellsAsync,
+} from 'react-native-nitro-h3'
 
 const SAN_FRANCISCO_BOX: [lat: number, lng: number][][] = [
   [
