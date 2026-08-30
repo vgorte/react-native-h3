@@ -34,7 +34,11 @@ jobs:
     if: github.event_name == 'pull_request' || inputs.dry_run
     runs-on: ubuntu-latest
     steps:
+      # A pull request checks out a detached merge commit, and release-it refuses to run without a
+      # branch under HEAD; the head branch has one, and the dry run never pushes to it.
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.3.14  # <-- pinned: `latest` turns an upstream release into a red build
