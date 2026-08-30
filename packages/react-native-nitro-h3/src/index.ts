@@ -4,6 +4,7 @@ export {
   polygonToCellsExperimentalAsync,
   uncompactCellsAsync,
 } from './async'
+export { cellsToLatLngs, latLngsToCells } from './batches'
 export type { H3Config } from './configure'
 export { configure } from './configure'
 export {

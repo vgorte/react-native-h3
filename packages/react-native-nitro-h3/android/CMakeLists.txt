@@ -29,6 +29,7 @@ add_library(
   ${PACKAGE_ROOT}/cpp/core/Validation.cpp
   ${PACKAGE_ROOT}/cpp/core/LinkedGeoPolygonReader.cpp
   ${PACKAGE_ROOT}/cpp/core/GeoPolygonBuilder.cpp
+  ${PACKAGE_ROOT}/cpp/ops/Batches.cpp
   ${PACKAGE_ROOT}/cpp/ops/Edges.cpp
   ${PACKAGE_ROOT}/cpp/ops/Hierarchy.cpp
   ${PACKAGE_ROOT}/cpp/ops/Indexing.cpp

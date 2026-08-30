@@ -24,6 +24,7 @@ const OUT = join(HERE, '..', 'packages', 'react-native-nitro-h3', 'docs', 'api.m
 const TITLES: Record<string, string> = {
   H3Error: 'Errors',
   async: 'Async variants',
+  batches: 'Batch operations',
   configure: 'Configuration',
   edges: 'Directed edges',
   hierarchy: 'Hierarchy',
@@ -54,6 +55,7 @@ const ORDER = [
   'measurement',
   'units',
   'misc',
+  'batches',
   'async',
   'configure',
   'H3Error',

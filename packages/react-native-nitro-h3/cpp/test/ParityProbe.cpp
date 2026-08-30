@@ -20,6 +20,7 @@
 #include "core/Geometry.hpp"
 #include "core/H3ErrorMapping.hpp"
 #include "core/Validation.hpp"
+#include "ops/Batches.hpp"
 #include "ops/Edges.hpp"
 #include "ops/Hierarchy.hpp"
 #include "ops/Indexing.hpp"
@@ -276,6 +277,24 @@ const std::map<std::string, Handler>& handlers() {
        [](const Args& a) { return jsonCell(h3ops::latLngToCell(numArg(a, 0), numArg(a, 1), numArg(a, 2))); }},
       {"cellToLatLng", [](const Args& a) { return jsonPoint(h3ops::cellToLatLng(cellArg(a, 0))); }},
       {"cellToBoundary", [](const Args& a) { return jsonRing(h3ops::cellToBoundary(cellArg(a, 0))); }},
+
+      // Batches
+      {"latLngsToCells",
+       [](const Args& a) {
+         const std::vector<double> coords = numbersArg(a, 0);
+         return jsonCells(h3ops::latLngsToCells(coords.data(), static_cast<int64_t>(coords.size()), numArg(a, 1)));
+       }},
+      {"cellsToLatLngs",
+       [](const Args& a) {
+         const std::vector<uint64_t> cells = cellsArg(a, 0);
+         const std::vector<double> centres = h3ops::cellsToLatLngs(cells.data(), static_cast<int64_t>(cells.size()));
+         std::vector<std::string> items;
+         items.reserve(centres.size());
+         for (const double value : centres) {
+           items.push_back(jsonNumber(value));
+         }
+         return jsonArray(items);
+       }},
 
       // Inspection
       {"isValidCell", [](const Args& a) { return jsonBool(h3ops::isValidCell(cellArg(a, 0))); }},

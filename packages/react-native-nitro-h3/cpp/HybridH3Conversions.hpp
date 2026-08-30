@@ -70,6 +70,54 @@ inline CellSpan toCellSpan(const std::shared_ptr<ArrayBuffer>& buffer) {
   return CellSpan{reinterpret_cast<const uint64_t*>(data), static_cast<int64_t>(bytes / sizeof(uint64_t))};
 }
 
+/** Hands an interleaved coordinate vector to JS as an owning `ArrayBuffer`. */
+inline std::shared_ptr<ArrayBuffer> toArrayBuffer(std::vector<double>&& values) {
+  if (values.empty()) {
+    // `wrap` rejects `nullptr`, which an empty vector's `data()` may be
+    return ArrayBuffer::allocate(0);
+  }
+  auto owned = std::make_unique<std::vector<double>>(std::move(values));
+  uint8_t* data = reinterpret_cast<uint8_t*>(owned->data());
+  const size_t bytes = owned->size() * sizeof(double);
+  // the deleter frees the vector that owns the block, never the `uint8_t*` wrapped below
+  auto wrapped = ArrayBuffer::wrap(data, bytes, [buffer = owned.get()]() { delete buffer; });
+  owned.release();
+  return wrapped;
+}
+
+/** Borrows a read-only view of interleaved coordinates that arrived from JS. */
+struct DoubleSpan {
+  const double* data;
+  int64_t count;
+};
+
+/**
+ * Validates an inbound `ArrayBuffer` and views it as doubles.
+ *
+ * The span is valid only for the duration of the synchronous call, as `toCellSpan`'s is, and the
+ * checks are the same four in the same order, worded for coordinates.
+ */
+inline DoubleSpan toDoubleSpan(const std::shared_ptr<ArrayBuffer>& buffer) {
+  if (buffer == nullptr) {
+    h3core::throwInvalidArgument("Expected a coordinate set");
+  }
+  const size_t bytes = buffer->size();
+  if (bytes == 0) {
+    return DoubleSpan{nullptr, 0};
+  }
+  uint8_t* data = buffer->data();
+  if (data == nullptr) {
+    h3core::throwInvalidArgument("The coordinate set has already been released");
+  }
+  if (bytes % sizeof(double) != 0) {
+    h3core::throwInvalidArgument("A coordinate set's byte length must be a multiple of 8");
+  }
+  if (reinterpret_cast<uintptr_t>(data) % alignof(double) != 0) {
+    h3core::throwInvalidArgument("A coordinate set must be aligned to 8 bytes");
+  }
+  return DoubleSpan{reinterpret_cast<const double*>(data), static_cast<int64_t>(bytes / sizeof(double))};
+}
+
 /** Copies a ring of degrees into the generated Nitro struct. */
 inline std::vector<LatLng> toLatLngs(const h3core::Ring& ring) {
   std::vector<LatLng> points;

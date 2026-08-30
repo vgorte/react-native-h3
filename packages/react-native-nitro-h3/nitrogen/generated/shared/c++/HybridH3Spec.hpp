@@ -112,6 +112,8 @@ namespace margelo::nitro::h3 {
       virtual std::shared_ptr<ArrayBuffer> cellToChildren(uint64_t cell, double res) = 0;
       virtual std::shared_ptr<ArrayBuffer> compactCells(const std::shared_ptr<ArrayBuffer>& cells) = 0;
       virtual std::shared_ptr<ArrayBuffer> uncompactCells(const std::shared_ptr<ArrayBuffer>& cells, double res) = 0;
+      virtual std::shared_ptr<ArrayBuffer> latLngsToCells(const std::shared_ptr<ArrayBuffer>& coords, double res) = 0;
+      virtual std::shared_ptr<ArrayBuffer> cellsToLatLngs(const std::shared_ptr<ArrayBuffer>& cells) = 0;
       virtual double getHexagonAreaAvgKm2(double res) = 0;
       virtual double getHexagonAreaAvgM2(double res) = 0;
       virtual double getHexagonEdgeLengthAvgKm(double res) = 0;

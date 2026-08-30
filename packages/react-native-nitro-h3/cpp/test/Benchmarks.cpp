@@ -25,7 +25,9 @@
 
 #include "core/CellBuffer.hpp"
 #include "core/Geometry.hpp"
+#include "ops/Batches.hpp"
 #include "ops/Hierarchy.hpp"
+#include "ops/Indexing.hpp"
 #include "ops/Regions.hpp"
 
 extern "C" {
@@ -85,6 +87,30 @@ Rings sanFranciscoBox() {
       {37.74, -122.39},
       {37.74, -122.45},
   }};
+}
+
+/** Holds the batch size the app benchmark uses, so both instruments describe one set. */
+constexpr int64_t kBatchPairs = 100000;
+
+/**
+ * Returns `pairs` interleaved `[lat, lng]` degrees scattered over the globe. A xorshift keeps the
+ * fixture reproducible without `<random>` and independent of the machine's random device.
+ */
+std::vector<double> scatteredCoordinates(int64_t pairs) {
+  std::vector<double> coords;
+  coords.reserve(static_cast<size_t>(pairs) * 2);
+  uint64_t state = 88172645463325252ULL;
+  const auto unitInterval = [&state]() {
+    state ^= state << 13;
+    state ^= state >> 7;
+    state ^= state << 17;
+    return static_cast<double>(state >> 11) / static_cast<double>(1ULL << 53);
+  };
+  for (int64_t i = 0; i < pairs; i++) {
+    coords.push_back(unitInterval() * 170.0 - 85.0);
+    coords.push_back(unitInterval() * 360.0 - 180.0);
+  }
+  return coords;
 }
 
 } // namespace
@@ -159,6 +185,38 @@ int main() {
   results.push_back(measure("cellsToMultiPolygon of a k=4 disk", 100, [&]() -> int64_t {
     const h3core::MultiPolygon polygons = h3ops::cellsToMultiPolygon(disk.data(), static_cast<int64_t>(disk.size()));
     return static_cast<int64_t>(polygons.size());
+  }));
+
+  // the batch paths beside the loop a caller would write instead; no bridge is involved either way,
+  // so the pair isolates what the native loop itself costs
+  const std::vector<double> coords = scatteredCoordinates(kBatchPairs);
+  const int64_t doubleCount = static_cast<int64_t>(coords.size());
+  results.push_back(measure("latLngsToCells over 100k pairs", 10,
+                            [&]() -> int64_t { return h3ops::latLngsToCells(coords.data(), doubleCount, 9).count(); }));
+
+  results.push_back(measure("latLngToCell loop over 100k pairs", 10, [&]() -> int64_t {
+    // the batch allocates its result once, so the loop gets a destination too
+    std::vector<uint64_t> cells(static_cast<size_t>(kBatchPairs));
+    for (size_t i = 0; i < cells.size(); i++) {
+      cells[i] = h3ops::latLngToCell(coords[2 * i], coords[2 * i + 1], 9);
+    }
+    return static_cast<int64_t>(cells.size());
+  }));
+
+  const h3core::CellBuffer batchCells = h3ops::latLngsToCells(coords.data(), doubleCount, 9);
+  results.push_back(measure("cellsToLatLngs over 100k cells", 10, [&]() -> int64_t {
+    return static_cast<int64_t>(h3ops::cellsToLatLngs(batchCells.data(), batchCells.count()).size());
+  }));
+
+  results.push_back(measure("cellToLatLng loop over 100k cells", 10, [&]() -> int64_t {
+    std::vector<double> centres;
+    centres.reserve(static_cast<size_t>(batchCells.count()) * 2);
+    for (int64_t i = 0; i < batchCells.count(); i++) {
+      const h3core::Point centre = h3ops::cellToLatLng(batchCells.data()[i]);
+      centres.push_back(centre.lat);
+      centres.push_back(centre.lng);
+    }
+    return static_cast<int64_t>(centres.size());
   }));
 
   std::printf("### Host benchmark (informational, not a gate)\n\n");
