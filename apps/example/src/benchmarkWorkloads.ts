@@ -1,6 +1,7 @@
 import h3 from 'h3-js'
 import type { LatLng, Ring } from 'react-native-nitro-h3'
 import {
+  cellsToLatLngs,
   cellsToMultiPolygon,
   cellToBoundary,
   cellToChildren,
@@ -10,6 +11,7 @@ import {
   getResolution,
   gridDisk,
   gridPathCells,
+  latLngsToCells,
   latLngToCell,
   polygonToCells,
   polygonToCellsAsync,
@@ -44,6 +46,9 @@ const EPSILON = 1e-9
 const SINGLE_CALLS = 1_000
 const SINGLE_CALL_STEP = 0.001
 const SINGLE_CALL_COLUMNS = 40
+// the same grid at the size a batch is written for
+const BATCH_STEP = 0.001
+const BATCH_COLUMNS = 320
 // a macrotask between two single calls would cost more than the calls themselves
 const SINGLE_CALL_YIELD = 100
 
@@ -80,6 +85,8 @@ const LABELS = {
   w7: 'W7 cellToBoundary x 100,000',
   w9: `W9 cellToChildren, res ${CHILDREN_PARENT_RES} to res ${CHILDREN_RES}`,
   w10: `W10 gridPathCells, Berlin to Hamburg, res ${PATH_RES} x 1,000`,
+  w11: 'W11 latLngsToCells x 100,000 pairs',
+  w12: 'W12 cellsToLatLngs x 100,000 cells',
 }
 
 function diskSeriesLabel(series: { id: string; k: number }): string {
@@ -106,6 +113,8 @@ function planOf(uncompactRes: number): string[] {
     uncompactLabel(uncompactRes, true),
     LABELS.w9,
     LABELS.w10,
+    LABELS.w11,
+    LABELS.w12,
   ]
 }
 
@@ -294,6 +303,16 @@ function sameLatLng(subject: LatLng, reference: number[]): boolean {
   )
 }
 
+// a batch returns its centres interleaved, so the check walks two entries per cell
+function sameLatLngPairs(subject: Float64Array, reference: number[][]): boolean {
+  if (subject.length !== reference.length * 2) {
+    return false
+  }
+  return reference.every((point, index) =>
+    sameLatLng({ lat: subject[2 * index] as number, lng: subject[2 * index + 1] as number }, point),
+  )
+}
+
 function sameBoundary(subject: LatLng[], reference: number[][]): boolean {
   return (
     subject.length === reference.length &&
@@ -361,6 +380,16 @@ function singleCallInputs(): LatLng[] {
     }
   }
   return inputs
+}
+
+// the single-call grid at batch size, interleaved as the batch takes it
+function batchInputs(): Float64Array {
+  const coords = new Float64Array(CALLS * 2)
+  for (let index = 0; index < CALLS; index++) {
+    coords[2 * index] = SAN_FRANCISCO.lat + (index % BATCH_COLUMNS) * BATCH_STEP
+    coords[2 * index + 1] = SAN_FRANCISCO.lng + Math.floor(index / BATCH_COLUMNS) * BATCH_STEP
+  }
+  return coords
 }
 
 // both engines allocate whatever is asked for, so the row drops a resolution to stay in budget
@@ -964,6 +993,82 @@ export async function runBenchmark(
       w10Reference.stats,
       sameCellsInOrder(w10.value, w10Reference.value),
       `${w10.value.length} cells per path`,
+    ),
+  )
+
+  if (await pause(signal)) {
+    return undefined
+  }
+
+  const coordinates = batchInputs()
+  const w11 = await timeRuns(signal, RUNS, () => latLngsToCells(coordinates, 9), track(OWN, RUNS))
+  if (w11 == null) {
+    return undefined
+  }
+  // the batch answers for the whole set, so the loop it replaces collects too
+  const w11Reference = await timeRuns(
+    signal,
+    RUNS,
+    () => {
+      const cells = new Array<string>(CALLS)
+      for (let i = 0; i < CALLS; i++) {
+        cells[i] = h3.latLngToCell(
+          coordinates[2 * i] as number,
+          coordinates[2 * i + 1] as number,
+          9,
+        )
+      }
+      return cells
+    },
+    track(REFERENCE, RUNS),
+  )
+  if (w11Reference == null) {
+    return undefined
+  }
+  // `W12` compares two engines if both start from the same cells, which is what `W11` answered
+  const sameBatchCells = sameCellsInOrder(w11.value, w11Reference.value)
+  finish(
+    toRow(
+      LABELS.w11,
+      RUNS,
+      w11.stats,
+      w11Reference.stats,
+      sameBatchCells,
+      `${CALLS} pairs in one call, ${CALLS} h3-js calls`,
+    ),
+  )
+
+  if (await pause(signal)) {
+    return undefined
+  }
+
+  const w12 = await timeRuns(signal, RUNS, () => cellsToLatLngs(w11.value), track(OWN, RUNS))
+  if (w12 == null) {
+    return undefined
+  }
+  const w12Reference = await timeRuns(
+    signal,
+    RUNS,
+    () => {
+      const centres = new Array<number[]>(CALLS)
+      for (let i = 0; i < CALLS; i++) {
+        centres[i] = h3.cellToLatLng(w11Reference.value[i] as string)
+      }
+      return centres
+    },
+    track(REFERENCE, RUNS),
+  )
+  if (w12Reference == null) {
+    return undefined
+  }
+  finish(
+    toRow(
+      LABELS.w12,
+      RUNS,
+      w12.stats,
+      w12Reference.stats,
+      sameBatchCells && sameLatLngPairs(w12.value, w12Reference.value),
+      `${CALLS} cells in one call, ${CALLS} h3-js calls`,
     ),
   )
 
