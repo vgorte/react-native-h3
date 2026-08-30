@@ -50,7 +50,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   publish:
-    name: Publish ${{ inputs.version }}
+    name: Publish
     if: github.event_name == 'workflow_dispatch' && !inputs.dry_run
     # macOS, not Ubuntu: the root `after:bump` hook refreshes `apps/example/ios/Podfile.lock` with
     # `pod install`, and CocoaPods only ships on the macOS runner image. One run per release.
