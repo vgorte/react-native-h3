@@ -25,8 +25,8 @@ machine-code execution on iOS and Android for maximum performance.
 ## ✨ Features
 
 - 🔄 **Full API Parity:** Mirrors the 64 functions of `h3-js` 4.5.0 under the same names, plus four
-  `Async` variants and `configure`. Backed by a rigorous parity test suite covering every
-  resolution, pentagons, and poles.
+  `Async` variants, `configure`, and a small batch surface beyond parity. Backed by a rigorous
+  parity test suite covering every resolution, pentagons, and poles.
 - ⚡ **Zero Conversion Overhead:** Cell indexes are returned as `bigint` rather than hexadecimal
   strings, completely eliminating string-conversion bottlenecks on the hot path.
 - 🚀 **Zero-Copy Architecture:** Cell sets are returned as `BigUint64Array`, a direct view onto the
@@ -168,6 +168,34 @@ async function fillGrid(): Promise<BigUint64Array> {
 > background thread. The buffer you pass in is immediately yours to reuse the moment the function
 > returns, while yielding the exact same results as its synchronous sibling.
 
+## 🧮 Batch API (Beyond h3-js)
+
+Two additive functions run a scalar operation over a whole typed array in one native call, for the
+workloads where per-call overhead dominates. They are not part of the `h3-js` parity surface.
+
+```ts
+import { cellsToLatLngs, latLngsToCells } from 'react-native-nitro-h3'
+
+const points = [
+  { lat: 37.7749, lng: -122.4194 },
+  { lat: 37.8044, lng: -122.2712 },
+]
+
+// coordinates are interleaved [lat, lng] pairs, latitude first (GeoJSON is the other way round)
+const coords = new Float64Array(points.length * 2)
+points.forEach((point, i) => {
+  coords[i * 2] = point.lat
+  coords[i * 2 + 1] = point.lng
+})
+
+const cells = latLngsToCells(coords, 9) // BigUint64Array, one cell per pair
+const centres = cellsToLatLngs(cells) // Float64Array, [lat, lng] per cell
+```
+
+Both fail fast: the first invalid element throws an `H3Error` whose message names its index, such as
+`cells[1]: Cell argument was not valid (code: 5)`. An empty input returns an empty result. The Cell
+Ceiling below applies to both, counted in cells, which is one cell per coordinate pair.
+
 ## 🛡️ The Cell Ceiling (Opt-In)
 
 There is no cell limit until you set one: a call returns whatever you ask for, exactly as
@@ -236,13 +264,13 @@ try {
 ## 📚 API Reference
 
 The exported surface mirrors the 64 functions of `h3-js` 4.5.0 under the same names, complete with
-rich JSDoc comments.
+rich JSDoc comments, plus the additive batch functions.
 
 - 📖 **[Full API Documentation](https://github.com/vgorte/react-native-nitro-h3/blob/main/packages/react-native-nitro-h3/docs/api.md):**
   Generated directly from the TypeScript sources and grouped by domain. What your editor shows is
   exactly what you get.
 - 🗺️ **[H3 C-Function Mapping](https://github.com/vgorte/react-native-nitro-h3/blob/main/docs/h3-function-table.md):**
-  A table mapping every export to its H3 C library counterpart.
+  A table mapping every parity export to its H3 C library counterpart.
 
 ## 🔄 Migrating from h3-js
 

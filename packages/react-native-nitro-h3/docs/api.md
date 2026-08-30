@@ -16,6 +16,7 @@ Every function throws [`H3Error`](#h3error) on failure. Cells are `bigint`; cell
 - [Measurement](#measurement)
 - [Angle conversion](#angle-conversion)
 - [Miscellaneous](#miscellaneous)
+- [Batch operations](#batch-operations)
 - [Async variants](#async-variants)
 - [Configuration](#configuration)
 - [Errors](#errors)
@@ -1041,6 +1042,44 @@ them, and twelve of them are pentagons.
 
 Returns: The `122` base cells.
 
+## Batch operations
+
+### cellsToLatLngs
+
+```ts
+function cellsToLatLngs(cells: BigUint64Array): Float64Array
+```
+
+Finds the centres of many cells at once, one native call for the whole set.
+
+Additive to the h3-js surface: this is `cellToLatLng` over a typed array, sized for
+circle layers, heatmaps and other renderers that consume flat coordinate buffers. The order is
+latitude first, unlike GeoJSON.
+
+- `cells`: The cells.
+
+Returns: Interleaved `[lat0, lng0, lat1, lng1, ...]` in degrees, two entries per cell.
+
+Throws: `H3Error` if a cell is not valid (the message names its index), or the input would exceed a cell ceiling set with `configure`.
+
+### latLngsToCells
+
+```ts
+function latLngsToCells(coords: Float64Array, res: number): BigUint64Array
+```
+
+Finds the cells containing many coordinates at once, one native call for the whole set.
+
+Additive to the h3-js surface: this is `latLngToCell` over a typed array, for the hot
+paths where per-call overhead dominates. The order is latitude first, unlike GeoJSON.
+
+- `coords`: Interleaved `[lat0, lng0, lat1, lng1, ...]` in degrees.
+- `res`: Resolution, `0` to `15`.
+
+Returns: One cell per pair, in input order.
+
+Throws: `H3Error` if the length of `coords` is odd, a pair is rejected (the message names its index, and a batch-wide bad `res` reads `coords[0]`), or the result would exceed a cell ceiling set with `configure`. An empty input returns an empty result without judging `res`.
+
 ## Async variants
 
 ### cellsToMultiPolygonAsync
@@ -1245,4 +1284,4 @@ type Ring = [lat: number, lng: number][]
 
 Represents a ring of `[latitude, longitude]` pairs in degrees, whose first point is not repeated at the end.
 
-<!-- 77 exported symbols -->
+<!-- 79 exported symbols -->
