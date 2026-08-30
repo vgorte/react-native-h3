@@ -1,4 +1,3 @@
-import h3 from 'h3-js'
 import React from 'react'
 import {
   ActivityIndicator,
@@ -9,57 +8,11 @@ import {
   Text,
   View,
 } from 'react-native'
-import type { LatLng, Ring } from 'react-native-h3'
-import {
-  cellsToMultiPolygon,
-  cellToBoundary,
-  cellToLatLng,
-  compactCells,
-  gridDisk,
-  latLngToCell,
-  polygonToCells,
-  polygonToCellsAsync,
-} from 'react-native-h3'
+import type { Row, RunSignal, RunState, Stats } from './benchmarkWorkloads'
+import { runBenchmark } from './benchmarkWorkloads'
 
-const SAN_FRANCISCO = { lat: 37.7749, lng: -122.4194 }
-
-// the polygon of the measurement that justified the package: San Francisco, res 12, 412,377 cells
-const SAN_FRANCISCO_POLYGON: Ring[] = [
-  [
-    [37.81331899998324, -122.40898669999721],
-    [37.71980619999785, -122.35447369999936],
-    [37.70761319999757, -122.5123436999984],
-    [37.78358719999717, -122.5247187000022],
-    [37.815157199999845, -122.4798767000009],
-  ],
-]
-
-const RUNS = 20
-// one `polygonToCells` costs `h3-js` over twenty seconds, so W3 gets far fewer runs
-const RUNS_W3 = 3
-const CALLS = 100_000
-const DISK_K = 20
-const EPSILON = 1e-9
 // the unified log on iOS truncates a message at about a kilobyte
 const CHUNK = 700
-
-interface Stats {
-  median: number
-  p95: number
-  min: number
-  max: number
-}
-
-interface Row {
-  workload: string
-  runs: number
-  millis: number
-  referenceMillis: number | undefined
-  stats: Stats
-  referenceStats: Stats | undefined
-  equivalent: boolean
-  detail: string
-}
 
 interface Payload {
   rows: {
@@ -90,409 +43,6 @@ function isDebugBuild(): boolean {
   return (globalThis as { __DEV__?: boolean }).__DEV__ === true
 }
 
-function now(): number {
-  const performanceApi = (globalThis as { performance?: { now(): number } }).performance
-  if (performanceApi != null) {
-    return performanceApi.now()
-  }
-  return Date.now()
-}
-
-function statsOf(samples: number[]): Stats {
-  const sorted = [...samples].sort((a, b) => a - b)
-  const last = sorted.length - 1
-  // the median takes the upper of the two middle samples on an even count
-  const median = sorted[Math.min(last, Math.floor(0.5 * sorted.length))] as number
-  // nearest rank, so `p95` is the nineteenth of 20 samples, not the maximum
-  const rank = Math.min(last, Math.max(0, Math.ceil(0.95 * sorted.length) - 1))
-  return {
-    median,
-    p95: sorted[rank] as number,
-    min: sorted[0] as number,
-    max: sorted[last] as number,
-  }
-}
-
-interface Timed<T> {
-  value: T
-  stats: Stats
-}
-
-// warm-up untimed; its value feeds the equivalence check
-// a pause outside every `now()` window caps the longest freeze at one run
-async function timeRuns<T>(
-  signal: RunSignal,
-  runs: number,
-  body: () => T,
-): Promise<Timed<T> | undefined> {
-  const value = body()
-  if (await pause(signal)) {
-    return undefined
-  }
-  const samples: number[] = []
-  for (let index = 0; index < runs; index++) {
-    const start = now()
-    body()
-    samples.push(now() - start)
-    if (await pause(signal)) {
-      return undefined
-    }
-  }
-  return { value, stats: statsOf(samples) }
-}
-
-async function timeRunsAsync<T>(
-  signal: RunSignal,
-  runs: number,
-  body: () => Promise<T>,
-): Promise<Timed<T> | undefined> {
-  const value = await body()
-  if (await pause(signal)) {
-    return undefined
-  }
-  const samples: number[] = []
-  for (let index = 0; index < runs; index++) {
-    const start = now()
-    await body()
-    samples.push(now() - start)
-    if (await pause(signal)) {
-      return undefined
-    }
-  }
-  return { value, stats: statsOf(samples) }
-}
-
-function sortedHex(cells: BigUint64Array): string[] {
-  const hex = new Array<string>(cells.length)
-  for (let index = 0; index < cells.length; index++) {
-    hex[index] = (cells[index] as bigint).toString(16)
-  }
-  return hex.sort()
-}
-
-function sameStrings(subject: string[], reference: string[]): boolean {
-  return subject.length === reference.length && subject.every((cell, i) => cell === reference[i])
-}
-
-function sameCells(subject: BigUint64Array, reference: string[]): boolean {
-  if (subject.length !== reference.length) {
-    return false
-  }
-  return sameStrings(sortedHex(subject), reference.map((cell) => cell.toLowerCase()).sort())
-}
-
-function sameLatLng(subject: LatLng, reference: number[]): boolean {
-  return (
-    Math.abs(subject.lat - (reference[0] as number)) < EPSILON &&
-    Math.abs(subject.lng - (reference[1] as number)) < EPSILON
-  )
-}
-
-function sameBoundary(subject: LatLng[], reference: number[][]): boolean {
-  return (
-    subject.length === reference.length &&
-    subject.every((point, index) => sameLatLng(point, reference[index] as number[]))
-  )
-}
-
-function samePolygons(subject: LatLng[][][], reference: number[][][][]): boolean {
-  return (
-    subject.length === reference.length &&
-    subject.every((polygon, p) => {
-      const other = reference[p] as number[][][]
-      return (
-        polygon.length === other.length &&
-        polygon.every((loop, l) => sameBoundary(loop, other[l] as number[][]))
-      )
-    })
-  )
-}
-
-// carries the request to abandon a run to the sample and workload boundaries
-interface RunSignal {
-  cancelled: boolean
-}
-
-// a macrotask between samples lets queued presses through and reports whether the run is unwanted
-async function pause(signal: RunSignal): Promise<boolean> {
-  await new Promise<void>((resolve) => {
-    setTimeout(() => {
-      resolve()
-    }, 0)
-  })
-  return signal.cancelled
-}
-
-function toRow(
-  workload: string,
-  runs: number,
-  stats: Stats,
-  referenceStats: Stats | undefined,
-  equivalent: boolean,
-  detail: string,
-): Row {
-  return {
-    workload,
-    runs,
-    millis: stats.median,
-    referenceMillis: referenceStats?.median,
-    stats,
-    referenceStats,
-    equivalent,
-    detail,
-  }
-}
-
-async function runBenchmark(
-  signal: RunSignal,
-): Promise<{ rows: Row[]; seconds: number } | undefined> {
-  const started = now()
-  const origin = latLngToCell(SAN_FRANCISCO.lat, SAN_FRANCISCO.lng, 9)
-  const disk = gridDisk(origin, DISK_K)
-  // `h3-js` stays in its own hexadecimal-string world; converting either side would time the conversion
-  const referenceOrigin = h3.latLngToCell(SAN_FRANCISCO.lat, SAN_FRANCISCO.lng, 9)
-  const referenceDisk = h3.gridDisk(referenceOrigin, DISK_K)
-  const cells = Array.from(disk)
-  const rows: Row[] = []
-
-  const w1 = await timeRuns(signal, RUNS, () => {
-    let last = 0n
-    for (let i = 0; i < CALLS; i++) {
-      last = latLngToCell(SAN_FRANCISCO.lat, SAN_FRANCISCO.lng, 9)
-    }
-    return last
-  })
-  if (w1 == null) {
-    return undefined
-  }
-  const w1Reference = await timeRuns(signal, RUNS, () => {
-    let last = ''
-    for (let i = 0; i < CALLS; i++) {
-      last = h3.latLngToCell(SAN_FRANCISCO.lat, SAN_FRANCISCO.lng, 9)
-    }
-    return last
-  })
-  if (w1Reference == null) {
-    return undefined
-  }
-  rows.push(
-    toRow(
-      'W1 latLngToCell x 100,000',
-      RUNS,
-      w1.stats,
-      w1Reference.stats,
-      w1.value.toString(16) === w1Reference.value.toLowerCase(),
-      w1.value.toString(16),
-    ),
-  )
-
-  if (await pause(signal)) {
-    return undefined
-  }
-
-  const w2 = await timeRuns(signal, RUNS, () => {
-    let last = disk
-    for (let i = 0; i < 1_000; i++) {
-      last = gridDisk(origin, DISK_K)
-    }
-    return last
-  })
-  if (w2 == null) {
-    return undefined
-  }
-  const w2Reference = await timeRuns(signal, RUNS, () => {
-    let last = referenceDisk
-    for (let i = 0; i < 1_000; i++) {
-      last = h3.gridDisk(referenceOrigin, DISK_K)
-    }
-    return last
-  })
-  if (w2Reference == null) {
-    return undefined
-  }
-  rows.push(
-    toRow(
-      'W2 gridDisk(k=20) x 1,000',
-      RUNS,
-      w2.stats,
-      w2Reference.stats,
-      sameCells(w2.value, w2Reference.value),
-      `${w2.value.length} cells per call`,
-    ),
-  )
-
-  if (await pause(signal)) {
-    return undefined
-  }
-
-  const w3 = await timeRuns(signal, RUNS_W3, () => polygonToCells(SAN_FRANCISCO_POLYGON, 12))
-  if (w3 == null) {
-    return undefined
-  }
-  const w3Reference = await timeRuns(signal, RUNS_W3, () =>
-    h3.polygonToCells(SAN_FRANCISCO_POLYGON, 12),
-  )
-  if (w3Reference == null) {
-    return undefined
-  }
-  const w3Hex = sortedHex(w3.value)
-  rows.push(
-    toRow(
-      'W3 polygonToCells, SF, res 12',
-      RUNS_W3,
-      w3.stats,
-      w3Reference.stats,
-      sameCells(w3.value, w3Reference.value),
-      `${w3.value.length} cells`,
-    ),
-  )
-
-  if (await pause(signal)) {
-    return undefined
-  }
-
-  const w3Async = await timeRunsAsync(signal, RUNS_W3, () =>
-    polygonToCellsAsync(SAN_FRANCISCO_POLYGON, 12),
-  )
-  if (w3Async == null) {
-    return undefined
-  }
-  rows.push(
-    toRow(
-      'W3 polygonToCellsAsync, SF, res 12',
-      RUNS_W3,
-      w3Async.stats,
-      undefined,
-      sameStrings(sortedHex(w3Async.value), w3Hex),
-      `${w3Async.value.length} cells`,
-    ),
-  )
-
-  if (await pause(signal)) {
-    return undefined
-  }
-
-  const w4 = await timeRuns(signal, RUNS, () => compactCells(disk))
-  if (w4 == null) {
-    return undefined
-  }
-  const w4Reference = await timeRuns(signal, RUNS, () => h3.compactCells(referenceDisk))
-  if (w4Reference == null) {
-    return undefined
-  }
-  rows.push(
-    toRow(
-      'W4 compactCells of a k=20 disk',
-      RUNS,
-      w4.stats,
-      w4Reference.stats,
-      sameCells(w4.value, w4Reference.value),
-      `${w4.value.length} cells`,
-    ),
-  )
-
-  if (await pause(signal)) {
-    return undefined
-  }
-
-  const w5 = await timeRuns(signal, RUNS, () => cellsToMultiPolygon(disk))
-  if (w5 == null) {
-    return undefined
-  }
-  const w5Reference = await timeRuns(signal, RUNS, () => h3.cellsToMultiPolygon(referenceDisk))
-  if (w5Reference == null) {
-    return undefined
-  }
-  rows.push(
-    toRow(
-      'W5 cellsToMultiPolygon of a k=20 disk',
-      RUNS,
-      w5.stats,
-      w5Reference.stats,
-      samePolygons(w5.value, w5Reference.value),
-      `${w5.value.length} polygons`,
-    ),
-  )
-
-  if (await pause(signal)) {
-    return undefined
-  }
-
-  const w6 = await timeRuns(signal, RUNS, () => {
-    let last: LatLng = { lat: 0, lng: 0 }
-    for (let i = 0; i < CALLS; i++) {
-      last = cellToLatLng(cells[i % cells.length] as bigint)
-    }
-    return last
-  })
-  if (w6 == null) {
-    return undefined
-  }
-  const w6Reference = await timeRuns(signal, RUNS, () => {
-    let last: number[] = []
-    for (let i = 0; i < CALLS; i++) {
-      last = h3.cellToLatLng(referenceDisk[i % referenceDisk.length] as string)
-    }
-    return last
-  })
-  if (w6Reference == null) {
-    return undefined
-  }
-  rows.push(
-    toRow(
-      'W6 cellToLatLng x 100,000',
-      RUNS,
-      w6.stats,
-      w6Reference.stats,
-      cells.length === referenceDisk.length &&
-        cells.every((cell, index) =>
-          sameLatLng(cellToLatLng(cell), h3.cellToLatLng(referenceDisk[index] as string)),
-        ),
-      `${CALLS} calls over ${cells.length} distinct cells`,
-    ),
-  )
-
-  if (await pause(signal)) {
-    return undefined
-  }
-
-  const w7 = await timeRuns(signal, RUNS, () => {
-    let last: LatLng[] = []
-    for (let i = 0; i < CALLS; i++) {
-      last = cellToBoundary(cells[i % cells.length] as bigint)
-    }
-    return last
-  })
-  if (w7 == null) {
-    return undefined
-  }
-  const w7Reference = await timeRuns(signal, RUNS, () => {
-    let last: number[][] = []
-    for (let i = 0; i < CALLS; i++) {
-      last = h3.cellToBoundary(referenceDisk[i % referenceDisk.length] as string)
-    }
-    return last
-  })
-  if (w7Reference == null) {
-    return undefined
-  }
-  rows.push(
-    toRow(
-      'W7 cellToBoundary x 100,000',
-      RUNS,
-      w7.stats,
-      w7Reference.stats,
-      cells.length === referenceDisk.length &&
-        cells.every((cell, index) =>
-          sameBoundary(cellToBoundary(cell), h3.cellToBoundary(referenceDisk[index] as string)),
-        ),
-      `${CALLS} calls over ${cells.length} distinct cells`,
-    ),
-  )
-
-  return { rows, seconds: (now() - started) / 1000 }
-}
-
 function reactNativeVersion(): string {
   const { major, minor, patch } = Platform.constants.reactNativeVersion
   return `${major}.${minor}.${patch}`
@@ -509,6 +59,16 @@ function formatMillis(millis: number): string {
   return millis < 1 ? millis.toFixed(3) : millis.toFixed(1)
 }
 
+// a per-call row carries p95 beside median, the tail users feel
+function formatStats(stats: Stats, singleCall: boolean): string {
+  const median = formatMillis(stats.median)
+  return singleCall ? `${median} / ${formatMillis(stats.p95)} ms` : `${median} ms`
+}
+
+function formatReference(row: Row): string {
+  return row.referenceStats == null ? 'n/a' : formatStats(row.referenceStats, row.singleCall)
+}
+
 // a missing reference and an unmeasurable own time both mean no factor, as in the SVG script
 function factorOf(row: Row): number | undefined {
   if (row.referenceMillis == null || row.millis <= 0) {
@@ -521,20 +81,25 @@ function formatFactor(factor: number): string {
   return factor >= 10 ? factor.toFixed(0) : factor.toFixed(1)
 }
 
-// the rule `scripts/benchmark-svg.mjs` applies to the chart: a row under a millisecond of
-// `react-native-h3` time measures `h3-js` string marshalling rather than the work, so the headline
-// skips it, takes the widest remaining factor and rounds down to a ten
-const HEADLINE_MIN_MILLIS = 1
-
-function headlineFactor(rows: Row[]): number | undefined {
-  const factors = rows
-    .filter((row) => row.millis >= HEADLINE_MIN_MILLIS)
-    .map(factorOf)
-    .filter((factor): factor is number => factor != null)
-  if (factors.length === 0) {
-    return undefined
+// the run count is read back off the rows, naming whichever workloads differ from the common one
+function runSummary(rows: Row[]): string {
+  const tally = new Map<number, number>()
+  for (const row of rows) {
+    tally.set(row.runs, (tally.get(row.runs) ?? 0) + 1)
   }
-  return Math.floor(Math.max(...factors) / 10) * 10
+  const [common] = [...tally.entries()].sort((a, b) => b[1] - a[1])[0] as [number, number]
+  const named = new Set<string>()
+  const exceptions: string[] = []
+  for (const row of rows) {
+    // variants of one workload share an id and are named once
+    const id = row.workload.split(' ')[0] as string
+    if (row.runs === common || named.has(id)) {
+      continue
+    }
+    named.add(id)
+    exceptions.push(`${row.runs} for ${id}`)
+  }
+  return exceptions.length === 0 ? `${common} runs` : `${common} runs, ${exceptions.join(', ')}`
 }
 
 function caption(rows: Row[], seconds: number): string {
@@ -545,7 +110,7 @@ function caption(rows: Row[], seconds: number): string {
   return (
     `Measured on ${Platform.OS} ${String(Platform.Version)}, ${build}, ` +
     `react-native ${reactNativeVersion()}, Hermes ${hermesVersion()}, against h3-js 4.5.0; ` +
-    `median of ${RUNS} runs (${RUNS_W3} for W3) after one warm-up, ${seconds.toFixed(0)} s total.` +
+    `median of ${runSummary(rows)} after one warm-up, ${seconds.toFixed(0)} s total.` +
     warning
   )
 }
@@ -555,10 +120,9 @@ function toMarkdown(rows: Row[], seconds: number): string {
     '| Workload | react-native-h3 | h3-js | Equivalent | Result |\n|---|---:|---:|:-:|---|'
   const body = rows
     .map((row) => {
-      const reference =
-        row.referenceMillis == null ? 'n/a' : `${formatMillis(row.referenceMillis)} ms`
       const equivalent = row.equivalent ? 'yes' : 'no'
-      return `| ${row.workload} | ${formatMillis(row.millis)} ms | ${reference} | ${equivalent} | ${row.detail} |`
+      const own = formatStats(row.stats, row.singleCall)
+      return `| ${row.workload} | ${own} | ${formatReference(row)} | ${equivalent} | ${row.detail} |`
     })
     .join('\n')
   return `${header}\n${body}\n\n${caption(rows, seconds)}`
@@ -601,6 +165,21 @@ function logPayload(payload: Payload): void {
   }
 }
 
+function describe(error: unknown): string {
+  return error instanceof Error ? error.message : String(error)
+}
+
+// the JavaScript thread is blocked for the length of a sample, so this line only moves between
+// samples; the spinner beside it is native and keeps turning throughout
+function progressLabel(state: RunState): string {
+  if (state.passes === 0) {
+    return 'starting'
+  }
+  return state.pass === 0
+    ? `${state.engine}, warm-up`
+    : `${state.engine}, pass ${state.pass}/${state.passes}`
+}
+
 function Measure({ label, value }: { label: string; value: string }): React.JSX.Element {
   return (
     <View style={styles.measure}>
@@ -610,48 +189,79 @@ function Measure({ label, value }: { label: string; value: string }): React.JSX.
   )
 }
 
-function WorkloadCard({ row }: { row: Row }): React.JSX.Element {
-  const factor = factorOf(row)
+function Status({ row, running }: { row: Row | undefined; running: boolean }): React.JSX.Element {
+  if (row != null) {
+    return (
+      <Text style={row.equivalent ? styles.equivalent : styles.differs}>
+        {row.equivalent ? '✓' : '✗'}
+      </Text>
+    )
+  }
+  if (running) {
+    return <ActivityIndicator size="small" />
+  }
+  return <Text style={styles.waiting}>-</Text>
+}
+
+function WorkloadCard({
+  label,
+  row,
+  progress,
+}: {
+  label: string
+  row: Row | undefined
+  progress: string | undefined
+}): React.JSX.Element {
+  const factor = row == null ? undefined : factorOf(row)
   return (
     <View style={styles.card}>
       <View style={styles.cardHeader}>
-        <Text style={styles.workload}>{row.workload}</Text>
-        <Text style={row.equivalent ? styles.equivalent : styles.differs}>
-          {row.equivalent ? 'yes' : 'no'}
+        <Text style={row == null ? styles.workloadWaiting : styles.workload}>
+          {row?.workload ?? label}
         </Text>
+        <Status row={row} running={progress != null} />
       </View>
-      <View style={styles.measures}>
-        <Measure label="react-native-h3" value={`${formatMillis(row.millis)} ms`} />
-        <Measure
-          label="h3-js"
-          value={row.referenceMillis == null ? 'n/a' : `${formatMillis(row.referenceMillis)} ms`}
-        />
-        <View style={styles.measure}>
-          <Text style={styles.measureLabel}>factor</Text>
-          <Text style={styles.factor}>{factor == null ? 'n/a' : `${formatFactor(factor)}×`}</Text>
+      {row == null ? undefined : (
+        <View style={styles.measures}>
+          <Measure label="react-native-h3" value={formatStats(row.stats, row.singleCall)} />
+          <Measure label="h3-js" value={formatReference(row)} />
+          <View style={styles.measure}>
+            <Text style={styles.measureLabel}>factor</Text>
+            <Text style={styles.factor}>{factor == null ? 'n/a' : `${formatFactor(factor)}×`}</Text>
+          </View>
         </View>
-      </View>
-      <Text style={styles.detail}>{row.detail}</Text>
+      )}
+      {row == null ? undefined : <Text style={styles.detail}>{row.detail}</Text>}
+      {progress == null ? undefined : <Text style={styles.detail}>{progress}</Text>}
     </View>
   )
 }
 
-function Results({ rows, seconds }: { rows: Row[]; seconds: number }): React.JSX.Element {
-  const headline = headlineFactor(rows)
+function Results({
+  state,
+  seconds,
+}: {
+  state: RunState
+  seconds: number | undefined
+}): React.JSX.Element {
   return (
     <View style={styles.results}>
-      <View style={styles.summary}>
-        <Text style={styles.summaryFactor}>
-          {headline == null ? 'no factor measured' : `up to ${headline}× faster than h3-js`}
-        </Text>
-        <Text
-          style={styles.summaryMeta}
-        >{`${rows.length} workloads, ${seconds.toFixed(0)} s`}</Text>
-      </View>
-      {rows.map((row) => (
-        <WorkloadCard key={row.workload} row={row} />
+      <Text style={styles.summaryMeta}>
+        {seconds == null
+          ? `${state.rows.length} of ${state.plan.length} workloads`
+          : `${state.rows.length} workloads, ${seconds.toFixed(0)} s`}
+      </Text>
+      {state.plan.map((label, index) => (
+        <WorkloadCard
+          key={label}
+          label={label}
+          row={state.rows[index]}
+          progress={seconds == null && index === state.index ? progressLabel(state) : undefined}
+        />
       ))}
-      <Text style={styles.caption}>{caption(rows, seconds)}</Text>
+      {seconds == null ? undefined : (
+        <Text style={styles.caption}>{caption(state.rows, seconds)}</Text>
+      )}
     </View>
   )
 }
@@ -664,11 +274,13 @@ function Results({ rows, seconds }: { rows: Row[]; seconds: number }): React.JSX
  * which one produced the numbers.
  */
 export function BenchmarkScreen(): React.JSX.Element {
-  const [result, setResult] = React.useState<{ rows: Row[]; seconds: number } | undefined>(
-    undefined,
-  )
+  const [state, setState] = React.useState<RunState | undefined>(undefined)
+  const [seconds, setSeconds] = React.useState<number | undefined>(undefined)
   const [running, setRunning] = React.useState(false)
+  const [failure, setFailure] = React.useState<string | undefined>(undefined)
   const signal = React.useRef<RunSignal | undefined>(undefined)
+  // a failing run reports rows reached before the setter commits them
+  const latest = React.useRef<RunState | undefined>(undefined)
 
   // leaving the tab abandons the run, so the thread goes back to the app instead of finishing
   // measurements nothing will read
@@ -683,18 +295,40 @@ export function BenchmarkScreen(): React.JSX.Element {
   const run = React.useCallback(() => {
     const current: RunSignal = { cancelled: false }
     signal.current = current
+    latest.current = undefined
     setRunning(true)
-    setResult(undefined)
-    // a frame, so the spinner paints before the first workload takes the thread
+    setState(undefined)
+    setSeconds(undefined)
+    setFailure(undefined)
+    const startedAt = Date.now()
+    // a frame, so the disabled button paints before the workload starts
     requestAnimationFrame(() => {
-      void runBenchmark(current)
+      void runBenchmark(current, (next) => {
+        latest.current = next
+        if (!current.cancelled) {
+          setState(next)
+        }
+      })
         .then((measured) => {
           if (measured == null) {
             return
           }
-          setResult(measured)
+          setSeconds(measured.seconds)
           console.log(toMarkdown(measured.rows, measured.seconds))
           logPayload(toPayload(measured.rows, measured.seconds))
+        })
+        .catch((error: unknown) => {
+          console.error('benchmark run failed', error)
+          const rows = latest.current?.rows ?? []
+          setFailure(
+            `${describe(error)} after ${rows.length} of ${latest.current?.plan.length ?? 0}`,
+          )
+          if (rows.length === 0) {
+            return
+          }
+          const elapsed = (Date.now() - startedAt) / 1000
+          console.log(toMarkdown(rows, elapsed))
+          logPayload(toPayload(rows, elapsed))
         })
         .finally(() => {
           // an abandoned run must not touch the state of a screen that is gone
@@ -716,8 +350,8 @@ export function BenchmarkScreen(): React.JSX.Element {
       <Pressable style={styles.button} onPress={run} disabled={running}>
         <Text style={styles.buttonLabel}>{running ? 'Running' : 'Run benchmark'}</Text>
       </Pressable>
-      {running ? <ActivityIndicator style={styles.spinner} /> : undefined}
-      {result == null ? undefined : <Results rows={result.rows} seconds={result.seconds} />}
+      {state == null ? undefined : <Results state={state} seconds={seconds} />}
+      {failure == null ? undefined : <Text style={styles.failure}>Run failed: {failure}</Text>}
     </ScrollView>
   )
 }
@@ -736,27 +370,21 @@ const styles = StyleSheet.create({
     backgroundColor: '#1f6feb',
   },
   buttonLabel: { color: 'white', fontSize: 16, textAlign: 'center' },
-  spinner: { marginTop: 16 },
   results: { marginTop: 20, gap: 10 },
-  summary: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'baseline',
-    justifyContent: 'space-between',
-    gap: 8,
-  },
-  summaryFactor: { fontSize: 17, fontWeight: '700', color: HIGHLIGHT },
   summaryMeta: { fontSize: 13, color: MUTED },
   card: { borderWidth: 1, borderColor: '#e4e4e4', borderRadius: 10, padding: 12, gap: 10 },
   cardHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
   workload: { flex: 1, fontSize: 14, fontWeight: '600' },
-  equivalent: { fontSize: 13, fontWeight: '700', color: HIGHLIGHT },
-  differs: { fontSize: 13, fontWeight: '700', color: '#b3261e' },
+  workloadWaiting: { flex: 1, fontSize: 14, color: MUTED },
+  equivalent: { fontSize: 15, fontWeight: '700', color: HIGHLIGHT },
+  differs: { fontSize: 15, fontWeight: '700', color: '#b3261e' },
+  waiting: { fontSize: 15, color: MUTED },
   measures: { flexDirection: 'row', gap: 12 },
   measure: { flex: 1, gap: 2 },
   measureLabel: { fontSize: 11, color: MUTED },
   measureValue: { fontSize: 15, fontVariant: ['tabular-nums'] },
   factor: { fontSize: 15, fontWeight: '700', color: HIGHLIGHT, fontVariant: ['tabular-nums'] },
   detail: { fontSize: 12, color: MUTED },
+  failure: { fontSize: 13, color: '#b3261e', marginTop: 12 },
   caption: { fontSize: 11, lineHeight: 16, color: MUTED, marginTop: 6 },
 })
