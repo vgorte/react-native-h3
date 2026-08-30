@@ -72,3 +72,6 @@ docs/research/
 Pods/
 *.xcworkspace
 !apps/example/ios/*.xcworkspace
+
+# Claude Code skills, worktrees and local settings stay on this machine
+.claude/
