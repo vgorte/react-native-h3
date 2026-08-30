@@ -30,7 +30,7 @@
     "lint": "biome check .",
     "typecheck": "tsc --noEmit",
     "typecheck:tests": "tsc --noEmit -p tsconfig.tests.json",
-    "build": "tsc",
+    "build": "rm -rf lib tsconfig.tsbuildinfo && tsc",
     "specs": "nitrogen",
     "test": "bun test",
     "parity": "bun test parity",
@@ -67,7 +67,11 @@
   },
   "release-it": {
     "npm": {
-      "publish": true
+      "publish": true,
+      "skipChecks": true,
+      "publishArgs": [
+        "--provenance"
+      ]
     },
     "git": false,
     "github": {

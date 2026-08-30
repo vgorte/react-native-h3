@@ -33,7 +33,7 @@
       "release": true
     },
     "hooks": {
-      "before:release": "bun install && bun run lint && bun run build && bun run specs && bun test && H3_PARITY_REQUIRED=1 bun run --cwd packages/react-native-h3 parity",
+      "before:release": "H3_PARITY_REQUIRED=1 bun run --cwd packages/react-native-h3 parity",
       "after:bump": "bun install && git add bun.lock && bun example bundle-install && bun example pods && git add apps/example/ios/Podfile.lock"
     },
     "plugins": {

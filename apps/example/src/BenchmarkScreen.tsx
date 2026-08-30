@@ -26,6 +26,8 @@ interface Payload {
   }[]
   measuredOn: {
     platform: string
+    // Android only: iOS exposes no model, and the key is then absent from the JSON
+    device?: string
     osVersion: string
     build: string
     reactNative: string
@@ -41,6 +43,14 @@ interface Payload {
 // which this app's empty `types` list (`tsconfig.json`) would not provide.
 function isDebugBuild(): boolean {
   return (globalThis as { __DEV__?: boolean }).__DEV__ === true
+}
+
+function deviceModel(): string | undefined {
+  if (Platform.OS !== 'android') {
+    return undefined
+  }
+  const { Manufacturer, Model } = Platform.constants
+  return `${Manufacturer} ${Model}`
 }
 
 function reactNativeVersion(): string {
@@ -142,6 +152,7 @@ function toPayload(rows: Row[], seconds: number): Payload {
     })),
     measuredOn: {
       platform: Platform.OS,
+      device: deviceModel(),
       osVersion: String(Platform.Version),
       build: isDebugBuild() ? 'Debug' : 'Release',
       reactNative: reactNativeVersion(),

@@ -7,6 +7,8 @@
   "files": {
     "includes": [
       "**",
+      "!**/.claude",
+      "!**/.mcp.json",
       "!**/nitrogen/generated",
       "!**/third_party",
       "!**/lib",
