@@ -22,6 +22,7 @@ const H3_TARBALL = `https://github.com/uber/h3/archive/refs/tags/${H3_TAG}.tar.g
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const VENDOR = join(HERE, '..', 'packages', 'react-native-nitro-h3', 'third_party', 'h3')
+const README = join(HERE, '..', 'packages', 'react-native-nitro-h3', 'README.md')
 
 async function download(into: string): Promise<string> {
   const response = await fetch(H3_TARBALL)
@@ -108,6 +109,26 @@ async function buildVendorTree(source: string, target: string): Promise<void> {
   )
 }
 
+/**
+ * Points the README's vendored-H3 badge at `H3_TAG`, so a version bump cannot leave it stale.
+ * In check mode a stale badge fails instead of being rewritten.
+ */
+async function syncReadmeBadge(check: boolean): Promise<void> {
+  const readme = await readFile(README, 'utf8')
+  const updated = readme
+    .replace(/(github\.com\/uber\/h3\/releases\/tag\/)v\d+\.\d+\.\d+/, `$1${H3_TAG}`)
+    .replace(/(img\.shields\.io\/badge\/h3-)v\d+\.\d+\.\d+/, `$1${H3_TAG}`)
+    .replace(/(alt="Vendored H3 )v\d+\.\d+\.\d+/, `$1${H3_TAG}`)
+  if (!updated.includes(`img.shields.io/badge/h3-${H3_TAG}-`)) {
+    throw new Error('The README has no vendored-H3 badge; restore it before vendoring')
+  }
+  if (updated === readme) return
+  if (check) {
+    throw new Error(`The README badge does not say ${H3_TAG}; run \`bun run vendor:h3\``)
+  }
+  await writeFile(README, updated)
+}
+
 async function main(): Promise<void> {
   const check = process.argv.includes('--check')
   const scratch = await mkdtemp(join(tmpdir(), 'vendor-h3-'))
@@ -129,6 +150,7 @@ async function main(): Promise<void> {
     } else {
       process.stdout.write(`Vendored h3 ${H3_TAG} into ${VENDOR}\n`)
     }
+    await syncReadmeBadge(check)
   } finally {
     await rm(scratch, { recursive: true, force: true })
   }
