@@ -1,3 +1,4 @@
+import { describe, expect, test } from 'react-native-harness'
 import {
   cellsToMultiPolygon,
   cellsToMultiPolygonAsync,
@@ -9,8 +10,7 @@ import {
   polygonToCellsAsync,
   uncompactCells,
   uncompactCellsAsync,
-} from 'react-native-h3'
-import { describe, expect, test } from 'react-native-harness'
+} from 'react-native-nitro-h3'
 
 const SAN_FRANCISCO_BOX: [lat: number, lng: number][][] = [
   [

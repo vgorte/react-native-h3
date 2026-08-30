@@ -127,7 +127,7 @@ function caption(rows: Row[], seconds: number): string {
 
 function toMarkdown(rows: Row[], seconds: number): string {
   const header =
-    '| Workload | react-native-h3 | h3-js | Equivalent | Result |\n|---|---:|---:|:-:|---|'
+    '| Workload | react-native-nitro-h3 | h3-js | Equivalent | Result |\n|---|---:|---:|:-:|---|'
   const body = rows
     .map((row) => {
       const equivalent = row.equivalent ? 'yes' : 'no'
@@ -234,7 +234,7 @@ function WorkloadCard({
       </View>
       {row == null ? undefined : (
         <View style={styles.measures}>
-          <Measure label="react-native-h3" value={formatStats(row.stats, row.singleCall)} />
+          <Measure label="react-native-nitro-h3" value={formatStats(row.stats, row.singleCall)} />
           <Measure label="h3-js" value={formatReference(row)} />
           <View style={styles.measure}>
             <Text style={styles.measureLabel}>factor</Text>

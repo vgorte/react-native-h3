@@ -18,10 +18,10 @@ output file: `apps/example/benchmark.json`.
 
 ## 🔬 Methodology
 
-To ensure apples-to-apples comparisons, both libraries (`react-native-h3` and `h3-js`) are imported
-into the exact same Benchmark screen (`apps/example/src/BenchmarkScreen.tsx`). They run inside the
-same app, the same Hermes instance, against the exact same inputs, just seconds apart. Nothing is
-compared across different processes, machines, or days.
+To ensure apples-to-apples comparisons, both libraries (`react-native-nitro-h3` and `h3-js`) are
+imported into the exact same Benchmark screen (`apps/example/src/BenchmarkScreen.tsx`). They run
+inside the same app, the same Hermes instance, against the exact same inputs, just seconds apart.
+Nothing is compared across different processes, machines, or days.
 
 ### 1. Execution Strictness
 
@@ -76,8 +76,8 @@ one figure, measured on one device on one day.
   marshalling is the cost this package removes, so the row belongs in the chart, but it says more
   about the boundary than about `compactCells`.
 - **Paired Bars:** `img/benchmark.svg` shows the four README workloads (`W1`, `W3`, `W4` and `W7`)
-  as paired bars, `react-native-h3` above `h3-js`, each pair scaled linearly so the `h3-js` bar
-  spans the full width. The remaining workloads are in the table below.
+  as paired bars, `react-native-nitro-h3` above `h3-js`, each pair scaled linearly so the `h3-js`
+  bar spans the full width. The remaining workloads are in the table below.
 - **Where the Headline Comes From:** `bun run benchmark:svg` prints the widest factor of a payload
   as a `HEADLINE` line; the screen reports rows and their per-row factors and nothing else. Which
   factor deserves a headline is a judgement made when the numbers are published, not by the app that
@@ -110,9 +110,9 @@ resolution actually measured. On the run below the target resolution 12 fits, at
 ## 📈 Detailed Results
 
 All timing figures represent the median execution time in milliseconds. The speedup factor is the
-`h3-js` median divided by the `react-native-h3` median.
+`h3-js` median divided by the `react-native-nitro-h3` median.
 
-| Workload | react-native-h3 | h3-js | Speedup | p95 (RN) | p95 (JS) | Eq. | Detail |
+| Workload | react-native-nitro-h3 | h3-js | Speedup | p95 (RN) | p95 (JS) | Eq. | Detail |
 |---|---:|---:|---:|---:|---:|:-:|---|
 | **W0:** `latLngToCell` (per call) | **0.0038 ms** | 0.0292 ms | **7.7×** | 0.0053 ms | 0.0309 ms | ✅ | 1,000 distinct inputs, 0.0002 ms baseline subtracted |
 | **W1:** `latLngToCell` (100k) | **76.3 ms** | 937.0 ms | **12.3×** | 76.5 ms | 945.7 ms | ✅ | Returns `89283082803ffff` |
@@ -174,12 +174,12 @@ Two conditions are worth naming because they shape the numbers above:
 ## 📦 The Size Ledger
 
 Replacing `h3-js` trades JavaScript for machine code. Measured on 2026-08-30 from `apps/example`
-with React Native 0.87.0, Hermes 250829098.0.16, `h3-js` 4.5.0 and `react-native-h3` 0.1.0:
+with React Native 0.87.0, Hermes 250829098.0.16, `h3-js` 4.5.0 and `react-native-nitro-h3` 0.1.0:
 
 | Item | Size |
 |---|---:|
 | Hermes bytecode dropped with `h3-js` | 271 kB |
-| Hermes bytecode added by the `react-native-h3` JavaScript side | 39 kB |
+| Hermes bytecode added by the `react-native-nitro-h3` JavaScript side | 39 kB |
 | `libNitroH3.so`, `arm64-v8a` | 794 kB |
 | `libNitroH3.so`, `armeabi-v7a` | 583 kB |
 | `libNitroH3.so`, `x86_64` | 813 kB |
@@ -197,7 +197,7 @@ four; an app with no other Nitro module also carries `libNitroModules.so` from
 
 Neither library caps a request by default. `h3-js` bounds only its own WebAssembly allocation at
 2 GB, building JavaScript arrays of hexadecimal strings on top of it without a bound, and it offers
-no setting to change that. `react-native-h3` allocates whatever is asked for too, until
+no setting to change that. `react-native-nitro-h3` allocates whatever is asked for too, until
 `configure({ maxCellCount })` sets a Cell Ceiling; from then on an oversized request is refused
 before anything is allocated.
 
@@ -218,7 +218,7 @@ the array of strings it builds forces even an M5 Pro into swap.
 > **⚠️ The Mobile Reality:** A phone has neither that memory nor those seconds to spare, and the
 > allocation happens inside the app's own heap. When it fails, the OS kills the process; no
 > JavaScript `try/catch` sees it. That is exactly what a Cell Ceiling guards against:
-> `react-native-h3` sizes every result up front, so a ceiling can refuse the request with a
+> `react-native-nitro-h3` sizes every result up front, so a ceiling can refuse the request with a
 > catchable `H3Error`.
 
 ## 🔄 Regenerating the Benchmarks

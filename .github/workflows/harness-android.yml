@@ -4,14 +4,14 @@ on:
   workflow_dispatch:
   pull_request:
     paths:
-      - 'packages/react-native-h3/cpp/**'
-      - 'packages/react-native-h3/third_party/**'
-      - 'packages/react-native-h3/nitrogen/generated/**'
-      - 'packages/react-native-h3/android/**'
-      - 'packages/react-native-h3/src/**'
-      - 'packages/react-native-h3/parity/**'
-      - 'packages/react-native-h3/*.podspec'
-      - 'packages/react-native-h3/nitro.json'
+      - 'packages/react-native-nitro-h3/cpp/**'
+      - 'packages/react-native-nitro-h3/third_party/**'
+      - 'packages/react-native-nitro-h3/nitrogen/generated/**'
+      - 'packages/react-native-nitro-h3/android/**'
+      - 'packages/react-native-nitro-h3/src/**'
+      - 'packages/react-native-nitro-h3/parity/**'
+      - 'packages/react-native-nitro-h3/*.podspec'
+      - 'packages/react-native-nitro-h3/nitro.json'
       - 'apps/example/**'
       - 'bun.lock'
       - '.github/workflows/harness-android.yml'

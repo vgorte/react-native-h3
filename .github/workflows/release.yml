@@ -18,7 +18,7 @@ on:
       - '.github/workflows/release.yml'
       - 'scripts/release.sh'
       - 'package.json'
-      - 'packages/react-native-h3/package.json'
+      - 'packages/react-native-nitro-h3/package.json'
 
 permissions:
   contents: read
