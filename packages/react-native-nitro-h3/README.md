@@ -61,9 +61,7 @@ a `k=20` disk of 1,261 cells, with every result verified identical to `h3-js`'s.
 > **Methodology:** Measured on a Samsung Galaxy S23 (`SM-S911U1`, Android 16, API 36) in a Release
 > build, React Native 0.87.0 with Hermes 250829098.0.16, against `h3-js` 4.5.0, on 2026-08-29: both
 > libraries in the same app and the same Hermes instance, medians of 20 runs, three for
-> `polygonToCells`, after one warm-up, every result compared for equivalence. One run on one device,
-> which reaches light thermal throttling partway through, so read a factor as an order of magnitude
-> rather than a constant. Full data and method:
+> `polygonToCells`, after one warm-up, every result compared for equivalence. Full data and method:
 > [docs/benchmark.md](https://github.com/vgorte/react-native-nitro-h3/blob/main/docs/benchmark.md).
 
 ## 📦 Installation
