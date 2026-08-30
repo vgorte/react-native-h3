@@ -16,7 +16,8 @@ import type { ContainmentModeName, ContainmentModeValue, LatLng, Ring } from './
  * @param res The resolution, `0` to `15`.
  * @returns The cells covering the polygon, as a view onto the native buffer.
  * @throws {@linkcode H3Error} if a point is not a finite `[latitude, longitude]` pair, the
- * resolution is out of range, or the result would exceed the cell ceiling.
+ * resolution is out of range, or the result would exceed a cell ceiling set with
+ * {@linkcode configure}.
  */
 export async function polygonToCellsAsync(rings: Ring[], res: number): Promise<BigUint64Array> {
   try {
@@ -39,7 +40,7 @@ export async function polygonToCellsAsync(rings: Ring[], res: number): Promise<B
  * the matching h3-js name such as `'containmentCenter'`.
  * @returns The cells covering the polygon, as a view onto the native buffer.
  * @throws {@linkcode H3Error} if the polygon, the resolution or the mode is invalid, or the result
- * would exceed the cell ceiling.
+ * would exceed a cell ceiling set with {@linkcode configure}.
  */
 export async function polygonToCellsExperimentalAsync(
   rings: Ring[],
@@ -81,7 +82,7 @@ export async function cellsToMultiPolygonAsync(cells: BigUint64Array): Promise<L
  * @param cells A compacted cell set.
  * @param res The resolution to expand to, no finer than any cell in the set.
  * @throws {@linkcode H3Error} if the set is invalid, the resolution is out of range, or the result
- * would exceed the cell ceiling.
+ * would exceed a cell ceiling set with {@linkcode configure}.
  */
 export async function uncompactCellsAsync(
   cells: BigUint64Array,

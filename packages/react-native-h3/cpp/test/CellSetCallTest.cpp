@@ -8,7 +8,6 @@
 #include <gtest/gtest.h>
 
 #include <cstdint>
-#include <limits>
 #include <stdexcept>
 #include <string>
 
@@ -108,17 +107,6 @@ TEST(CellSetCall, DoesNotCallTheFillWhenTheSizeQueryThrows) {
   EXPECT_FALSE(filled);
 }
 
-TEST(CellSetCall, RefusesASizeAboveTheCeiling) {
-  try {
-    h3shapes::fillCompactedCells([] { return h3shapes::maxCellCount() + 1; }, [](uint64_t*) { return E_SUCCESS; });
-    FAIL() << "expected an exception";
-  } catch (const std::runtime_error& error) {
-    EXPECT_EQ(std::string(error.what()), "The requested result of 4000001 cells exceeds the cell limit of 4000000, "
-                                         "which guards against exhausting device memory. Raise it with configure({ "
-                                         "maxCellCount })");
-  }
-}
-
 TEST(CellSetCall, RefusesANegativeSize) {
   EXPECT_THROW(h3shapes::fillCompactedCells([] { return int64_t{-1}; }, [](uint64_t*) { return E_SUCCESS; }),
                std::runtime_error);
@@ -145,12 +133,6 @@ TEST(CellSetCall, FillExactDoesNotCompact) {
   EXPECT_EQ(buffer.data()[121], 0x80f3fffffffffffULL);
 }
 
-TEST(CellSetCall, FillExactStillRejectsAnOversizeRequest) {
-  EXPECT_THROW(
-      h3shapes::fillExactCells([] { return h3shapes::maxCellCount() + 1; }, [](uint64_t*) { return E_SUCCESS; }),
-      std::runtime_error);
-}
-
 TEST(CellSetCall, HandlesAZeroSizedResult) {
   auto buffer = h3shapes::fillCompactedCells([] { return int64_t{0}; }, [](uint64_t*) { return E_SUCCESS; });
   EXPECT_EQ(buffer.capacity(), 0);
@@ -160,12 +142,19 @@ TEST(CellSetCall, HandlesAZeroSizedResult) {
 /** Restores the ceiling after every case, because it is process-global and other suites read it. */
 class CellSetCallCeiling : public ::testing::Test {
 protected:
-  void TearDown() override { h3shapes::setMaxCellCount(h3shapes::kDefaultMaxCellCount); }
+  void TearDown() override { h3shapes::setMaxCellCount(h3shapes::kNoCellLimit); }
 };
 
-TEST_F(CellSetCallCeiling, StartsAtTheDefault) {
-  EXPECT_EQ(h3shapes::kDefaultMaxCellCount, 4000000);
-  EXPECT_EQ(h3shapes::maxCellCount(), h3shapes::kDefaultMaxCellCount);
+/**
+ * One cell above the ceiling that used to be the default, so a case proves the ceiling and not the
+ * size.
+ */
+constexpr int64_t kFourMillionAndOne = 4000001;
+
+TEST_F(CellSetCallCeiling, StartsWithNoLimit) {
+  EXPECT_EQ(h3shapes::maxCellCount(), h3shapes::kNoCellLimit);
+  auto buffer = h3shapes::allocateFor([] { return kFourMillionAndOne; });
+  EXPECT_EQ(buffer.capacity(), kFourMillionAndOne);
 }
 
 TEST_F(CellSetCallCeiling, HonoursALoweredCeiling) {
@@ -181,17 +170,36 @@ TEST_F(CellSetCallCeiling, NamesTheRequestAndTheCeilingInTheMessage) {
     h3shapes::allocateFor([] { return int64_t{11}; });
     FAIL() << "expected an exception";
   } catch (const std::runtime_error& error) {
-    EXPECT_EQ(std::string(error.what()), "The requested result of 11 cells exceeds the cell limit of 10, which "
-                                         "guards against exhausting device memory. Raise it with configure({ "
-                                         "maxCellCount })");
+    EXPECT_EQ(std::string(error.what()), "The requested result of 11 cells exceeds the cell limit of 10 set with "
+                                         "configure({ maxCellCount }). Raise or remove the limit to allow it.");
   }
 }
 
-TEST_F(CellSetCallCeiling, IsSwitchedOffByTheLargestInt64) {
-  h3shapes::setMaxCellCount(std::numeric_limits<int64_t>::max());
-  // the smallest request the default would have refused, so this proves the ceiling and not the size
-  auto buffer = h3shapes::allocateFor([] { return h3shapes::kDefaultMaxCellCount + 1; });
-  EXPECT_EQ(buffer.capacity(), h3shapes::kDefaultMaxCellCount + 1);
+TEST_F(CellSetCallCeiling, RefusesAFillAboveTheCeiling) {
+  h3shapes::setMaxCellCount(10);
+  bool filled = false;
+  EXPECT_THROW(h3shapes::fillCompactedCells([] { return int64_t{11}; },
+                                            [&](uint64_t*) {
+                                              filled = true;
+                                              return E_SUCCESS;
+                                            }),
+               std::runtime_error);
+  EXPECT_FALSE(filled);
+}
+
+TEST_F(CellSetCallCeiling, FillExactStillRejectsAnOversizeRequest) {
+  h3shapes::setMaxCellCount(10);
+  EXPECT_THROW(h3shapes::fillExactCells([] { return int64_t{11}; }, [](uint64_t*) { return E_SUCCESS; }),
+               std::runtime_error);
+}
+
+TEST_F(CellSetCallCeiling, IsRemovedAgainByTheNoLimitSentinel) {
+  h3shapes::setMaxCellCount(10);
+  EXPECT_THROW(h3shapes::allocateFor([] { return kFourMillionAndOne; }), std::runtime_error);
+
+  h3shapes::setMaxCellCount(h3shapes::kNoCellLimit);
+  auto buffer = h3shapes::allocateFor([] { return kFourMillionAndOne; });
+  EXPECT_EQ(buffer.capacity(), kFourMillionAndOne);
 }
 
 } // namespace

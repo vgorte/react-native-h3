@@ -18,6 +18,8 @@
 
 #include "core/CellBuffer.hpp"
 #include "core/Geometry.hpp"
+#include "core/H3ErrorMapping.hpp"
+#include "core/Validation.hpp"
 #include "ops/Edges.hpp"
 #include "ops/Hierarchy.hpp"
 #include "ops/Indexing.hpp"
@@ -28,6 +30,7 @@
 #include "ops/Traversal.hpp"
 #include "ops/Units.hpp"
 #include "ops/Vertexes.hpp"
+#include "shapes/CellSetCall.hpp"
 
 namespace {
 
@@ -90,6 +93,25 @@ uint64_t cellArg(const Args& args, size_t index) {
 
 double numArg(const Args& args, size_t index) {
   return parseNumber(rawArg(args, index));
+}
+
+/**
+ * Narrows a cell ceiling by the rules `HybridH3::setMaxCellCount` applies, so the probe cannot be
+ * put into a state `configure({ maxCellCount })` would have refused.
+ *
+ * The probe links no Nitro header, so it cannot call that method; repeating the two rules is what
+ * keeps a control request from reaching `h3shapes::setMaxCellCount` unvalidated.
+ */
+int64_t parseCellLimit(double value) {
+  static constexpr const char* kMessage = "maxCellCount must be a positive integer or Infinity";
+  if (std::isinf(value) && value > 0.0) {
+    return h3shapes::kNoCellLimit;
+  }
+  const int64_t limit = h3core::toInt64(value, kMessage);
+  if (limit < 1) {
+    h3core::throwInvalidArgument(kMessage);
+  }
+  return limit;
 }
 
 std::vector<uint64_t> cellsArg(const Args& args, size_t index) {
@@ -427,6 +449,18 @@ int main() {
 
     if (op == "__ops") {
       std::cout << "{\"ok\":" << listOps() << "}\n" << std::flush;
+      continue;
+    }
+
+    // the sink `configure({ maxCellCount })` writes to, and a control request rather than an
+    // operation, so it stays out of `__ops` and out of the surface the parity suite compares
+    if (op == "__maxCellCount") {
+      try {
+        h3shapes::setMaxCellCount(parseCellLimit(numArg(tokens, 0)));
+        std::cout << "{\"ok\":null}\n" << std::flush;
+      } catch (const std::exception& error) {
+        std::cout << "{\"err\":" << jsonString(error.what()) << "}\n" << std::flush;
+      }
       continue;
     }
 
