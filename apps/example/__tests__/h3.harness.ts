@@ -1,12 +1,14 @@
 import { expect, test } from 'react-native-harness'
 import {
   ContainmentMode,
+  cellsToLatLngs,
   cellsToMultiPolygon,
   cellToBoundary,
   cellToLatLng,
   getResolution,
   gridDisk,
   H3Error,
+  latLngsToCells,
   latLngToCell,
   polygonToCellsExperimental,
 } from 'react-native-nitro-h3'
@@ -151,4 +153,44 @@ test('an unknown containment mode name is rejected by the C layer', () => {
   // the name resolves to `CONTAINMENT_INVALID`, so H3 words the rejection and h3-js's code matches.
   expect((thrown as H3Error).message).toBe('Mode or flags argument was not valid (code: 15)')
   expect((thrown as H3Error).code).toBe(15)
+})
+
+test('latLngsToCells equals element-wise latLngToCell across the bridge', () => {
+  const coords = new Float64Array([37.7749, -122.4194, 48.8566, 2.3522, -33.8688, 151.2093])
+  const cells = latLngsToCells(coords, 9)
+  expect(cells).toBeInstanceOf(BigUint64Array)
+  expect(cells.length).toBe(3)
+  for (let i = 0; i < 3; i++) {
+    // exact equality: the batch runs the same native scalar, so a lat/lng swap cannot pass
+    expect(cells[i]).toBe(latLngToCell(coords[2 * i], coords[2 * i + 1], 9))
+  }
+})
+
+test('cellsToLatLngs equals element-wise cellToLatLng across the bridge', () => {
+  const cells = new BigUint64Array([SAN_FRANCISCO_RES_9, PENTAGON_RES_1])
+  const centres = cellsToLatLngs(cells)
+  expect(centres).toBeInstanceOf(Float64Array)
+  expect(centres.length).toBe(4)
+  for (let i = 0; i < cells.length; i++) {
+    const centre = cellToLatLng(cells[i] as bigint)
+    expect(centres[2 * i]).toBe(centre.lat)
+    expect(centres[2 * i + 1]).toBe(centre.lng)
+  }
+})
+
+test('a batch failure arrives as H3Error naming the element', () => {
+  let thrown: unknown
+  try {
+    cellsToLatLngs(new BigUint64Array([SAN_FRANCISCO_RES_9, 1n]))
+  } catch (error) {
+    thrown = error
+  }
+  expect(thrown).toBeInstanceOf(H3Error)
+  expect((thrown as H3Error).code).toBe(5)
+  expect((thrown as H3Error).message).toBe('cells[1]: Cell argument was not valid (code: 5)')
+})
+
+test('an empty batch answers empty in both directions', () => {
+  expect(latLngsToCells(new Float64Array(0), 9).length).toBe(0)
+  expect(cellsToLatLngs(new BigUint64Array(0)).length).toBe(0)
 })
