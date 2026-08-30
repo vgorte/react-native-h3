@@ -30,7 +30,7 @@
     "lint": "biome check .",
     "typecheck": "tsc --noEmit",
     "typecheck:tests": "tsc --noEmit -p tsconfig.tests.json",
-    "build": "tsc",
+    "build": "rm -rf lib tsconfig.tsbuildinfo && tsc",
     "specs": "nitrogen",
     "test": "bun test",
     "parity": "bun test parity",
