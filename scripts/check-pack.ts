@@ -43,6 +43,14 @@ const ALWAYS_REQUIRED = [
   'third_party/h3/sources.json',
 ]
 
+/** Returns the names of `declare module` blocks in `dts` that target a package other than `ownName`. */
+export function foreignModuleDeclarations(dts: string, ownName: string): string[] {
+  const names = [...dts.matchAll(/^\s*declare\s+module\s+(['"])([^'"]+)\1/gm)].map(
+    (match) => match[2] as string,
+  )
+  return names.filter((name) => name !== ownName)
+}
+
 let cached: Promise<string[]> | undefined
 
 /** Returns every path `npm` would put in the tarball, and throws if a required one is absent. */
@@ -77,6 +85,25 @@ async function computePackList(): Promise<string[]> {
     throw new Error(
       `The npm tarball is missing ${missing.length} required file(s). A missing vendored source ` +
         `publishes without error and fails at the consumer's native build.\n  ${missing.join('\n  ')}`,
+    )
+  }
+
+  // a fork shipped `declare module "h3-js"` and overrode the real package's types everywhere
+  const ownName = JSON.parse(await readFile(join(PACKAGE, 'package.json'), 'utf8')).name as string
+  const declarations = await Promise.all(
+    files
+      .filter((file) => file.endsWith('.d.ts'))
+      .map(async (file) => ({
+        file,
+        foreign: foreignModuleDeclarations(await readFile(join(PACKAGE, file), 'utf8'), ownName),
+      })),
+  )
+  const offending = declarations.filter(({ foreign }) => foreign.length > 0)
+  if (offending.length > 0) {
+    throw new Error(
+      'The npm tarball contains type declarations for foreign modules. A packed ' +
+        "`declare module` overrides the named package's types in every consumer.\n  " +
+        offending.map(({ file, foreign }) => `${file}: ${foreign.join(', ')}`).join('\n  '),
     )
   }
 

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { checkPackList } from '../../../scripts/check-pack'
+import { checkPackList, foreignModuleDeclarations } from '../../../scripts/check-pack'
 
 describe('npm pack list', () => {
   test('carries every vendored C source', async () => {
@@ -34,5 +34,15 @@ describe('npm pack list', () => {
     const files = await checkPackList()
     expect(files.some((file) => file.startsWith('cpp/test/'))).toBe(false)
     expect(files.some((file) => file.startsWith('__tests__/'))).toBe(false)
+  })
+
+  test('flags a type declaration for a foreign module', () => {
+    const dts = 'declare module "h3-js" {\n  export function latLngToCell(): string\n}\n'
+    expect(foreignModuleDeclarations(dts, 'react-native-nitro-h3')).toEqual(['h3-js'])
+  })
+
+  test('accepts tsc output and a self-named module declaration', () => {
+    expect(foreignModuleDeclarations('export declare const x: number\n', 'a')).toEqual([])
+    expect(foreignModuleDeclarations('declare module "a" {}\n', 'a')).toEqual([])
   })
 })
