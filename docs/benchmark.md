@@ -103,7 +103,8 @@ README rests on four; the rest keep those four in context.
 | `W10` | `gridPathCells`, Berlin to Hamburg at res 9, 1,000 calls per pass |
 
 `W8` sizes its result with `cellToChildrenSize` before the run and targets the highest resolution
-that stays under the Cell Ceiling, so the row label names the resolution actually measured.
+that stays inside a 4,000,000 cell budget the benchmark sets for itself, so the row label names the
+resolution actually measured. On the run below the target resolution 12 fits, at 410,914 cells.
 
 ## 📈 Detailed Results
 

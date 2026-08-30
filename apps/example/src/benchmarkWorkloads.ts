@@ -60,8 +60,8 @@ const UNCOMPACT_RES = 12
 const CHILDREN_PARENT_RES = 5
 const CHILDREN_RES = 10
 const PATH_RES = 9
-// the package's default cell ceiling, which `configure({ maxCellCount })` would move
-const CELL_CEILING = 4_000_000
+// the benchmark's own budget, 32 MB packed, so `W8` cannot exhaust the phone's heap
+const UNCOMPACT_BUDGET = 4_000_000
 
 const OWN = 'react-native-h3'
 const REFERENCE = 'h3-js'
@@ -363,8 +363,7 @@ function singleCallInputs(): LatLng[] {
   return inputs
 }
 
-// the ceiling rejects an oversized result before the work starts, so the row drops a resolution
-// instead of throwing
+// both engines allocate whatever is asked for, so the row drops a resolution to stay in budget
 function fittingResolution(cells: BigUint64Array, target: number): number {
   // nothing below the input's finest cell is left to uncompact
   let floor = 0
@@ -376,7 +375,7 @@ function fittingResolution(cells: BigUint64Array, target: number): number {
     for (let index = 0; index < cells.length; index++) {
       size += cellToChildrenSize(cells[index] as bigint, res)
     }
-    if (size <= CELL_CEILING) {
+    if (size <= UNCOMPACT_BUDGET) {
       return res
     }
   }
@@ -388,7 +387,7 @@ export async function runBenchmark(
   onState: (state: RunState) => void,
 ): Promise<{ rows: Row[]; seconds: number } | undefined> {
   const started = now()
-  // plan starts at the target; the ceiling sets resolution after setup
+  // plan starts at the target; the budget sets resolution after setup
   let plan = planOf(UNCOMPACT_RES)
   const rows: Row[] = []
   let index = 0
