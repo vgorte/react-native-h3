@@ -28,8 +28,9 @@ compared across different processes, machines, or days.
 - **Release Builds Only:** A Debug build slows the native side several times over, so its numbers
   are not comparable. The screen reads `__DEV__` and records `Debug` or `Release` in the payload,
   and `bun run benchmark:svg` refuses a Debug payload.
-- **Detailed Telemetry:** The payload records `measuredOn` metadata (platform, OS, React Native and
-  Hermes versions, h3-js version, date, warm-up count, duration) written by the screen, not by hand.
+- **Detailed Telemetry:** The payload records `measuredOn` metadata (platform, device model on
+  Android, OS, React Native and Hermes versions, h3-js version, date, warm-up count, duration)
+  written by the screen, not by hand.
 
 ### 2. The Measurement Loop
 
@@ -170,6 +171,28 @@ Two conditions are worth naming because they shape the numbers above:
   times a single call rather than a pass. Both of its medians, the native one and the `h3-js` one,
   are single-sample figures measured from that state.
 
+## 📦 The Size Ledger
+
+Replacing `h3-js` trades JavaScript for machine code. Measured on 2026-08-30 from `apps/example`
+with React Native 0.87.0, Hermes 250829098.0.16, `h3-js` 4.5.0 and `react-native-h3` 0.1.0:
+
+| Item | Size |
+|---|---:|
+| Hermes bytecode dropped with `h3-js` | 271 kB |
+| Hermes bytecode added by the `react-native-h3` JavaScript side | 39 kB |
+| `libNitroH3.so`, `arm64-v8a` | 794 kB |
+| `libNitroH3.so`, `armeabi-v7a` | 583 kB |
+| `libNitroH3.so`, `x86_64` | 813 kB |
+| `libNitroH3.so`, `x86` | 829 kB |
+
+The bytecode figures come from two Metro bundles of the example app that differ only in whether
+`apps/example/src/BenchmarkScreen.tsx` imports `h3-js`, each compiled with `hermesc -O -emit-binary
+-output-source-map` (React Native's own production flags). The native figures are the stored sizes
+in `apps/example/android/app/build/outputs/apk/release/app-release.apk`, of which 333 kB on
+`arm64-v8a` is executable code and the rest is read-only data, symbol tables and C++ unwind
+information. An Android App Bundle ships one ABI per device, so a phone pays one of those rows, not
+four; an app with no other Nitro module also carries `libNitroModules.so` from
+`react-native-nitro-modules` (980 kB on `arm64-v8a`). iOS was not measured.
 ## 💥 The Cost of Unbounded Requests (What the Cell Ceiling Guards)
 
 Neither library caps a request by default. `h3-js` bounds only its own WebAssembly allocation at
