@@ -191,9 +191,8 @@ int main() {
   // so the pair isolates what the native loop itself costs
   const std::vector<double> coords = scatteredCoordinates(kBatchPairs);
   const int64_t doubleCount = static_cast<int64_t>(coords.size());
-  results.push_back(measure("latLngsToCells over 100k pairs", 10, [&]() -> int64_t {
-    return h3ops::latLngsToCells(coords.data(), doubleCount, 9).count();
-  }));
+  results.push_back(measure("latLngsToCells over 100k pairs", 10,
+                            [&]() -> int64_t { return h3ops::latLngsToCells(coords.data(), doubleCount, 9).count(); }));
 
   results.push_back(measure("latLngToCell loop over 100k pairs", 10, [&]() -> int64_t {
     // the batch allocates its result once, so the loop gets a destination too
