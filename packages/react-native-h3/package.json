@@ -67,7 +67,11 @@
   },
   "release-it": {
     "npm": {
-      "publish": true
+      "publish": true,
+      "skipChecks": true,
+      "publishArgs": [
+        "--provenance"
+      ]
     },
     "git": false,
     "github": {

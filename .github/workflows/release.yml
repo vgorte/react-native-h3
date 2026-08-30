@@ -1,0 +1,123 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Rehearse only: run the gate and simulate the publish'
+        type: boolean
+        default: true
+      version:
+        description: 'Version to publish, e.g. 0.2.0 (required when "dry_run" is unchecked)'
+        type: string
+        required: false
+  # The release path is only exercised end to end when it is dispatched, so a pull request that
+  # touches the script, the workflow or either release-it config rehearses it instead.
+  pull_request:
+    paths:
+      - '.github/workflows/release.yml'
+      - 'scripts/release.sh'
+      - 'package.json'
+      - 'packages/react-native-h3/package.json'
+
+permissions:
+  contents: read
+
+# Two releases writing the same tag would race; rehearsals are cheap enough to queue behind it.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  dry-run:
+    name: Rehearse
+    if: github.event_name == 'pull_request' || inputs.dry_run
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14  # <-- pinned: `latest` turns an upstream release into a red build
+      # cmake is preinstalled on ubuntu-latest and needs no setup step, same as in `parity.yml`.
+      # The script installs, exports `H3_PARITY_PROBE` and builds the probe on its own.
+      #
+      # No npm identity is needed: the package sets `npm.skipChecks`, and `npm publish --dry-run`
+      # never reaches the registry. `GITHUB_TOKEN` only keeps release-it from falling back to a
+      # web-based GitHub Release in its simulated output.
+      - name: Dry-run the release
+        run: ./scripts/release.sh --dry-run --ci
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  publish:
+    name: Publish ${{ inputs.version }}
+    if: github.event_name == 'workflow_dispatch' && !inputs.dry_run
+    # macOS, not Ubuntu: the root `after:bump` hook refreshes `apps/example/ios/Podfile.lock` with
+    # `pod install`, and CocoaPods only ships on the macOS runner image. One run per release.
+    runs-on: macos-latest
+    # An empty environment today; it exists so a required reviewer can be added without touching
+    # this file.
+    environment: npm
+    permissions:
+      contents: write  # the version bump commit, the tag and the GitHub Release
+      id-token: write  # the OIDC token npm exchanges for a short-lived publish credential
+    steps:
+      # `inputs.version` reaches the shell through the environment, never through `${{ }}`
+      # interpolation: the regex below is unanchored at the end (it matches the one in
+      # `scripts/release.sh`), so an interpolated value could still carry a shell suffix.
+      - name: Refuse anything but a semver release from main
+        env:
+          VERSION: ${{ inputs.version }}
+          REF: ${{ github.ref }}
+        run: |
+          if [ "$REF" != 'refs/heads/main' ]; then
+            echo "releases run from main only, got ${REF}" >&2
+            exit 1
+          fi
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+            echo "pass an explicit version, e.g. 0.2.0" >&2
+            exit 1
+          fi
+
+      # The conventional-changelog plugin reads the history back to the previous tag
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Identify as the release bot
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14  # <-- pinned: `latest` turns an upstream release into a red build
+
+      # Bun does not publish; `npm publish` does, and trusted publishing needs npm >= 11.5.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Ensure npm can use trusted publishing
+        run: |
+          npm --version
+          min=11.5.0
+          got="$(npm --version)"
+          if [ "$(printf '%s\n%s\n' "$min" "$got" | sort -V | head -1)" != "$min" ]; then
+            npm install -g npm@latest
+            npm --version
+          fi
+
+      # cmake is preinstalled on ubuntu-latest and needs no setup step, same as in `parity.yml`.
+      #
+      # Authentication is npm Trusted Publishing: the `id-token: write` permission above is the
+      # whole credential, which is why no `NPM_TOKEN` appears anywhere. Switching back to a token
+      # means adding `NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}` to this step's env (plus a
+      # `registry-url` on the setup-node step above, so npm writes an `.npmrc` that reads it).
+      #
+      # `GITHUB_TOKEN` is what the root release-it uses to create the GitHub Release.
+      - name: Release
+        env:
+          VERSION: ${{ inputs.version }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bun release "$VERSION" --ci
