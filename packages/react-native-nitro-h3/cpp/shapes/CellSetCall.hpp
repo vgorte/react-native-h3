@@ -46,14 +46,11 @@ inline int64_t maxCellCount() {
 }
 
 /**
- * Runs the size query, rejects an impossible or unaffordable answer, and allocates.
- *
- * Public because the ceiling is a property of the binding rather than of one template:
- * `gridDiskDistances` allocates a parallel distance array of its own and so cannot use either fill
- * below, but must still meet the same limit and report it in the same words.
+ * Rejects a negative or above-ceiling result size, in the words the refusal has always used.
+ * Split out of `allocateFor` for the operations whose output is not a `CellBuffer`, such as
+ * `cellsToLatLngs`, which must still meet the same limit.
  */
-template <typename SizeQuery> h3core::CellBuffer allocateFor(SizeQuery&& sizeQuery) {
-  const int64_t size = sizeQuery();
+inline void requireWithinCellLimit(int64_t size) {
   if (size < 0) {
     h3core::throwInvalidArgument("H3 reported a negative output size");
   }
@@ -66,6 +63,11 @@ template <typename SizeQuery> h3core::CellBuffer allocateFor(SizeQuery&& sizeQue
                                 " set with configure({ maxCellCount }). Raise or remove the limit to allow it.";
     h3core::throwInvalidArgument(message.c_str());
   }
+}
+
+template <typename SizeQuery> h3core::CellBuffer allocateFor(SizeQuery&& sizeQuery) {
+  const int64_t size = sizeQuery();
+  requireWithinCellLimit(size);
   return h3core::CellBuffer(size);
 }
 
