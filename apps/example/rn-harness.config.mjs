@@ -2,7 +2,8 @@ import { androidEmulator, androidPlatform } from '@react-native-harness/platform
 import { applePlatform, appleSimulator } from '@react-native-harness/platform-apple'
 
 // `H3_SANITIZER` is set by `harness-android.yml` and by `scripts/device-ios.sh`; unset locally.
-const TIMEOUT_SCALE = (process.env.H3_SANITIZER ?? '') === '' ? 1 : 4
+const SANITIZED = (process.env.H3_SANITIZER ?? '') !== ''
+const TIMEOUT_SCALE = SANITIZED ? 4 : 1
 
 const config = {
   entryPoint: './index.js',
@@ -13,6 +14,9 @@ const config = {
   testTimeout: 5000 * TIMEOUT_SCALE,
   bundleStartTimeout: 60000 * TIMEOUT_SCALE,
   platformReadyTimeout: 300000 * TIMEOUT_SCALE,
+  // Harness polls `adb shell pidof` once a second and reads a missing pid as a dead app, which a
+  // slow sanitised start turns into false crashes; a sanitizer report reaches the device log anyway.
+  detectNativeCrashes: !SANITIZED,
   runners: [
     applePlatform({
       name: 'ios',
