@@ -95,6 +95,8 @@ public:
   std::shared_ptr<ArrayBuffer> cellToChildren(uint64_t cell, double res) override;
   std::shared_ptr<ArrayBuffer> compactCells(const std::shared_ptr<ArrayBuffer>& cells) override;
   std::shared_ptr<ArrayBuffer> uncompactCells(const std::shared_ptr<ArrayBuffer>& cells, double res) override;
+  std::shared_ptr<ArrayBuffer> latLngsToCells(const std::shared_ptr<ArrayBuffer>& coords, double res) override;
+  std::shared_ptr<ArrayBuffer> cellsToLatLngs(const std::shared_ptr<ArrayBuffer>& cells) override;
 
   // Misc
   double getHexagonAreaAvgKm2(double res) override;

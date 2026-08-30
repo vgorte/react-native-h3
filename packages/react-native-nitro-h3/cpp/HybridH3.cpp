@@ -18,6 +18,7 @@
 #include "core/CellBuffer.hpp"
 #include "core/H3ErrorMapping.hpp"
 #include "core/Validation.hpp"
+#include "ops/Batches.hpp"
 #include "ops/Edges.hpp"
 #include "ops/Hierarchy.hpp"
 #include "ops/Indexing.hpp"
@@ -273,6 +274,16 @@ std::shared_ptr<ArrayBuffer> HybridH3::compactCells(const std::shared_ptr<ArrayB
 std::shared_ptr<ArrayBuffer> HybridH3::uncompactCells(const std::shared_ptr<ArrayBuffer>& cells, double res) {
   const CellSpan span = toCellSpan(cells);
   return toArrayBuffer(h3ops::uncompactCells(span.data, span.count, res));
+}
+
+std::shared_ptr<ArrayBuffer> HybridH3::latLngsToCells(const std::shared_ptr<ArrayBuffer>& coords, double res) {
+  const DoubleSpan span = toDoubleSpan(coords);
+  return toArrayBuffer(h3ops::latLngsToCells(span.data, span.count, res));
+}
+
+std::shared_ptr<ArrayBuffer> HybridH3::cellsToLatLngs(const std::shared_ptr<ArrayBuffer>& cells) {
+  const CellSpan span = toCellSpan(cells);
+  return toArrayBuffer(h3ops::cellsToLatLngs(span.data, span.count));
 }
 
 double HybridH3::getHexagonAreaAvgKm2(double res) {

@@ -70,6 +70,8 @@ namespace margelo::nitro::h3 {
       prototype.registerHybridMethod("cellToChildren", &HybridH3Spec::cellToChildren);
       prototype.registerHybridMethod("compactCells", &HybridH3Spec::compactCells);
       prototype.registerHybridMethod("uncompactCells", &HybridH3Spec::uncompactCells);
+      prototype.registerHybridMethod("latLngsToCells", &HybridH3Spec::latLngsToCells);
+      prototype.registerHybridMethod("cellsToLatLngs", &HybridH3Spec::cellsToLatLngs);
       prototype.registerHybridMethod("getHexagonAreaAvgKm2", &HybridH3Spec::getHexagonAreaAvgKm2);
       prototype.registerHybridMethod("getHexagonAreaAvgM2", &HybridH3Spec::getHexagonAreaAvgM2);
       prototype.registerHybridMethod("getHexagonEdgeLengthAvgKm", &HybridH3Spec::getHexagonEdgeLengthAvgKm);

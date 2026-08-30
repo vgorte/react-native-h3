@@ -94,6 +94,11 @@ export interface H3 extends HybridObject<{ ios: 'c++'; android: 'c++' }> {
   compactCells(cells: ArrayBuffer): ArrayBuffer
   uncompactCells(cells: ArrayBuffer, res: number): ArrayBuffer
 
+  // additive batch surface beyond h3-js. Coordinates are interleaved `[lat, lng]` doubles; the
+  // wrapper views the returned `ArrayBuffer` as a typed array without copying.
+  latLngsToCells(coords: ArrayBuffer, res: number): ArrayBuffer
+  cellsToLatLngs(cells: ArrayBuffer): ArrayBuffer
+
   getHexagonAreaAvgKm2(res: number): number
   getHexagonAreaAvgM2(res: number): number
   getHexagonEdgeLengthAvgKm(res: number): number
