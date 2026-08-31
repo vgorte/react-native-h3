@@ -28,6 +28,10 @@ updates:
       # Babel 8 is unreachable while `@react-native/babel-preset` pins `@babel/core` to `^7`.
       - dependency-name: "@babel/*"
         update-types: ["version-update:semver-major"]
+      # TypeScript 7.0 ships no compiler API, which `scripts/gen-api-docs.ts` needs; 7.1 is
+      # expected to restore one, so only the 7.0 line is held back.
+      - dependency-name: "typescript"
+        versions: ["~7.0.0"]
 
   - package-ecosystem: "github-actions"
     directory: "/"
