@@ -98,7 +98,7 @@ jobs:
           bun-version: 1.3.14  # <-- pinned: `latest` turns an upstream release into a red build
 
       # Bun does not publish; `npm publish` does, and trusted publishing needs npm >= 11.5.
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
 
