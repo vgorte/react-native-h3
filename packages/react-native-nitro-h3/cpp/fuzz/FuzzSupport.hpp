@@ -61,11 +61,12 @@ public:
 
   /** Returns a count no larger than the remaining bytes could fill at `bytesPerElement`. */
   size_t takeCount(size_t bytesPerElement) noexcept {
+    const size_t selector = byte();
     const size_t affordable = remaining() / bytesPerElement;
     if (affordable == 0) {
       return 0;
     }
-    return static_cast<size_t>(byte()) % (affordable + 1);
+    return selector % (affordable + 1);
   }
 
 private:
