@@ -1,12 +1,19 @@
 # Divergences from h3-js 4.5.0
 
+> 📖 This guide documents the intentional differences between
+> `react-native-nitro-h3` and `h3-js` 4.5.0, with migration guidance
+> for existing `h3-js` users.
+
+Test paths below are relative to `packages/react-native-nitro-h3/`.
+
 h3-js 4.5.0 bundles exactly the H3 C library this package vendors, so it is an oracle rather than an
 approximation, and `parity/` compares the two over all 122 resolution 0 cells, all sixteen
 resolutions, all 192 pentagons with their neighbourhoods, the poles, the antimeridian and seeded
 random coordinates. Every row and section below is proved by a test in
 `parity/divergences.test.ts`, which asserts both sides; the two type-surface rows are proved there
 for h3-js at run time and for this package by `tsc`, because the probe the suite drives speaks JSON.
-Everything not listed here is identical.
+The additive batch section leans on `parity/batches.test.ts` as well, which is where the two calls are
+compared with h3-js element for element. Everything not listed here is identical.
 
 ## Input this package refuses and h3-js answers
 
@@ -39,6 +46,23 @@ answers it. With a ceiling of 4,000,000 in force, `gridDisk(cell, 1155)` throws
 with no `code`, where h3-js allocates all 4,005,541 cells and has no such control. Every
 cell-producing call sizes its result before allocating anything, which is what makes the refusal
 possible at all.
+
+## The additive batch calls
+
+`latLngsToCells` and `cellsToLatLngs` run a scalar operation over a whole typed array in one native
+call. h3-js exports neither, so they are additive rather than a difference in behaviour: element for
+element they answer what a `latLngToCell` or `cellToLatLng` loop answers, which `parity/batches.test.ts`
+proves over the corpus. `parity/divergences.test.ts` asserts that h3-js has neither export, so the day
+it grows one this section fails rather than ages.
+
+| Case | This package | h3-js |
+| --- | --- | --- |
+| `latLngsToCells` | takes a `Float64Array` of interleaved `[lat, lng]` pairs and answers one `BigUint64Array`, one cell per pair | no counterpart |
+| `cellsToLatLngs` | takes a `BigUint64Array` of cells and answers one interleaved `Float64Array`, two doubles per cell | no counterpart |
+
+An invalid element is refused the way every other input is, with the index in the message
+(`cells[1]: Cell argument was not valid (code: 5)`), and the optional cell ceiling applies to both,
+counted in cells.
 
 ## Wording
 

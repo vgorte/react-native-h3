@@ -23,11 +23,12 @@ describe('npm pack list', () => {
     expect(files).toContain('android/CMakeLists.txt')
   }, 30_000)
 
-  test('carries the vendored version marker and the shipped docs', async () => {
+  test('carries the vendored version marker and the shipped API reference', async () => {
     const files = await checkPackList()
     expect(files).toContain('third_party/h3/H3_VERSION')
-    expect(files).toContain('docs/h3-js-divergences.md')
     expect(files).toContain('docs/api.md')
+    // the divergence guide lives at the repository root, deliberately outside the tarball
+    expect(files).not.toContain('docs/h3-js-divergences.md')
   }, 30_000)
 
   test('does not ship the tests or the host CMake project', async () => {
