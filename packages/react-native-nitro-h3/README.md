@@ -17,6 +17,8 @@ The result is a native H3 binding designed for performance-sensitive React Nativ
 
 > **Native mobile only.** For web applications, use [`h3-js`](https://github.com/uber/h3-js).
 
+![Architecture: JavaScript typed arrays cross one JSI boundary into the vendored H3 C core](https://raw.githubusercontent.com/vgorte/react-native-nitro-h3/main/img/architecture.svg)
+
 ---
 
 ## ✨ Highlights
@@ -344,7 +346,7 @@ For contributors and maintainers:
 | Nitro Modules | **0.37+**                      |
 | C++           | C++20-compatible toolchain     |
 | iOS           | React Native deployment target |
-| Xcode         | **16.4+**                      |
+| Xcode         | recent stable release          |
 | Android       | **minSdk 24**                  |
 | Android SDK   | **compileSdk 36**              |
 | Android NDK   | **27.1.12297006**              |
