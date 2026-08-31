@@ -50,7 +50,37 @@
         ]
       },
       "@release-it/conventional-changelog": {
-        "preset": "conventionalcommits"
+        "preset": {
+          "name": "conventionalcommits",
+          "types": [
+            {
+              "type": "feat",
+              "section": "✨ Features"
+            },
+            {
+              "type": "perf",
+              "section": "💨 Performance Improvements"
+            },
+            {
+              "type": "fix",
+              "section": "🐛 Bug Fixes"
+            },
+            {
+              "type": "build",
+              "scope": "deps",
+              "section": "🛠️ Dependency Upgrades"
+            },
+            {
+              "type": "build",
+              "scope": "deps-dev",
+              "section": "🛠️ Dependency Upgrades"
+            },
+            {
+              "type": "docs",
+              "section": "📚 Documentation"
+            }
+          ]
+        }
       }
     }
   },
