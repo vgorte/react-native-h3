@@ -29,7 +29,7 @@ target_compile_options(h3_vendored PRIVATE -w)
 # Nitro-free core
 # Every memory hazard in the project lives here, so it must stay free of Nitro headers and
 # therefore testable on the host under sanitizers.
-add_library(nitro_free_core STATIC
+set(NITRO_FREE_CORE_SOURCES
   ${PACKAGE_ROOT}/cpp/core/CellBuffer.cpp
   ${PACKAGE_ROOT}/cpp/core/H3ErrorMapping.cpp
   ${PACKAGE_ROOT}/cpp/core/Validation.cpp
@@ -47,6 +47,8 @@ add_library(nitro_free_core STATIC
   ${PACKAGE_ROOT}/cpp/ops/Units.cpp
   ${PACKAGE_ROOT}/cpp/ops/Vertexes.cpp
 )
+
+add_library(nitro_free_core STATIC ${NITRO_FREE_CORE_SOURCES})
 target_include_directories(nitro_free_core PUBLIC ${PACKAGE_ROOT}/cpp)
 target_link_libraries(nitro_free_core PUBLIC h3_vendored)
 target_compile_options(nitro_free_core PRIVATE -Wall -Wextra -Wpedantic -Werror)
@@ -95,10 +97,26 @@ target_link_libraries(tests PRIVATE nitro_free_core GTest::gtest_main)
 gtest_discover_tests(tests)
 
 # Sanitised twin
-# LeakSanitizer needs Linux (CI or Docker); it does not exist on macOS/arm64.
+# LeakSanitizer needs Linux (CI or Docker); it does not exist on macOS/arm64. The libraries are
+# rebuilt with the sanitisers rather than reused: instrumenting only the test translation units
+# leaves every access inside `cpp/core`, `cpp/ops` and H3 unchecked.
+set(SANITIZER_OPTIONS -fsanitize=address,undefined -fno-sanitize-recover=undefined -fno-omit-frame-pointer -g -O1)
+# Upstream code answers to upstream: ASan catches the overruns a wrong buffer size here causes, while
+# a hard UBSan failure inside H3 would be a report to file rather than a defect in this package.
+set(SANITIZER_OPTIONS_H3 -fsanitize=address -fno-omit-frame-pointer -g -O1)
+
+add_library(h3_vendored_asan STATIC ${H3_SOURCES})
+target_include_directories(h3_vendored_asan PUBLIC ${H3_ROOT}/include)
+target_compile_options(h3_vendored_asan PRIVATE -w ${SANITIZER_OPTIONS_H3})
+
+add_library(nitro_free_core_asan STATIC ${NITRO_FREE_CORE_SOURCES})
+target_include_directories(nitro_free_core_asan PUBLIC ${PACKAGE_ROOT}/cpp)
+target_link_libraries(nitro_free_core_asan PUBLIC h3_vendored_asan)
+target_compile_options(nitro_free_core_asan PRIVATE -Wall -Wextra -Wpedantic -Werror ${SANITIZER_OPTIONS})
+
 add_executable(tests_asan ${TEST_SOURCES})
-target_link_libraries(tests_asan PRIVATE nitro_free_core GTest::gtest_main)
-target_compile_options(tests_asan PRIVATE -fsanitize=address,undefined -fno-omit-frame-pointer -g -O1)
+target_link_libraries(tests_asan PRIVATE nitro_free_core_asan GTest::gtest_main)
+target_compile_options(tests_asan PRIVATE ${SANITIZER_OPTIONS})
 target_link_options(tests_asan PRIVATE -fsanitize=address,undefined)
 
 # Parity probe
