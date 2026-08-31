@@ -1,23 +1,23 @@
 name: ✨ Feature request
-description: Suggest an H3 operation, an addition to the API, or a change in behaviour.
+description: Suggest an H3 operation, API addition, or change in behaviour.
 labels: ["enhancement"]
 body:
   - type: textarea
     id: problem
     attributes:
-      label: What are you trying to do
-      description: The workload behind the request, not only the function you have in mind.
+      label: What are you trying to do?
+      description: Describe the problem or use case behind your request.
       placeholder: >
-        I redraw around 80,000 cell boundaries on every map pan, and building the GeoJSON in
-        JavaScript costs more than the H3 call itself.
+        I need to convert around 80,000 H3 cells to GeoJSON on every map pan.
+        Doing this in JavaScript is too slow for my use case.
     validations:
       required: true
 
   - type: textarea
     id: proposal
     attributes:
-      label: What you would like
-      description: The API you imagine, with its arguments and its return type if you have one in mind.
+      label: What would you like?
+      description: Describe the API or behaviour you would like to see. An example is helpful if you have one.
       render: typescript
     validations:
       required: true
@@ -27,15 +27,15 @@ body:
     attributes:
       label: h3-js equivalent
       description: >
-        The name in h3-js, if there is one. The package mirrors the h3-js 4.5.0 surface, so a request
-        that matches an existing name is a different conversation from a purely additive one.
-      placeholder: "cellsToMultiPolygon, or: none, this would be additive"
+        If this operation exists in h3-js, what is its name? The package mirrors the h3-js 4.5.0
+        surface, so a matching name is a parity gap, while a new one is an additive API.
+      placeholder: "cellsToMultiPolygon, or: none"
 
   - type: textarea
     id: workaround
     attributes:
-      label: What you do today
-      description: The workaround you currently use, and where it falls short.
+      label: Current workaround
+      description: How do you solve this today, if at all?
 
   - type: checkboxes
     id: checks

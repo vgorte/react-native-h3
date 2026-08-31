@@ -1,18 +1,12 @@
 name: 🐛 Bug report
-description: An H3 operation returns the wrong result, crashes, or the package fails to build.
+description: Report a wrong result, crash, or build failure.
 labels: ["bug"]
 body:
-  - type: markdown
-    attributes:
-      value: |
-        Wrong results and build failures both belong here. For a build failure, the full log matters
-        more than anything else in this form.
-
   - type: textarea
     id: what-happened
     attributes:
-      label: What happened
-      description: What you observed, and what you expected instead.
+      label: What happened?
+      description: What did you observe, and what did you expect instead?
       placeholder: |
         polygonToCells returns an empty BigUint64Array for a polygon that crosses the antimeridian.
         h3-js returns 4,214 cells for the same polygon.
@@ -23,9 +17,7 @@ body:
     id: reproduction
     attributes:
       label: Reproduction
-      description: >
-        The smallest piece of code that shows it, with real coordinates or cell indexes rather than
-        placeholders. A link to a repository works too.
+      description: Provide the smallest example that reproduces the issue. A link to a repository is also fine.
       render: typescript
     validations:
       required: true
@@ -69,17 +61,19 @@ body:
       required: true
 
   - type: input
-    id: device
+    id: environment
     attributes:
-      label: Device and OS
-      description: Whether this is a simulator, an emulator or physical hardware is often the whole story.
-      placeholder: "iPhone 15 simulator, iOS 18.2 / Pixel 7, Android 15"
+      label: Environment
+      description: >
+        Any other versions that might matter, and whether this is a simulator, an emulator or
+        physical hardware.
+      placeholder: "Expo 53, Hermes, Node 22, Xcode 16.2, iPhone 15 simulator"
 
   - type: textarea
     id: logs
     attributes:
-      label: Logs, stack trace or build output
-      description: Paste the relevant part. Native crashes need the logcat or Xcode console output, not the JS error alone.
+      label: Logs or stack trace
+      description: Include relevant Xcode, logcat, or build output if applicable.
       render: shell
 
   - type: checkboxes
@@ -89,7 +83,5 @@ body:
       options:
         - label: I searched the existing issues.
           required: true
-        - label: >
-            I checked the [h3-js divergences](https://github.com/vgorte/react-native-nitro-h3/blob/main/docs/h3-js-divergences.md)
-            in case the difference is an intentional one.
+        - label: I checked the [h3-js divergences](https://github.com/vgorte/react-native-nitro-h3/blob/main/docs/h3-js-divergences.md).
           required: true
