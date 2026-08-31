@@ -132,3 +132,63 @@ target_compile_options(parity_probe PRIVATE -Wall -Wextra -Wpedantic -Werror)
 add_executable(benchmarks ${CMAKE_CURRENT_SOURCE_DIR}/Benchmarks.cpp)
 target_link_libraries(benchmarks PRIVATE nitro_free_core)
 target_compile_options(benchmarks PRIVATE -Wall -Wextra -Wpedantic -Werror)
+
+# Fuzz targets
+# Off by default and the only option in this project: `-fsanitize=fuzzer` is a Clang feature, and an
+# unconditional target would break every other toolchain that configures this directory.
+option(H3_BUILD_FUZZERS "Build the libFuzzer targets in cpp/fuzz" OFF)
+
+if(H3_BUILD_FUZZERS)
+  include(CheckCXXSourceCompiles)
+
+  # A link probe rather than a compiler-ID check: AppleClang ships the asan runtime but no
+  # libFuzzer, so an ID check would configure cleanly and die at link. libFuzzer supplies `main`,
+  # which is why the probe must not define one.
+  set(CMAKE_REQUIRED_FLAGS "-fsanitize=fuzzer")
+  check_cxx_source_compiles("
+    #include <cstddef>
+    #include <cstdint>
+    extern \"C\" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
+      return data == nullptr && size == 0 ? 1 : 0;
+    }
+  " H3_HAVE_LIBFUZZER)
+  unset(CMAKE_REQUIRED_FLAGS)
+
+  if(NOT H3_HAVE_LIBFUZZER)
+    message(FATAL_ERROR
+      "H3_BUILD_FUZZERS=ON needs a toolchain that links -fsanitize=fuzzer, and this one does not. "
+      "AppleClang ships no libFuzzer runtime: install LLVM (brew install llvm) and configure with "
+      "-DCMAKE_C_COMPILER=$(brew --prefix llvm)/bin/clang "
+      "-DCMAKE_CXX_COMPILER=$(brew --prefix llvm)/bin/clang++.")
+  endif()
+
+  set(FUZZ_ROOT ${PACKAGE_ROOT}/cpp/fuzz)
+  set(FUZZ_OPTIONS -fsanitize=fuzzer-no-link,address,undefined -fno-sanitize-recover=undefined
+                   -fno-omit-frame-pointer -g -O1)
+  # ASan only on upstream code: it is what catches a write past a buffer this package sized, while a
+  # hard UBSan failure inside H3 would wedge the nightly on a bug that is an upstream report.
+  set(FUZZ_OPTIONS_H3 -fsanitize=fuzzer-no-link,address -fno-omit-frame-pointer -g -O1)
+
+  # Compiled once and linked by all four executables.
+  add_library(h3_vendored_fuzz STATIC ${H3_SOURCES})
+  target_include_directories(h3_vendored_fuzz PUBLIC ${H3_ROOT}/include)
+  target_compile_options(h3_vendored_fuzz PRIVATE -w ${FUZZ_OPTIONS_H3})
+
+  add_library(nitro_free_core_fuzz STATIC ${NITRO_FREE_CORE_SOURCES})
+  target_include_directories(nitro_free_core_fuzz PUBLIC ${PACKAGE_ROOT}/cpp)
+  target_link_libraries(nitro_free_core_fuzz PUBLIC h3_vendored_fuzz)
+  target_compile_options(nitro_free_core_fuzz PRIVATE -Wall -Wextra -Wpedantic -Werror ${FUZZ_OPTIONS})
+
+  # The sanitisers are repeated on the link line so their runtimes and libFuzzer's `main` are pulled
+  # in, as `tests_asan` does.
+  function(add_h3_fuzz_target name source)
+    add_executable(${name} ${FUZZ_ROOT}/${source})
+    target_link_libraries(${name} PRIVATE nitro_free_core_fuzz)
+    target_compile_options(${name} PRIVATE -Wall -Wextra -Wpedantic -Werror
+                           -fsanitize=fuzzer,address,undefined -fno-sanitize-recover=undefined
+                           -fno-omit-frame-pointer -g -O1)
+    target_link_options(${name} PRIVATE -fsanitize=fuzzer,address,undefined)
+  endfunction()
+
+  add_h3_fuzz_target(fuzz_cell_buffers FuzzCellBuffers.cpp)
+endif()
