@@ -8,6 +8,7 @@
     "includes": [
       "**",
       "!**/.claude",
+      "!**/docs/research",
       "!**/vendor",
       "!**/.mcp.json",
       "!**/nitrogen/generated",
