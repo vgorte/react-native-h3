@@ -1,12 +1,12 @@
-# react-native-nitro-h3: authoritative H3 function table (derived from upstream v4.5.0)
+# H3 Function Reference
 
-> Research artifact, generated 2026-08-26 while preparing the implementation plans, by reading
-> `uber/h3` at tag `v4.5.0` (commit `1b536c34`) and `h3-js` v4.5.0. Referenced by design section
-> 10.F and by the Phase 2 plan, which builds its tasks from the main table. Regenerate rather than
-> hand-edit when the pinned upstream version changes.
+> ⚙️ Derived from H3 v4.5.0 and `h3-js` v4.5.0 by reading the pinned upstream sources. Do not edit
+> ad hoc; rebuild it against the pinned upstream when that version changes.
 
+The authoritative mapping from this package's exported surface to the H3 C library it binds. Every
+row is read off the upstream header named under Provenance.
 
-## 0. Provenance
+## Provenance
 
 | Item | Value |
 |---|---|
@@ -24,19 +24,19 @@
 | C functions declared in `h3api.h.in` | **79** (`grep -c "^DECLSPEC"` = 79; the 3 other `DECLSPEC` grep hits are the `#define`s at lines 44/46/49) |
 | h3-js `export`s | 58 = 2 constants (`UNITS`, `POLYGON_TO_CELLS_FLAGS`) + 56 functions |
 | h3-js user-facing *operations* | **54** (56 functions minus the 2 JS-only split-long helpers) |
-| Public TS parity functions we ship | **64** (= 54 - 5 unit-dispatch + 13 unit-suffixed + `cellToString` + `cellFromString`) |
+| Public TS parity functions shipped | **64** (= 54 - 5 unit-dispatch + 13 unit-suffixed + `cellToString` + `cellFromString`) |
 | Distinct C functions bound | **75** (79 declared - 4 deliberately unbound) |
 | C functions deliberately unbound | **4** |
 
-Note on the "62": the design's 62 counts the 54 h3-js operations with the 5 unit-dispatch ones expanded
-(54 - 5 + 13 = 62), then adds `cellToString` / `cellFromString` on top. 62 + 2 = **64** exported TS
-symbols. Both numbers are correct; they just count different things. This table has 64 rows.
+Note on the "62": counting the 54 h3-js operations with the 5 unit-dispatch ones expanded gives 62
+(54 - 5 + 13), and adding `cellToString` / `cellFromString` gives **64**. Both numbers are correct;
+they count different things. This table has 64 rows.
 
 Note on the exported surface: the 64 above are the *parity* functions, the ones this table enumerates
 from upstream. The package also exports the 2 additive batch functions `latLngsToCells` and
 `cellsToLatLngs`, which h3-js does not have and which therefore have no row here, plus 4 `Async`
 variants of functions already listed and `configure`. `__tests__/exports.test.ts` asserts the whole
-surface of 71 names; `packages/react-native-nitro-h3/docs/h3-js-divergences.md` records the additive
+surface of 71 names; `docs/h3-js-divergences.md` records the additive
 pair.
 
 Notation used below:
@@ -46,11 +46,11 @@ Notation used below:
   `#define H3_EXPORT(name) name`). Line wrapping in the header is joined; no token is otherwise changed.
 - "size source" names the C size function, or a compile-time constant with its value, or
   `caller input length`, or `n/a`.
-- Shape ids are exactly the design's S1..S14 taxonomy (design section 5).
+- Shape ids `S1` to `S14` are this document's own taxonomy, defined under Shape taxonomy.
 
 ---
 
-## 1. Main table: the 64 public TS functions
+## Function mapping
 
 Sorted by shape (S1..S14, then ONE-OFF), alphabetically within each shape.
 
@@ -76,7 +76,7 @@ Sorted by shape (S1..S14, then ONE-OFF), alphabetically within each shape.
 | `getHexagonAreaAvgM2` | `getHexagonAreaAvgM2` | `H3Error getHexagonAreaAvgM2(int res, double *out);` | S5 | n/a | `double*`, no sentinel | H3Error | header line 393. |
 | `getHexagonEdgeLengthAvgKm` | `getHexagonEdgeLengthAvgKm` | `H3Error getHexagonEdgeLengthAvgKm(int res, double *out);` | S5 | n/a | `double*`, no sentinel | H3Error | header line 416. |
 | `getHexagonEdgeLengthAvgM` | `getHexagonEdgeLengthAvgM` | `H3Error getHexagonEdgeLengthAvgM(int res, double *out);` | S5 | n/a | `double*`, no sentinel | H3Error | header line 419. |
-| `getNumCells` | `getNumCells` | `H3Error getNumCells(int res, int64_t *out);` | S5 | n/a | `int64_t*`, no sentinel | H3Error | header line 482. **`int64_t` out, not `double`** - S5 is not homogeneous in out type. Max value at res 15 is `2 + 120*7^15` = 569,707,381,193,162, which exceeds `Number.MAX_SAFE_INTEGER`? No: 5.7e14 < 9.0e15, so a JS `number` is still exact. Ambiguous whether TS should return `number` or `bigint`; design does not say. |
+| `getNumCells` | `getNumCells` | `H3Error getNumCells(int res, int64_t *out);` | S5 | n/a | `int64_t*`, no sentinel | H3Error | header line 482. **`int64_t` out, not `double`** - S5 is not homogeneous in out type. Max value at res 15 is `2 + 120*7^15` = 569,707,381,193,162, which exceeds `Number.MAX_SAFE_INTEGER`? No: 5.7e14 < 9.0e15, so a JS `number` is still exact. This package returns a `number`, which stays exact at that magnitude. |
 | `getDirectedEdgeDestination` | `getDirectedEdgeDestination` | `H3Error getDirectedEdgeDestination(H3Index edge, H3Index *out);` | S6 | n/a | `H3Index*`, no sentinel (single value) | H3Error | header line 739. |
 | `getDirectedEdgeOrigin` | `getDirectedEdgeOrigin` | `H3Error getDirectedEdgeOrigin(H3Index edge, H3Index *out);` | S6 | n/a | `H3Index*`, no sentinel | H3Error | header line 729. |
 | `reverseDirectedEdge` | `reverseDirectedEdge` | `H3Error reverseDirectedEdge(H3Index edge, H3Index *out);` | S6 | n/a | `H3Index*`, no sentinel | H3Error | header line 780. |
@@ -96,23 +96,23 @@ Sorted by shape (S1..S14, then ONE-OFF), alphabetically within each shape.
 | `cellToVertexes` | `cellToVertexes` | `H3Error cellToVertexes(H3Index origin, H3Index *vertexes);` | S12 | compile-time constant **6** - not in the header; only in `src/h3lib/lib/vertex.c:298` and in h3-js `const maxNumVertexes = 6;` | `H3Index*` (named `vertexes`), H3_NULL padded (pentagons yield 5 real + 1 null) | H3Error | header line 797. Hazard, see section 5. |
 | `directedEdgeToCells` | `directedEdgeToCells` | `H3Error directedEdgeToCells(H3Index edge, H3Index *originDestination);` | S12 | compile-time constant **2** - **not documented anywhere in the C library**; only in h3-js `const count = 2;` | `H3Index*` (named `originDestination`), no padding in practice (always 2 real cells on success) | H3Error | header line 750. Hazard, see section 5. |
 | `originToDirectedEdges` | `originToDirectedEdges` | `H3Error originToDirectedEdges(H3Index origin, H3Index *edges);` | S12 | compile-time constant **6** - stated only in the header `@brief` prose, see section 5 | `H3Index*` (named `edges`), H3_NULL padded (pentagons yield 5 real + 1 null) | H3Error | header line 761. |
-| `cellToChildren` | `cellToChildren` | `H3Error cellToChildren(H3Index h, int childRes, H3Index *children);` | S13 | `cellToChildrenSize` | `H3Index*` (named `children`), size is **exact**, so no padding expected | H3Error | header line 606. `cellToChildrenSize` doc: "determines the exact number of children (or grandchildren, etc) that would be returned for the given cell". The compact-in-place pass is therefore a no-op here but is kept for uniformity. **Async candidate?** design lists only 4 async variants and this is not one. |
+| `cellToChildren` | `cellToChildren` | `H3Error cellToChildren(H3Index h, int childRes, H3Index *children);` | S13 | `cellToChildrenSize` | `H3Index*` (named `children`), size is **exact**, so no padding expected | H3Error | header line 606. `cellToChildrenSize` doc: "determines the exact number of children (or grandchildren, etc) that would be returned for the given cell". The compact-in-place pass is therefore a no-op here but is kept for uniformity. Not one of the four operations with an async variant. |
 | `getIcosahedronFaces` | `getIcosahedronFaces` | `H3Error getIcosahedronFaces(H3Index h3, int *out);` | S13 | `maxFaceCount` | `int*`, **-1 padded** (not H3_NULL) | H3Error | header line 691. `h3Index.c:1238-1244`: "The array is sparse; since 0 is a valid value, invalid array values are represented as -1. It is the responsibility of the caller to filter out invalid values." and "@param out Output array. Must be of size maxFaceCount(h3)." This is the row that forces S13 to be parameterized on element type + sentinel predicate. |
 | `getPentagons` | `getPentagons` | `H3Error getPentagons(int res, H3Index *out);` | S13 (size from S12-style counter) | `pentagonCount()` -> compile-time **12** | `H3Index*`, no padding (all 12 are real) | H3Error | header line 504. `h3Index.c:1332`: "@param out Output array. Must be of size pentagonCount()." |
 | `getRes0Cells` | `getRes0Cells` | `H3Error getRes0Cells(H3Index *out);` | S13 (size from S12-style counter) | `res0CellCount()` -> compile-time **122** (`NUM_BASE_CELLS`) | `H3Index*`, no padding | H3Error | header line 493. `baseCells.c:925-926`: "getRes0Cells generates all base cells storing them into the provided memory pointer. Buffer must be of size NUM_BASE_CELLS * sizeof(H3Index)." Impl `@returns E_SUCCESS.` i.e. cannot fail. |
 | `gridDisk` | `gridDisk` | `H3Error gridDisk(H3Index origin, int k, H3Index *out);` | S13 | `maxGridDiskSize` | `H3Index*`, **H3_NULL padded** | H3Error | header line 281. `algos.c:193-198`: "Output is placed in the provided array in no particular order. Elements of the output array may be left zero, as can happen when crossing a pentagon." and "@param out zero-filled array which must be of size maxGridDiskSize(k)". **The buffer must be zero-filled before the call** - `calloc`, not `malloc`. |
 | `gridPathCells` | `gridPathCells` | `H3Error gridPathCells(H3Index start, H3Index end, H3Index *out);` | S13 | `gridPathCellsSize` | `H3Index*`, size exact, no padding expected | H3Error | header line 834. `gridPathCellsSize` header doc: "Number of indexes in a line connecting two indexes". |
 | `polygonToCells` | `polygonToCells` | `H3Error polygonToCells(const GeoPolygon *geoPolygon, int res, uint32_t flags, H3Index *out);` | S13 | `maxPolygonToCellsSize` | `H3Index*`, **H3_NULL padded** (size is a max, not exact) | H3Error | header line 318. `algos.c:990`: "@param out The slab of zeroed memory to write to. Assumed to be big enough." -> **must be zero-filled**. `flags` is `uint32_t`; for the non-experimental call the only valid value is `0`. Has an async variant `polygonToCellsAsync`. |
-| `uncompactCells` | `uncompactCells` | `H3Error uncompactCells(const H3Index *compactedSet, const int64_t numCompacted, H3Index *outSet, const int64_t numOut, const int res);` | S13 **and** ONE-OFF (design lists it in both; see DISCREPANCIES) | `uncompactCellsSize` | `H3Index*` (named `outSet`), size documented as **exact** | H3Error | header line 661. Five arguments carrying two lengths (`numCompacted` in, `numOut` out) is why the design also calls it a one-off. `h3Index.c:798-799`: "uncompactCellsSize takes a compacted set of hexagons and provides **the exact size** of the uncompacted set of hexagons." Has an async variant `uncompactCellsAsync`. |
-| `gridRing` | `gridRing` | `H3Error gridRing(H3Index origin, int k, H3Index *out);` | S14 (design: fold into S13) | `maxGridRingSize` (C function exists, header line 299) | `H3Index*`, **H3_NULL padded** | H3Error | header line 305. `algos.c:360-365`: "Elements of the output array may be left zero, as can happen when crossing a pentagon." / "@param out Array which must be of size 6 * k (or 1 if k == 0)". `maxGridRingSize` returns exactly that: `if (k == 0) { *out = 1; ... } *out = 6 * (int64_t)k;` (`algos.c:344-354`), so calling it instead of h3-js's inline `k === 0 ? 1 : 6 * k` is behaviourally identical and adds a `k < 0` -> `E_DOMAIN` check. |
-| `gridRingUnsafe` | `gridRingUnsafe` | `H3Error gridRingUnsafe(H3Index origin, int k, H3Index *out);` | S14 (design: fold into S13) | `maxGridRingSize` | `H3Index*`, partial-write on failure - **discard, do not compact** | H3Error | header line 302. Returns `E_PENTAGON` after having already written part of the buffer. |
-| `cellFromString` | `stringToH3` | `H3Error stringToH3(const char *str, H3Index *out);` | ONE-OFF | n/a | `H3Index*`, no sentinel | H3Error | header line 554. **Not exported by h3-js** (h3-js indexes *are* hex strings). Renamed per design section 4. Impl (`h3Index.c:180-188`) uses `sscanf(str, "%" PRIx64, &h)` and returns `E_FAILED` on a parse failure; it does **not** validate the resulting index. |
+| `uncompactCells` | `uncompactCells` | `H3Error uncompactCells(const H3Index *compactedSet, const int64_t numCompacted, H3Index *outSet, const int64_t numOut, const int res);` | S13 and ONE-OFF (it fits both) | `uncompactCellsSize` | `H3Index*` (named `outSet`), size documented as **exact** | H3Error | header line 661. Five arguments carrying two lengths (`numCompacted` in, `numOut` out) is why it counts as a one-off as well. `h3Index.c:798-799`: "uncompactCellsSize takes a compacted set of hexagons and provides **the exact size** of the uncompacted set of hexagons." Has an async variant `uncompactCellsAsync`. |
+| `gridRing` | `gridRing` | `H3Error gridRing(H3Index origin, int k, H3Index *out);` | S14 | `maxGridRingSize` (C function exists, header line 299) | `H3Index*`, **H3_NULL padded** | H3Error | header line 305. `algos.c:360-365`: "Elements of the output array may be left zero, as can happen when crossing a pentagon." / "@param out Array which must be of size 6 * k (or 1 if k == 0)". `maxGridRingSize` returns exactly that: `if (k == 0) { *out = 1; ... } *out = 6 * (int64_t)k;` (`algos.c:344-354`), so calling it instead of h3-js's inline `k === 0 ? 1 : 6 * k` is behaviourally identical and adds a `k < 0` -> `E_DOMAIN` check. |
+| `gridRingUnsafe` | `gridRingUnsafe` | `H3Error gridRingUnsafe(H3Index origin, int k, H3Index *out);` | S14 | `maxGridRingSize` | `H3Index*`, partial-write on failure - **discard, do not compact** | H3Error | header line 302. Returns `E_PENTAGON` after having already written part of the buffer. |
+| `cellFromString` | `stringToH3` | `H3Error stringToH3(const char *str, H3Index *out);` | ONE-OFF | n/a | `H3Index*`, no sentinel | H3Error | header line 554. **Not exported by h3-js** (h3-js indexes *are* hex strings). Renamed to `cellFromString` in this package. Impl (`h3Index.c:180-188`) uses `sscanf(str, "%" PRIx64, &h)` and returns `E_FAILED` on a parse failure; it does **not** validate the resulting index. |
 | `cellToLocalIj` | `cellToLocalIj` | `H3Error cellToLocalIj(H3Index origin, H3Index h3, uint32_t mode, CoordIJ *out);` | ONE-OFF | n/a | `CoordIJ*`, no sentinel | H3Error | header line 843. `localij.c:528`: "@param mode Mode, must be 0". Pin `mode = 0`. Impl doc also warns: "This function's output is not guaranteed to be compatible across different versions of H3." |
 | `cellToString` | `h3ToString` | `H3Error h3ToString(H3Index h, char *str, size_t sz);` | ONE-OFF | caller-provided `sz` | `char*` buffer, NUL-terminated | H3Error | header line 562. **Not exported by h3-js.** The header gives no required `sz`; `h3Index.c:190-195` only says "@param sz Size of the buffer `str`". A 16-hex-digit `uint64_t` plus NUL needs **17** bytes; use a named constant, not a literal. Returns `E_MEMORY_BOUNDS` if `sz` is too small. |
 | `cellsToMultiPolygon` | `cellsToLinkedMultiPolygon` + `destroyLinkedMultiPolygon` | `H3Error cellsToLinkedMultiPolygon(const H3Index *h3Set, const int numHexes, LinkedGeoPolygon *out);` and `void destroyLinkedMultiPolygon(LinkedGeoPolygon *polygon);` | ONE-OFF | caller input length (`numHexes`, an `int` not `int64_t`) | `LinkedGeoPolygon*` root owned by caller; all loops/coords/siblings owned by H3 | H3Error (destroy has none) | header lines 343 / 348. Header group comment: "Functions for cellsToMultiPolygon (currently a binding-only concept)". `numHexes` is `const int`, so an input set larger than `INT_MAX` must be rejected at the boundary. Ownership hazard, see section 5. Has an async variant `cellsToMultiPolygonAsync`. |
-| `childPosToCell` | `childPosToCell` | `H3Error childPosToCell(int64_t childPos, H3Index parent, int childRes, H3Index *child);` | ONE-OFF (**unassigned in the design - see DISCREPANCIES**) | n/a | `H3Index*` (named `child`), no sentinel | H3Error | header line 636. Three inputs `(int64_t, H3Index, int)` match no design shape: S7 is `(H3Index, int)`. Either add an S15 `H3Error f(int64_t, H3Index, int, H3Index*)` or generalize S7's argument tuple. h3-js signature is `childPosToCell(childPos, h3Index, childRes)` - same order as C. |
+| `childPosToCell` | `childPosToCell` | `H3Error childPosToCell(int64_t childPos, H3Index parent, int childRes, H3Index *child);` | ONE-OFF | n/a | `H3Index*` (named `child`), no sentinel | H3Error | header line 636. Three inputs `(int64_t, H3Index, int)` match no shape in this taxonomy: S7 is `(H3Index, int)`. h3-js signature is `childPosToCell(childPos, h3Index, childRes)` - same order as C. |
 | `compactCells` | `compactCells` | `H3Error compactCells(const H3Index *h3Set, H3Index *compactedSet, const int64_t numHexes);` | ONE-OFF | **caller input length** (`numHexes` is the size of *both* arrays) | `H3Index*` (named `compactedSet`), **H3_NULL padded** | H3Error | header line 645. `h3Index.c:551-553`: "@param compactedSet The output array of compressed hexagons (preallocated)" / "@param numHexes The size of the input and output arrays (possible that no contiguous regions exist in the set at all and no compression possible)". No size function exists anywhere. |
-| `constructCell` | `constructCell` | `H3Error constructCell(int res, int baseCellNumber, const int *digits, H3Index *out);` | ONE-OFF | `digits` length is **implied by `res`** | `H3Index*`, no sentinel | H3Error | header line 545. `h3Index.c:130-131`: "@param digits Array of child digits (0--6) of length `res`. NULL allowed for `res=0`." **Argument-order divergence:** h3-js is `constructCell(baseCellNumber, digits, res)`, C is `(res, baseCellNumber, digits)`. Design does not state which order TS uses - ambiguous, decide in the plan. |
+| `constructCell` | `constructCell` | `H3Error constructCell(int res, int baseCellNumber, const int *digits, H3Index *out);` | ONE-OFF | `digits` length is **implied by `res`** | `H3Index*`, no sentinel | H3Error | header line 545. `h3Index.c:130-131`: "@param digits Array of child digits (0--6) of length `res`. NULL allowed for `res=0`." **Argument-order divergence:** h3-js is `constructCell(baseCellNumber, digits, res)`, C is `(res, baseCellNumber, digits)`. This package keeps the h3-js order. |
 | `greatCircleDistanceKm` | `greatCircleDistanceKm` | `double greatCircleDistanceKm(const LatLng *a, const LatLng *b);` | ONE-OFF | n/a | none (scalar return) | **none** | header line 377. Two struct inputs, `double` return, no error channel at all. |
 | `greatCircleDistanceM` | `greatCircleDistanceM` | `double greatCircleDistanceM(const LatLng *a, const LatLng *b);` | ONE-OFF | n/a | none (scalar return) | **none** | header line 381. |
 | `greatCircleDistanceRads` | `greatCircleDistanceRads` | `double greatCircleDistanceRads(const LatLng *a, const LatLng *b);` | ONE-OFF | n/a | none (scalar return) | **none** | header line 372. |
@@ -123,13 +123,13 @@ Sorted by shape (S1..S14, then ONE-OFF), alphabetically within each shape.
 
 **Row count: 64.**
 
-Public functions with async twins (design section 4, not separate rows above):
+Public functions with async twins (not separate rows above):
 `polygonToCellsAsync`, `polygonToCellsExperimentalAsync`, `cellsToMultiPolygonAsync`, `uncompactCellsAsync`.
-Counting those, the exported symbol count is 68.
+Counting those, `configure` and the two additive batch functions, the package exports 71 functions; see Export surface.
 
 ---
 
-## 2. C functions deliberately NOT bound
+### C functions deliberately not bound
 
 | C function | full C signature (verbatim, macros stripped) | in h3-js? | reason not bound |
 |---|---|---|---|
@@ -143,7 +143,7 @@ Counting those, the exported symbol count is 68.
 
 | C function | signature | role |
 |---|---|---|
-| `describeH3Error` | `const char *describeH3Error(H3Error err);` (line 121) | Error message source (design section 4: "Messages come from `describeH3Error`"). |
+| `describeH3Error` | `const char *describeH3Error(H3Error err);` (line 121) | Error message source: every H3 failure message is read from it. |
 | `maxGridDiskSize` | `H3Error maxGridDiskSize(int k, int64_t *out);` (259) | size source for `gridDisk`, `gridDiskDistances` |
 | `maxGridRingSize` | `H3Error maxGridRingSize(int k, int64_t *out);` (299) | size source for `gridRing`, `gridRingUnsafe` |
 | `maxPolygonToCellsSize` | `H3Error maxPolygonToCellsSize(const GeoPolygon *geoPolygon, int res, uint32_t flags, int64_t *out);` (313) | size source for `polygonToCells` |
@@ -167,15 +167,15 @@ lack of 64-bit integer arguments and have no C counterpart:
 | `splitLongToH3Index(lower, upper)` (h3core.js:296) | JS-only inverse of the above. |
 
 The remaining **54** are all covered by the 64-row table (the 5 unit-dispatch operations expand to 13
-rows). **No user-facing h3-js operation is missing.** Conversely we add two operations h3-js does not
+rows). **No user-facing h3-js operation is missing.** Conversely this package adds two operations h3-js does not
 have (`cellToString`/`h3ToString`, `cellFromString`/`stringToH3`), because h3-js represents indexes as
 hex strings natively and therefore needs no conversion functions.
 
 ---
 
-## 3. Verbatim declarations the plan needs
+## Header declarations
 
-All quoted from `h3api.h.in` at `v4.5.0`, with line numbers.
+Quoted verbatim from `h3api.h.in` at `v4.5.0`, with line numbers, for the types the binding has to match.
 
 ### `H3Index`, `H3_NULL`, `H3Error` (lines 65-79)
 
@@ -238,7 +238,7 @@ typedef enum {
 
 Codes 0..19 are contiguous with no gaps. `H3_ERROR_END` == 20 and is **not** a real error; the C++
 mapping table must have exactly 20 entries and must reject `code >= H3_ERROR_END` rather than index
-past the end. The design's `H3ErrorCode` string union therefore has 19 members (0 = success is not an
+past the end. The `H3ErrorCode` string union therefore has 19 members (0 = success is not an
 error).
 
 ### `LatLng`, `CellBoundary`, `MAX_CELL_BNDRY_VERTS` (lines 131-150)
@@ -296,7 +296,7 @@ typedef struct {
 ```
 
 `GeoMultiPolygon` is declared but is not an argument or return type of any function in the header; it
-is unused by our binding.
+is unused by this binding.
 
 ### `ContainmentMode` (lines 177-187)
 
@@ -367,7 +367,7 @@ typedef struct {
 
 ---
 
-## 4. Counts
+## Export surface
 
 ### Public TS functions
 
@@ -380,7 +380,12 @@ typedef struct {
 | Added: `cellToString`, `cellFromString` | +2 |
 | **Public TS functions (rows in the main table)** | **64** |
 | Additional async variants | +4 |
-| **Total exported symbols** | **68** |
+| `configure` | +1 |
+| The two additive batch functions (`latLngsToCells`, `cellsToLatLngs`) | +2 |
+| **Total exported functions** | **71** |
+
+`__tests__/exports.test.ts` asserts exactly those 71 names, plus the `H3Error` class and the
+`ContainmentMode` constants.
 
 ### C functions
 
@@ -394,7 +399,7 @@ typedef struct {
 
 (`cellToChildrenSize` is counted once, in the 64: it is both public and a size source.)
 
-### Per shape (counting **h3-js operations**, i.e. before the unit split - this is the design's unit)
+## Shape taxonomy
 
 | Shape | Operations | Members |
 |---|---|---|
@@ -415,7 +420,7 @@ typedef struct {
 | **Shape subtotal** | **44** | |
 | ONE-OFF | **11** | `gridDiskDistances`, `compactCells`, `uncompactCells`*, `polygonToCellsExperimental`, `cellsToMultiPolygon`, `cellToLocalIj`, `localIjToCell`, `latLngToCell`, `greatCircleDistance`, `constructCell`, **`childPosToCell`** |
 
-\* `uncompactCells` appears in both S13 and ONE-OFF, per the design. Distinct operations covered:
+\* `uncompactCells` appears in both S13 and ONE-OFF. Distinct operations covered:
 44 + 11 - 1 (the `uncompactCells` overlap) = **54**. Balanced.
 
 Per shape, counting **table rows** (after the unit split, including `cellToString`/`cellFromString`):
@@ -424,100 +429,12 @@ ONE-OFF = 14 rows (the 11 operations above with `greatCircleDistance` expanded t
 `uncompactCells` row already counted under S13, plus `cellToString` and `cellFromString`).
 50 + 14 = **64**.
 
----
-
-## DISCREPANCIES
-
-Three, all in design section 5. None invalidates the shape approach; all need a one-line correction.
-
-### D1. `childPosToCell` is assigned to no shape and is not among the ten one-offs
-
-`childPosToCell` is exported by h3-js (`h3core.js:1015`) and declared in the header:
-
-```c
-DECLSPEC H3Error H3_EXPORT(childPosToCell)(int64_t childPos, H3Index parent,
-                                           int childRes, H3Index *child);
-```
-(h3api.h.in lines 636-637)
-
-It appears in **none** of S1..S14 (S7 is `H3Error f(H3Index, int, H3Index *out)`; this is
-`H3Error f(int64_t, H3Index, int, H3Index *out)`, a different arity and a different leading type) and
-it is **not** in the design's list of ten one-offs. It is a genuine gap, not a naming variant:
-its inverse `cellToChildPos` *is* covered (S8).
-
-Fix: either add S15 `H3Error f(int64_t, H3Index, int, H3Index *out)` for this single member, or
-generalize S7's template to an arbitrary scalar-argument tuple, which would also absorb it. The design
-already argues for tuple-parameterized templates, so the second option costs nothing.
-
-### D2. `uncompactCells` is counted twice
-
-The design lists `uncompactCells` as the 5th member of S13 ("size query then fill", 8 members) **and**
-as the 3rd of the ten one-offs ("five-argument work function carrying two lengths"). Both descriptions
-are accurate, but it is one operation, so the stated arithmetic "14 shapes covering 44 of the 54 bound
-operations, plus 10 genuine one-offs" resolves to 44 + 10 = 54 only because this double-count exactly
-cancels the omission in D1. Distinct operations actually assigned by the design = **53**.
-
-Corrected: 44 shape operations + **11** one-offs - 1 overlap (`uncompactCells`) = 54.
-
-Fix: keep `uncompactCells` in S13 (its buffer discipline is S13's) and note the extra argument, or move
-it out of S13 entirely; do not leave it in both. Either way the one-off count becomes 11, not 10.
-
-### D3. The `uncompactCells` "always overestimates if in error" quote is not in H3 v4.5.0
-
-The design writes: *"`uncompactCells` (five-argument work function carrying two lengths; the header
-notes the size 'always overestimates if in error')"*.
-
-Evidence: `grep -rn -i "overestimate" h3-4.5.0/` over the **entire** upstream v4.5.0 tarball returns
-exactly one hit, and it is unrelated:
-
-```
-h3-4.5.0/src/h3lib/lib/cellsToMultiPoly.c:333:        // This is an overestimate for numVerts.
-```
-
-The header's own doc for the size function says the opposite:
-
-```c
-/** @brief determines the exact number of hexagons that will be uncompacted
- * from the compacted set */
-DECLSPEC H3Error H3_EXPORT(uncompactCellsSize)(const H3Index *compactedSet,
-                                               const int64_t numCompacted,
-                                               const int res, int64_t *out);
-```
-(h3api.h.in lines 654-658)
-
-and so does the implementation (`src/h3lib/lib/h3Index.c:798-799`):
-
-```c
- * uncompactCellsSize takes a compacted set of hexagons and provides
- * the exact size of the uncompacted set of hexagons.
-```
-
-Fix: drop the quote. Treat `uncompactCellsSize` as exact, and if the plan still wants defence in depth,
-justify the compact-in-place pass on uniformity grounds rather than on a doc claim that does not exist.
-(`uncompactCells` does return `E_MEMORY_BOUNDS` if `numOut` is smaller than needed, which is the real
-safety net.)
-
-### Not discrepancies (checked, design is right)
-
-- "62 functions plus `cellToString` and `cellFromString`" - correct: 54 - 5 + 13 = 62.
-- "14 shapes covering 44 ... operations" - the 44 is exactly right (see the per-shape table).
-- "the five unit-dispatch operations are backed by 13 C functions" - correct: 3 + 3 + 3 + 2 + 2 = 13.
-- "`maxGridRingSize` ... does exist in C" - correct, h3api.h.in line 299, and it handles `k == 0`
-  identically to h3-js's inline formula.
-- "`getIcosahedronFaces` fills `int` with `-1` padding" - correct, confirmed from `h3Index.c:1239-1241`.
-- "`getRes0Cells` (122)" and "`getPentagons` (12)" - correct: `res0CellCount()` returns
-  `NUM_BASE_CELLS` and `pentagonCount()` returns `NUM_PENTAGONS`.
-- "Every size function except the two nullary counters can itself fail with an `H3Error`" - correct;
-  `res0CellCount` and `pentagonCount` are the only `int f(void)` forms.
-
----
-
-## 5. Hazards confirmed from header text
+## Implementation hazards
 
 ### H1. Fixed-N buffers with no size function
 
-The design says the three sizes "exist only in doc comments". Verified: that is **too generous** for two
-of the three.
+Three fixed-N buffers have no size function. Their sizes are documented only in prose, and for two
+of the three not even in the header.
 
 **`originToDirectedEdges` - size 6, stated only as prose in the header `@brief`:**
 
@@ -585,8 +502,8 @@ The value 2 is inferable only from the prose ("origin, destination pair") and fr
 `const count = 2;` (`h3core.js:1463`). `grep -rn -i "overestimate\|must be of size\|length >=" ` over the
 tarball confirms no size statement for this function.
 
-**Consequence for `BufferSizes.hpp`:** the design's instruction to quote the header text next to each
-constant holds, but for `directedEdgeToCells` there is no header text to quote. Quote the
+**Consequence for `BufferSizes.hpp`:** each constant carries the header text it comes from, but for
+`directedEdgeToCells` there is no header text to quote. Quote the
 implementation prose plus the h3-js constant, and pin the value with a C++ unit test that asserts the
 observed fill count for a known edge, so a future upstream change fails a test rather than corrupting
 the heap.
@@ -700,8 +617,8 @@ All other size sources (`maxGridDiskSize`, `maxGridRingSize`, `maxPolygonToCells
 
 ### H8. The size query itself can request an unbounded allocation
 
-`maxPolygonToCellsSize` returns an `int64_t` with no upper bound. Design section 4 already calls for a
-ceiling; note that `getNumCells(15)` = 569,707,381,193,162 cells is the theoretical maximum, i.e.
+`maxPolygonToCellsSize` returns an `int64_t` with no upper bound, which is what the optional cell
+ceiling guards; note that `getNumCells(15)` = 569,707,381,193,162 cells is the theoretical maximum, i.e.
 ~4.5 petabytes at 8 bytes each. The ceiling must be applied to the *returned size*, before any
 allocation, and must produce a clean `H3Error` (`E_MEMORY_ALLOC` is the closest upstream code) rather
 than an OOM abort.
