@@ -1,379 +1,192 @@
 {
+  "source": "transcribed from on-device screenshots, raw BENCHMARK_JSON not captured",
   "rows": [
     {
       "workload": "W0 latLngToCell, one call per sample",
       "runs": 1000,
-      "millis": 0.0038030147552490234,
-      "referenceMillis": 0.0291670560836792,
+      "millis": 0.004,
+      "p95Millis": 0.008,
+      "referenceMillis": 0.033,
+      "referenceP95Millis": 0.048,
+      "factor": 7.6,
       "equivalent": true,
-      "stats": {
-        "millis": {
-          "median": 0.0038030147552490234,
-          "p95": 0.0053130388259887695,
-          "min": 0.003229975700378418,
-          "max": 0.06812596321105957
-        },
-        "referenceMillis": {
-          "median": 0.0291670560836792,
-          "p95": 0.03093695640563965,
-          "min": 0.013229012489318848,
-          "max": 0.0781259536743164
-        }
-      },
       "detail": "1000 distinct inputs, median and p95 per call, 0.0002 ms baseline subtracted"
     },
     {
       "workload": "W1 latLngToCell x 100,000",
       "runs": 20,
-      "millis": 76.32088494300842,
-      "referenceMillis": 936.9975510835648,
+      "millis": 96.0,
+      "referenceMillis": 2448.6,
+      "factor": 25,
       "equivalent": true,
-      "stats": {
-        "millis": {
-          "median": 76.32088494300842,
-          "p95": 76.50994789600372,
-          "min": 75.74078094959259,
-          "max": 76.95635390281677
-        },
-        "referenceMillis": {
-          "median": 936.9975510835648,
-          "p95": 945.6737500429153,
-          "min": 931.9071350097656,
-          "max": 946.5459369421005
-        }
-      },
       "detail": "89283082803ffff"
     },
     {
       "workload": "W2 gridDisk(k=20) x 1,000",
       "runs": 20,
-      "millis": 22.092135906219482,
-      "referenceMillis": 2368.040519952774,
+      "millis": 32.6,
+      "referenceMillis": 5562.4,
+      "factor": 171,
       "equivalent": true,
-      "stats": {
-        "millis": {
-          "median": 22.092135906219482,
-          "p95": 29.777134895324707,
-          "min": 19.05635392665863,
-          "max": 33.155051946640015
-        },
-        "referenceMillis": {
-          "median": 2368.040519952774,
-          "p95": 2507.0240099430084,
-          "min": 2323.3622909784317,
-          "max": 2601.467446923256
-        }
-      },
       "detail": "1261 cells per call"
     },
     {
       "workload": "W2a gridDisk(k=1) x 1,000",
       "runs": 20,
-      "millis": 2.03890597820282,
-      "referenceMillis": 17.53208291530609,
+      "millis": 2.2,
+      "referenceMillis": 31.4,
+      "factor": 14,
       "equivalent": true,
-      "stats": {
-        "millis": {
-          "median": 2.03890597820282,
-          "p95": 2.5829169750213623,
-          "min": 1.4001569747924805,
-          "max": 6.502187967300415
-        },
-        "referenceMillis": {
-          "median": 17.53208291530609,
-          "p95": 20.43052089214325,
-          "min": 17.290677070617676,
-          "max": 21.05333399772644
-        }
-      },
       "detail": "7 cells per call"
     },
     {
       "workload": "W2b gridDisk(k=5) x 1,000",
       "runs": 20,
-      "millis": 4.405416011810303,
-      "referenceMillis": 188.59479105472565,
+      "millis": 3.8,
+      "referenceMillis": 404.5,
+      "factor": 105,
       "equivalent": true,
-      "stats": {
-        "millis": {
-          "median": 4.405416011810303,
-          "p95": 5.717864036560059,
-          "min": 3.7778120040893555,
-          "max": 8.610936999320984
-        },
-        "referenceMillis": {
-          "median": 188.59479105472565,
-          "p95": 189.9148440361023,
-          "min": 187.88822901248932,
-          "max": 190.09005200862885
-        }
-      },
       "detail": "91 cells per call"
     },
     {
       "workload": "W2c gridDisk(k=10) x 1,000",
       "runs": 20,
-      "millis": 9.659114003181458,
-      "referenceMillis": 678.2240619659424,
+      "millis": 7.8,
+      "referenceMillis": 1450.3,
+      "factor": 187,
       "equivalent": true,
-      "stats": {
-        "millis": {
-          "median": 9.659114003181458,
-          "p95": 12.583072900772095,
-          "min": 6.672707915306091,
-          "max": 18.40401005744934
-        },
-        "referenceMillis": {
-          "median": 678.2240619659424,
-          "p95": 681.8057290315628,
-          "min": 676.3306770324707,
-          "max": 685.2120829820633
-        }
-      },
       "detail": "331 cells per call"
     },
     {
       "workload": "W2d gridDisk(k=50) x 1,000",
       "runs": 3,
-      "millis": 148.9715620279312,
-      "referenceMillis": 16343.629368901253,
+      "millis": 176.8,
+      "referenceMillis": 34036.4,
+      "factor": 192,
       "equivalent": true,
-      "stats": {
-        "millis": {
-          "median": 148.9715620279312,
-          "p95": 150.13229191303253,
-          "min": 147.59572899341583,
-          "max": 150.13229191303253
-        },
-        "referenceMillis": {
-          "median": 16343.629368901253,
-          "p95": 16348.735410928726,
-          "min": 16337.927441954613,
-          "max": 16348.735410928726
-        }
-      },
       "detail": "7651 cells per call"
     },
     {
       "workload": "W3 polygonToCells, SF, res 12",
       "runs": 3,
-      "millis": 231.82598996162415,
-      "referenceMillis": 31179.72701895237,
+      "millis": 233.8,
+      "referenceMillis": 78805.6,
+      "factor": 337,
       "equivalent": true,
-      "stats": {
-        "millis": {
-          "median": 231.82598996162415,
-          "p95": 237.04244792461395,
-          "min": 231.47963500022888,
-          "max": 237.04244792461395
-        },
-        "referenceMillis": {
-          "median": 31179.72701895237,
-          "p95": 31191.878268957138,
-          "min": 28744.152644991875,
-          "max": 31191.878268957138
-        }
-      },
       "detail": "412377 cells"
     },
     {
       "workload": "W3 polygonToCellsAsync, SF, res 12",
       "runs": 3,
-      "millis": 262.4827610254288,
+      "millis": 244.7,
       "referenceMillis": null,
+      "factor": null,
       "equivalent": true,
-      "stats": {
-        "millis": {
-          "median": 262.4827610254288,
-          "p95": 273.636666059494,
-          "min": 255.00479197502136,
-          "max": 273.636666059494
-        },
-        "referenceMillis": null
-      },
       "detail": "412377 cells"
     },
     {
       "workload": "W4 compactCells of a k=20 disk",
       "runs": 20,
-      "millis": 0.08494806289672852,
-      "referenceMillis": 31.908542037010193,
+      "millis": 0.1,
+      "referenceMillis": 81.0,
+      "factor": 807,
       "equivalent": true,
-      "stats": {
-        "millis": {
-          "median": 0.08494806289672852,
-          "p95": 0.11072897911071777,
-          "min": 0.05692696571350098,
-          "max": 0.11677110195159912
-        },
-        "referenceMillis": {
-          "median": 31.908542037010193,
-          "p95": 34.82395803928375,
-          "min": 31.448749899864197,
-          "max": 35.98724007606506
-        }
-      },
       "detail": "163 cells"
     },
     {
       "workload": "W5 cellsToMultiPolygon of a k=20 disk",
       "runs": 20,
-      "millis": 1.8817698955535889,
-      "referenceMillis": 162.67119705677032,
+      "millis": 2.0,
+      "referenceMillis": 406.8,
+      "factor": 203,
       "equivalent": true,
-      "stats": {
-        "millis": {
-          "median": 1.8817698955535889,
-          "p95": 1.96390700340271,
-          "min": 1.5408849716186523,
-          "max": 1.9978119134902954
-        },
-        "referenceMillis": {
-          "median": 162.67119705677032,
-          "p95": 164.18682193756104,
-          "min": 162.11770796775818,
-          "max": 164.70208299160004
-        }
-      },
       "detail": "1 polygons"
     },
     {
       "workload": "W6 cellToLatLng x 100,000",
       "runs": 20,
-      "millis": 112.56526100635529,
-      "referenceMillis": 698.3135409355164,
+      "millis": 112.2,
+      "referenceMillis": 1298.4,
+      "factor": 12,
       "equivalent": true,
-      "stats": {
-        "millis": {
-          "median": 112.56526100635529,
-          "p95": 113.19416689872742,
-          "min": 111.91057205200195,
-          "max": 113.25203204154968
-        },
-        "referenceMillis": {
-          "median": 698.3135409355164,
-          "p95": 700.7143739461899,
-          "min": 697.0038009881973,
-          "max": 790.4054169654846
-        }
-      },
       "detail": "100000 calls over 1261 distinct cells"
     },
     {
       "workload": "W7 cellToBoundary x 100,000",
       "runs": 20,
-      "millis": 346.5659890174866,
-      "referenceMillis": 2020.7943739891052,
+      "millis": 425.3,
+      "referenceMillis": 3742.0,
+      "factor": 8.8,
       "equivalent": true,
-      "stats": {
-        "millis": {
-          "median": 346.5659890174866,
-          "p95": 347.30411398410797,
-          "min": 345.6842710971832,
-          "max": 347.37734293937683
-        },
-        "referenceMillis": {
-          "median": 2020.7943739891052,
-          "p95": 2572.2467700242996,
-          "min": 2013.9537490606308,
-          "max": 2768.034737944603
-        }
-      },
       "detail": "100000 calls over 1261 distinct cells"
     },
     {
       "workload": "W8 uncompactCells, SF res 9 compacted, to res 12",
       "runs": 20,
-      "millis": 3.303749918937683,
-      "referenceMillis": 755.0449990034103,
+      "millis": 3.8,
+      "referenceMillis": 1238.0,
+      "factor": 325,
       "equivalent": true,
-      "stats": {
-        "millis": {
-          "median": 3.303749918937683,
-          "p95": 3.592813014984131,
-          "min": 2.0166670083999634,
-          "max": 4.033905982971191
-        },
-        "referenceMillis": {
-          "median": 755.0449990034103,
-          "p95": 836.1955720186234,
-          "min": 745.8201040029526,
-          "max": 915.5183329582214
-        }
-      },
       "detail": "190 cells in, 410914 cells out"
     },
     {
       "workload": "W8 uncompactCellsAsync, SF res 9 compacted, to res 12",
       "runs": 20,
-      "millis": 4.491614103317261,
+      "millis": 3.8,
       "referenceMillis": null,
+      "factor": null,
       "equivalent": true,
-      "stats": {
-        "millis": {
-          "median": 4.491614103317261,
-          "p95": 5.625833988189697,
-          "min": 3.8916149139404297,
-          "max": 6.557500004768372
-        },
-        "referenceMillis": null
-      },
       "detail": "190 cells in, 410914 cells out"
     },
     {
       "workload": "W9 cellToChildren, res 5 to res 10",
       "runs": 20,
-      "millis": 0.12213492393493652,
-      "referenceMillis": 29.46359395980835,
+      "millis": 0.225,
+      "referenceMillis": 48.9,
+      "factor": 217,
       "equivalent": true,
-      "stats": {
-        "millis": {
-          "median": 0.12213492393493652,
-          "p95": 0.21984398365020752,
-          "min": 0.09489595890045166,
-          "max": 0.23979103565216064
-        },
-        "referenceMillis": {
-          "median": 29.46359395980835,
-          "p95": 30.908334016799927,
-          "min": 29.160051941871643,
-          "max": 34.84348905086517
-        }
-      },
       "detail": "16807 children of 85283083fffffff"
     },
     {
       "workload": "W10 gridPathCells, Berlin to Hamburg, res 9 x 1,000",
       "runs": 20,
-      "millis": 209.65812504291534,
-      "referenceMillis": 7374.090152978897,
+      "millis": 314.9,
+      "referenceMillis": 16253.9,
+      "factor": 52,
       "equivalent": true,
-      "stats": {
-        "millis": {
-          "median": 209.65812504291534,
-          "p95": 214.61500000953674,
-          "min": 206.9442709684372,
-          "max": 216.38098907470703
-        },
-        "referenceMillis": {
-          "median": 7374.090152978897,
-          "p95": 7448.775935053825,
-          "min": 7338.943174004555,
-          "max": 8789.929007053375
-        }
-      },
       "detail": "914 cells per path"
+    },
+    {
+      "workload": "W11 latLngsToCells x 100,000 pairs",
+      "runs": 20,
+      "millis": 54.3,
+      "referenceMillis": 2515.2,
+      "factor": 46,
+      "equivalent": true,
+      "detail": "100000 pairs in one call, 100000 h3-js calls"
+    },
+    {
+      "workload": "W12 cellsToLatLngs x 100,000 cells",
+      "runs": 20,
+      "millis": 23.4,
+      "referenceMillis": 1313.6,
+      "factor": 56,
+      "equivalent": true,
+      "detail": "100000 cells in one call, 100000 h3-js calls"
     }
   ],
   "measuredOn": {
-    "platform": "android",
-    "osVersion": "36",
+    "platform": "ios",
+    "device": "iPhone XS (A12 Bionic, 2018)",
+    "osVersion": "18.7.9",
     "build": "Release",
     "reactNative": "0.87.0",
     "hermes": "250829098.0.16",
     "h3js": "4.5.0",
-    "date": "2026-08-29",
+    "date": "2026-08-31",
     "warmupRuns": 1,
-    "durationSeconds": 540.2
+    "durationSeconds": 1262,
+    "binaryCommit": "7f5d93d",
+    "power": "wired USB throughout, charging"
   }
 }
