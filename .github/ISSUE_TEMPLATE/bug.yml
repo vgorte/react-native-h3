@@ -7,9 +7,6 @@ body:
     attributes:
       label: What happened?
       description: What did you observe, and what did you expect instead?
-      placeholder: |
-        polygonToCells returns an empty BigUint64Array for a polygon that crosses the antimeridian.
-        h3-js returns 4,214 cells for the same polygon.
     validations:
       required: true
 

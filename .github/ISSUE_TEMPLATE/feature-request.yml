@@ -7,9 +7,6 @@ body:
     attributes:
       label: What are you trying to do?
       description: Describe the problem or use case behind your request.
-      placeholder: >
-        I need to convert around 80,000 H3 cells to GeoJSON on every map pan.
-        Doing this in JavaScript is too slow for my use case.
     validations:
       required: true
 
@@ -27,8 +24,8 @@ body:
     attributes:
       label: h3-js equivalent
       description: >
-        If this operation exists in h3-js, what is its name? The package mirrors the h3-js 4.5.0
-        surface, so a matching name is a parity gap, while a new one is an additive API.
+        If this operation exists in h3-js, what is its name? The package mirrors the h3-js surface,
+        so a matching name is a parity gap, while a new one is an additive API.
       placeholder: "cellsToMultiPolygon, or: none"
 
   - type: textarea
