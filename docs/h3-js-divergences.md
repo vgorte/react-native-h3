@@ -1,5 +1,11 @@
 # Divergences from h3-js 4.5.0
 
+> 📖 This guide documents the intentional differences between
+> `react-native-nitro-h3` and `h3-js` 4.5.0, with migration guidance
+> for existing `h3-js` users.
+
+Test paths below are relative to `packages/react-native-nitro-h3/`.
+
 h3-js 4.5.0 bundles exactly the H3 C library this package vendors, so it is an oracle rather than an
 approximation, and `parity/` compares the two over all 122 resolution 0 cells, all sixteen
 resolutions, all 192 pentagons with their neighbourhoods, the poles, the antimeridian and seeded

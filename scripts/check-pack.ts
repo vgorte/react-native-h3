@@ -35,7 +35,6 @@ const ALWAYS_REQUIRED = [
   'android/gradle.properties',
   'nitrogen/generated/shared/c++/HybridH3Spec.hpp',
   'docs/api.md',
-  'docs/h3-js-divergences.md',
   'third_party/h3/include/h3api.h',
   'third_party/h3/LICENSE',
   'third_party/h3/NOTICE',
