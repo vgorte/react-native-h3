@@ -17,8 +17,6 @@ The result is a native H3 binding designed for performance-sensitive React Nativ
 
 > **Native mobile only.** For web applications, use [`h3-js`](https://github.com/uber/h3-js).
 
-![Architecture: JavaScript typed arrays cross one JSI boundary into the vendored H3 C core](https://raw.githubusercontent.com/vgorte/react-native-nitro-h3/main/img/architecture.svg)
-
 ---
 
 ## ✨ Highlights
