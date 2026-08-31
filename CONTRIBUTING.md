@@ -142,3 +142,8 @@ If the vendored H3 sources changed, `bun run vendor:h3 --check` has to pass too.
 
 Code and comments are in English. Commit messages follow the conventional format. Work on a branch
 and open a pull request; `bun run lint` and `bun run typecheck` have to pass before review.
+
+## Code of conduct
+
+Taking part here means following the [Code of Conduct](CODE_OF_CONDUCT.md). Security problems take a
+different route than ordinary bugs: [SECURITY.md](SECURITY.md) explains it.
