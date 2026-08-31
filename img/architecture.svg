@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="516" viewBox="0 0 800 516" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" role="img" aria-label="The data path from JavaScript through Nitro Modules and the h3ops C++ layer to the vendored H3 C core">
+<title>The data path from JavaScript through Nitro Modules and the h3ops C++ layer to the vendored H3 C core</title>
+<style>
+text { fill: #727a84 }
+.strong { fill: #727a84 }
+.accent { fill: #2f78dc }
+.box { fill: none; stroke: #7d8590; stroke-width: 1.5 }
+.box-accent { fill: none; stroke: #3b82f6; stroke-width: 1.5 }
+.flow { stroke: #7d8590; stroke-width: 1.5; fill: none }
+.head { fill: #7d8590 }
+@media (prefers-color-scheme: light) {
+text { fill: #57606a }
+.strong { fill: #1f2328 }
+.accent { fill: #1f6feb }
+.box { stroke: #6e7781 }
+.flow { stroke: #6e7781 }
+.head { fill: #6e7781 }
+}
+@media (prefers-color-scheme: dark) {
+text { fill: #8b949e }
+.strong { fill: #e6edf3 }
+.accent { fill: #58a6ff }
+.box { stroke: #8b949e }
+.flow { stroke: #8b949e }
+.head { fill: #8b949e }
+}
+</style>
+<text class="strong" x="24" y="32" font-size="17" font-weight="600">react-native-nitro-h3, from a JavaScript call to the H3 C core</text>
+
+<rect class="box" x="24" y="62" width="752" height="66" rx="6"/>
+<text class="strong" x="48" y="92" font-size="15" font-weight="600">JavaScript</text>
+<text x="48" y="112" font-size="12">bigint cells, BigUint64Array cell sets, Float64Array coordinate batches</text>
+<text x="752" y="92" font-size="12" text-anchor="end">src/</text>
+
+<path class="flow" d="M400 128 V 158"/>
+<polygon class="head" points="394,158 406,158 400,168"/>
+<text x="414" y="152" font-size="11">one crossing per call, not one per element</text>
+
+<rect class="box-accent" x="24" y="174" width="752" height="66" rx="6"/>
+<text class="strong" x="48" y="204" font-size="15" font-weight="600">Nitro Modules, JSI binding</text>
+<text x="48" y="224" font-size="12">a result crosses as one ArrayBuffer and is viewed in place, no per-element conversion</text>
+<text class="accent" x="752" y="204" font-size="12" text-anchor="end">the boundary</text>
+
+<path class="flow" d="M400 240 V 270"/>
+<polygon class="head" points="394,270 406,270 400,280"/>
+<text x="414" y="264" font-size="11">nitrogen generates the C++ spec both sides implement</text>
+
+<rect class="box" x="24" y="286" width="752" height="66" rx="6"/>
+<text class="strong" x="48" y="316" font-size="15" font-weight="600">h3ops, the C++ operations layer</text>
+<text x="48" y="336" font-size="12">argument validation, result sizing, the optional cell ceiling; includes no Nitro header</text>
+<text x="752" y="316" font-size="12" text-anchor="end">cpp/ops, cpp/core, cpp/shapes</text>
+
+<path class="flow" d="M400 352 V 382"/>
+<polygon class="head" points="394,382 406,382 400,392"/>
+<text x="414" y="376" font-size="11">plain C calls, no marshalling</text>
+
+<rect class="box" x="24" y="398" width="752" height="66" rx="6"/>
+<text class="strong" x="48" y="428" font-size="15" font-weight="600">H3 C core, v4.5.0</text>
+<text x="48" y="448" font-size="12">vendored in the repository and compiled into the app, Apache-2.0</text>
+<text x="752" y="428" font-size="12" text-anchor="end">third_party/h3</text>
+
+<text x="24" y="492" font-size="11">The same layer runs on iOS and Android. An async variant runs the h3ops call on a background thread, copying its input first.</text>
+</svg>
