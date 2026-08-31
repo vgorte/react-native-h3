@@ -1,0 +1,69 @@
+name: Build iOS
+
+on:
+  workflow_dispatch:
+  # A podspec that links only one way is a silent failure for consumers: `use_frameworks!` is an
+  # app-side choice and nothing but a real build of both linkages catches it.
+  pull_request:
+    paths:
+      - 'packages/react-native-nitro-h3/cpp/**'
+      - 'packages/react-native-nitro-h3/third_party/**'
+      - 'packages/react-native-nitro-h3/nitrogen/generated/**'
+      - 'packages/react-native-nitro-h3/src/**'
+      - 'packages/react-native-nitro-h3/*.podspec'
+      - 'packages/react-native-nitro-h3/nitro.json'
+      - 'apps/example/ios/**'
+      - 'apps/example/package.json'
+      - 'bun.lock'
+      - 'scripts/build-ios-variants.sh'
+      - '.github/workflows/build-ios.yml'
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build iOS (${{ matrix.variant }} frameworks)
+    # Xcode only ships on the macOS runner image, the same reason `ios-pods.yml` runs there.
+    runs-on: macos-latest
+    # Pod resolution alone is given 30 minutes in `ios-pods.yml`, and this adds a cold Debug build
+    # of the app and every pod on top of it.
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [static, dynamic]
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14  # <-- pinned: `latest` turns an upstream release into a red build
+
+      # The Podfile resolves `react_native_pods.rb` through `node -p` and React Native codegen runs
+      # inside `pod install`, so Node has to be present and pinned the way `release.yml` pins it.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - run: bun install --frozen-lockfile
+
+      # Not the runner's preinstalled Ruby: `Gemfile.lock` carries Bundler 4 checksums that a
+      # Bundler 2 cannot read, and the image's own CocoaPods is not the version this project pins,
+      # which the script installs pods through.
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '4.0.6'  # <-- exact: `Gemfile.lock` records `RUBY VERSION ruby 4.0.6`
+          working-directory: apps/example
+          bundler-cache: true  # <-- installs the pinned Bundler and gems, and caches them
+
+      # The same script the release runbook runs without an argument, so CI and the runbook cannot
+      # drift apart on how a variant is built.
+      - name: Build the app
+        run: scripts/build-ios-variants.sh ${{ matrix.variant }}
