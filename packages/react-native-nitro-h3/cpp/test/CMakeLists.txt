@@ -191,4 +191,5 @@ if(H3_BUILD_FUZZERS)
   endfunction()
 
   add_h3_fuzz_target(fuzz_cell_buffers FuzzCellBuffers.cpp)
+  add_h3_fuzz_target(fuzz_polygon_rings FuzzPolygonRings.cpp)
 endif()
