@@ -25,6 +25,9 @@ updates:
       - dependency-name: "metro"
       - dependency-name: "metro-*"
       - dependency-name: "hermes-compiler"
+      # Babel 8 is unreachable while `@react-native/babel-preset` pins `@babel/core` to `^7`.
+      - dependency-name: "@babel/*"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "github-actions"
     directory: "/"
