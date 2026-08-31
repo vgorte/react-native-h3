@@ -1,0 +1,46 @@
+name: ✨ Feature request
+description: Suggest an H3 operation, an addition to the API, or a change in behaviour.
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do
+      description: The workload behind the request, not only the function you have in mind.
+      placeholder: >
+        I redraw around 80,000 cell boundaries on every map pan, and building the GeoJSON in
+        JavaScript costs more than the H3 call itself.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you would like
+      description: The API you imagine, with its arguments and its return type if you have one in mind.
+      render: typescript
+    validations:
+      required: true
+
+  - type: input
+    id: h3-js-equivalent
+    attributes:
+      label: h3-js equivalent
+      description: >
+        The name in h3-js, if there is one. The package mirrors the h3-js 4.5.0 surface, so a request
+        that matches an existing name is a different conversation from a purely additive one.
+      placeholder: "cellsToMultiPolygon, or: none, this would be additive"
+
+  - type: textarea
+    id: workaround
+    attributes:
+      label: What you do today
+      description: The workaround you currently use, and where it falls short.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched the existing issues.
+          required: true

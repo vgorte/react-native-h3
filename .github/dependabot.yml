@@ -1,0 +1,36 @@
+version: 2
+
+updates:
+  - package-ecosystem: "bun"
+    directories:
+      - "/"
+      - "/packages/react-native-nitro-h3"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      nitro:
+        patterns:
+          - "nitrogen"
+          - "react-native-nitro-modules"
+      minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
+    ignore:
+      - dependency-name: "h3-js"
+      - dependency-name: "react"
+      - dependency-name: "react-native"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      actions:
+        update-types:
+          - "minor"
+          - "patch"
