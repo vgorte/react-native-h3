@@ -12,8 +12,8 @@
 ## Quick release checklist
 
 1. **CI is green on `main`.** All seven core workflows on the last push to `main`.
-2. **iOS is validated locally.** `scripts/device-ios.sh default|asan|tsan`, then
-   `scripts/build-ios-variants.sh`.
+2. **iOS is validated locally.** `bun example pods` first, then
+   `scripts/device-ios.sh default|asan|tsan` and `scripts/build-ios-variants.sh`.
 3. **Benchmarks are current**, if performance may have shifted. Release build, physical phone only.
 4. **Generated assets and the tarball check out.**
    ```sh
@@ -39,6 +39,16 @@ push to `main` reports the true status of all seven core workflows: `CI`, `Nitro
 
 The macOS workflows are not part of CI yet (see After going public below), so iOS validation is run
 locally prior to release.
+
+Start with a pod install, so the example app picks up any C++ files added since the last one:
+
+```sh
+bun example pods
+```
+
+> **Why:** CocoaPods expands the podspec's `cpp/**/*.{hpp,cpp}` glob into a static file list at
+> `pod install` time. A `Pods/` tree generated before a new source file existed links without it,
+> and the failure surfaces as an undefined-symbol error from `ld`, not as a missing file.
 
 Run the three device checks (targeting the `iPhone 17 Pro` simulator, iOS 26.5) to guarantee the
 harness suite runs clean across all sanitizer flavors:
