@@ -17,7 +17,7 @@ row is read off the upstream header named under Provenance.
 | h3-js export list | `https://raw.githubusercontent.com/uber/h3-js/v4.5.0/lib/h3core.js` (1973 lines, 58 `export` statements) |
 | h3-js pinned H3 version | `https://raw.githubusercontent.com/uber/h3-js/v4.5.0/H3_VERSION` -> `4.5.0` (confirms the two sources are the same C library) |
 
-**Derived totals** (full derivation in section 4):
+**Derived totals** (full derivation under Export surface):
 
 | Total | Value |
 |---|---|
@@ -76,7 +76,7 @@ Sorted by shape (S1..S14, then ONE-OFF), alphabetically within each shape.
 | `getHexagonAreaAvgM2` | `getHexagonAreaAvgM2` | `H3Error getHexagonAreaAvgM2(int res, double *out);` | S5 | n/a | `double*`, no sentinel | H3Error | header line 393. |
 | `getHexagonEdgeLengthAvgKm` | `getHexagonEdgeLengthAvgKm` | `H3Error getHexagonEdgeLengthAvgKm(int res, double *out);` | S5 | n/a | `double*`, no sentinel | H3Error | header line 416. |
 | `getHexagonEdgeLengthAvgM` | `getHexagonEdgeLengthAvgM` | `H3Error getHexagonEdgeLengthAvgM(int res, double *out);` | S5 | n/a | `double*`, no sentinel | H3Error | header line 419. |
-| `getNumCells` | `getNumCells` | `H3Error getNumCells(int res, int64_t *out);` | S5 | n/a | `int64_t*`, no sentinel | H3Error | header line 482. **`int64_t` out, not `double`** - S5 is not homogeneous in out type. Max value at res 15 is `2 + 120*7^15` = 569,707,381,193,162, which exceeds `Number.MAX_SAFE_INTEGER`? No: 5.7e14 < 9.0e15, so a JS `number` is still exact. This package returns a `number`, which stays exact at that magnitude. |
+| `getNumCells` | `getNumCells` | `H3Error getNumCells(int res, int64_t *out);` | S5 | n/a | `int64_t*`, no sentinel | H3Error | header line 482. **`int64_t` out, not `double`** - S5 is not homogeneous in out type. Max value at res 15 is `2 + 120*7^15` = 569,707,381,193,162, which is below `Number.MAX_SAFE_INTEGER` (5.7e14 < 9.0e15), so a JS `number` stays exact. This package returns a `number`, which stays exact at that magnitude. |
 | `getDirectedEdgeDestination` | `getDirectedEdgeDestination` | `H3Error getDirectedEdgeDestination(H3Index edge, H3Index *out);` | S6 | n/a | `H3Index*`, no sentinel (single value) | H3Error | header line 739. |
 | `getDirectedEdgeOrigin` | `getDirectedEdgeOrigin` | `H3Error getDirectedEdgeOrigin(H3Index edge, H3Index *out);` | S6 | n/a | `H3Index*`, no sentinel | H3Error | header line 729. |
 | `reverseDirectedEdge` | `reverseDirectedEdge` | `H3Error reverseDirectedEdge(H3Index edge, H3Index *out);` | S6 | n/a | `H3Index*`, no sentinel | H3Error | header line 780. |
@@ -91,11 +91,11 @@ Sorted by shape (S1..S14, then ONE-OFF), alphabetically within each shape.
 | `gridDistance` | `gridDistance` | `H3Error gridDistance(H3Index origin, H3Index h3, int64_t *distance);` | S9 | n/a | `int64_t*` (named `distance`), no sentinel | H3Error | header line 821. S9's out type varies (`int` vs `H3Index` vs `int64_t`); template must be parameterized on it. |
 | `cellToLatLng` | `cellToLatLng` | `H3Error cellToLatLng(H3Index h3, LatLng *g);` | S10 | n/a | `LatLng*` (named `g`), no sentinel | H3Error | header line 243. |
 | `vertexToLatLng` | `vertexToLatLng` | `H3Error vertexToLatLng(H3Index vertex, LatLng *point);` | S10 | n/a | `LatLng*` (named `point`), no sentinel | H3Error | header line 805. |
-| `cellToBoundary` | `cellToBoundary` | `H3Error cellToBoundary(H3Index h3, CellBoundary *gp);` | S11 | `MAX_CELL_BNDRY_VERTS` = 10 (compile-time, header line 134) | `CellBoundary*`, length carried by `numVerts` field | H3Error | header line 251. Alignment hazard, see section 5. |
+| `cellToBoundary` | `cellToBoundary` | `H3Error cellToBoundary(H3Index h3, CellBoundary *gp);` | S11 | `MAX_CELL_BNDRY_VERTS` = 10 (compile-time, header line 134) | `CellBoundary*`, length carried by `numVerts` field | H3Error | header line 251. Alignment hazard, see hazard H3. |
 | `directedEdgeToBoundary` | `directedEdgeToBoundary` | `H3Error directedEdgeToBoundary(H3Index edge, CellBoundary *gb);` | S11 | `MAX_CELL_BNDRY_VERTS` = 10 | `CellBoundary*`, length via `numVerts` | H3Error | header line 770. h3-js doc notes this "may return 3 coordinates" for icosahedron-face-crossing edges. |
-| `cellToVertexes` | `cellToVertexes` | `H3Error cellToVertexes(H3Index origin, H3Index *vertexes);` | S12 | compile-time constant **6** - not in the header; only in `src/h3lib/lib/vertex.c:298` and in h3-js `const maxNumVertexes = 6;` | `H3Index*` (named `vertexes`), H3_NULL padded (pentagons yield 5 real + 1 null) | H3Error | header line 797. Hazard, see section 5. |
-| `directedEdgeToCells` | `directedEdgeToCells` | `H3Error directedEdgeToCells(H3Index edge, H3Index *originDestination);` | S12 | compile-time constant **2** - **not documented anywhere in the C library**; only in h3-js `const count = 2;` | `H3Index*` (named `originDestination`), no padding in practice (always 2 real cells on success) | H3Error | header line 750. Hazard, see section 5. |
-| `originToDirectedEdges` | `originToDirectedEdges` | `H3Error originToDirectedEdges(H3Index origin, H3Index *edges);` | S12 | compile-time constant **6** - stated only in the header `@brief` prose, see section 5 | `H3Index*` (named `edges`), H3_NULL padded (pentagons yield 5 real + 1 null) | H3Error | header line 761. |
+| `cellToVertexes` | `cellToVertexes` | `H3Error cellToVertexes(H3Index origin, H3Index *vertexes);` | S12 | compile-time constant **6** - not in the header; only in `src/h3lib/lib/vertex.c:298` and in h3-js `const maxNumVertexes = 6;` | `H3Index*` (named `vertexes`), H3_NULL padded (pentagons yield 5 real + 1 null) | H3Error | header line 797. Fixed-N buffer with no size function, see hazard H1. |
+| `directedEdgeToCells` | `directedEdgeToCells` | `H3Error directedEdgeToCells(H3Index edge, H3Index *originDestination);` | S12 | compile-time constant **2** - **not documented anywhere in the C library**; only in h3-js `const count = 2;` | `H3Index*` (named `originDestination`), no padding in practice (always 2 real cells on success) | H3Error | header line 750. Fixed-N buffer with no size function, see hazard H1. |
+| `originToDirectedEdges` | `originToDirectedEdges` | `H3Error originToDirectedEdges(H3Index origin, H3Index *edges);` | S12 | compile-time constant **6** - stated only in the header `@brief` prose, see hazard H1 | `H3Index*` (named `edges`), H3_NULL padded (pentagons yield 5 real + 1 null) | H3Error | header line 761. |
 | `cellToChildren` | `cellToChildren` | `H3Error cellToChildren(H3Index h, int childRes, H3Index *children);` | S13 | `cellToChildrenSize` | `H3Index*` (named `children`), size is **exact**, so no padding expected | H3Error | header line 606. `cellToChildrenSize` doc: "determines the exact number of children (or grandchildren, etc) that would be returned for the given cell". The compact-in-place pass is therefore a no-op here but is kept for uniformity. Not one of the four operations with an async variant. |
 | `getIcosahedronFaces` | `getIcosahedronFaces` | `H3Error getIcosahedronFaces(H3Index h3, int *out);` | S13 | `maxFaceCount` | `int*`, **-1 padded** (not H3_NULL) | H3Error | header line 691. `h3Index.c:1238-1244`: "The array is sparse; since 0 is a valid value, invalid array values are represented as -1. It is the responsibility of the caller to filter out invalid values." and "@param out Output array. Must be of size maxFaceCount(h3)." This is the row that forces S13 to be parameterized on element type + sentinel predicate. |
 | `getPentagons` | `getPentagons` | `H3Error getPentagons(int res, H3Index *out);` | S13 (size from S12-style counter) | `pentagonCount()` -> compile-time **12** | `H3Index*`, no padding (all 12 are real) | H3Error | header line 504. `h3Index.c:1332`: "@param out Output array. Must be of size pentagonCount()." |
@@ -109,7 +109,7 @@ Sorted by shape (S1..S14, then ONE-OFF), alphabetically within each shape.
 | `cellFromString` | `stringToH3` | `H3Error stringToH3(const char *str, H3Index *out);` | ONE-OFF | n/a | `H3Index*`, no sentinel | H3Error | header line 554. **Not exported by h3-js** (h3-js indexes *are* hex strings). Renamed to `cellFromString` in this package. Impl (`h3Index.c:180-188`) uses `sscanf(str, "%" PRIx64, &h)` and returns `E_FAILED` on a parse failure; it does **not** validate the resulting index. |
 | `cellToLocalIj` | `cellToLocalIj` | `H3Error cellToLocalIj(H3Index origin, H3Index h3, uint32_t mode, CoordIJ *out);` | ONE-OFF | n/a | `CoordIJ*`, no sentinel | H3Error | header line 843. `localij.c:528`: "@param mode Mode, must be 0". Pin `mode = 0`. Impl doc also warns: "This function's output is not guaranteed to be compatible across different versions of H3." |
 | `cellToString` | `h3ToString` | `H3Error h3ToString(H3Index h, char *str, size_t sz);` | ONE-OFF | caller-provided `sz` | `char*` buffer, NUL-terminated | H3Error | header line 562. **Not exported by h3-js.** The header gives no required `sz`; `h3Index.c:190-195` only says "@param sz Size of the buffer `str`". A 16-hex-digit `uint64_t` plus NUL needs **17** bytes; use a named constant, not a literal. Returns `E_MEMORY_BOUNDS` if `sz` is too small. |
-| `cellsToMultiPolygon` | `cellsToLinkedMultiPolygon` + `destroyLinkedMultiPolygon` | `H3Error cellsToLinkedMultiPolygon(const H3Index *h3Set, const int numHexes, LinkedGeoPolygon *out);` and `void destroyLinkedMultiPolygon(LinkedGeoPolygon *polygon);` | ONE-OFF | caller input length (`numHexes`, an `int` not `int64_t`) | `LinkedGeoPolygon*` root owned by caller; all loops/coords/siblings owned by H3 | H3Error (destroy has none) | header lines 343 / 348. Header group comment: "Functions for cellsToMultiPolygon (currently a binding-only concept)". `numHexes` is `const int`, so an input set larger than `INT_MAX` must be rejected at the boundary. Ownership hazard, see section 5. Has an async variant `cellsToMultiPolygonAsync`. |
+| `cellsToMultiPolygon` | `cellsToLinkedMultiPolygon` + `destroyLinkedMultiPolygon` | `H3Error cellsToLinkedMultiPolygon(const H3Index *h3Set, const int numHexes, LinkedGeoPolygon *out);` and `void destroyLinkedMultiPolygon(LinkedGeoPolygon *polygon);` | ONE-OFF | caller input length (`numHexes`, an `int` not `int64_t`) | `LinkedGeoPolygon*` root owned by caller; all loops/coords/siblings owned by H3 | H3Error (destroy has none) | header lines 343 / 348. Header group comment: "Functions for cellsToMultiPolygon (currently a binding-only concept)". `numHexes` is `const int`, so an input set larger than `INT_MAX` must be rejected at the boundary. Ownership hazard, see hazard H4. Has an async variant `cellsToMultiPolygonAsync`. |
 | `childPosToCell` | `childPosToCell` | `H3Error childPosToCell(int64_t childPos, H3Index parent, int childRes, H3Index *child);` | ONE-OFF | n/a | `H3Index*` (named `child`), no sentinel | H3Error | header line 636. Three inputs `(int64_t, H3Index, int)` match no shape in this taxonomy: S7 is `(H3Index, int)`. h3-js signature is `childPosToCell(childPos, h3Index, childRes)` - same order as C. |
 | `compactCells` | `compactCells` | `H3Error compactCells(const H3Index *h3Set, H3Index *compactedSet, const int64_t numHexes);` | ONE-OFF | **caller input length** (`numHexes` is the size of *both* arrays) | `H3Index*` (named `compactedSet`), **H3_NULL padded** | H3Error | header line 645. `h3Index.c:551-553`: "@param compactedSet The output array of compressed hexagons (preallocated)" / "@param numHexes The size of the input and output arrays (possible that no contiguous regions exist in the set at all and no compression possible)". No size function exists anywhere. |
 | `constructCell` | `constructCell` | `H3Error constructCell(int res, int baseCellNumber, const int *digits, H3Index *out);` | ONE-OFF | `digits` length is **implied by `res`** | `H3Index*`, no sentinel | H3Error | header line 545. `h3Index.c:130-131`: "@param digits Array of child digits (0--6) of length `res`. NULL allowed for `res=0`." **Argument-order divergence:** h3-js is `constructCell(baseCellNumber, digits, res)`, C is `(res, baseCellNumber, digits)`. This package keeps the h3-js order. |
@@ -502,11 +502,11 @@ The value 2 is inferable only from the prose ("origin, destination pair") and fr
 `const count = 2;` (`h3core.js:1463`). `grep -rn -i "overestimate\|must be of size\|length >=" ` over the
 tarball confirms no size statement for this function.
 
-**Consequence for `BufferSizes.hpp`:** each constant carries the header text it comes from, but for
-`directedEdgeToCells` there is no header text to quote. Quote the
-implementation prose plus the h3-js constant, and pin the value with a C++ unit test that asserts the
-observed fill count for a known edge, so a future upstream change fails a test rather than corrupting
-the heap.
+**How the binding handles this:** `cpp/core/BufferSizes.hpp` pins all three as named constants,
+each carrying the header or implementation text it comes from; for `directedEdgeToCells`, where there
+is no header text to quote, it cites the implementation prose and the h3-js constant.
+`cpp/test/BufferSizesTest.cpp` asserts the count H3 actually writes for each one, including for a
+pentagon, so a future upstream change fails a test rather than corrupting the heap.
 
 ### H2. Buffers H3 requires to be pre-zeroed
 
@@ -648,7 +648,8 @@ The same file also warns:
 ```
 (`src/h3lib/lib/localij.c:523-524`)
 
-Worth surfacing in the TS JSDoc: local IJ coordinates are not a stable serialization format.
+The TS JSDoc carries this: `src/traversal.ts` documents that local IJ coordinates are not a
+serialization format, because H3 does not guarantee them across its own versions.
 
 ### H10. `h3ToString` has no documented buffer size
 
@@ -660,6 +661,7 @@ DECLSPEC H3Error H3_EXPORT(h3ToString)(H3Index h, char *str, size_t sz);
 
 Implementation doc gives nothing more than "@param sz Size of the buffer `str`"
 (`src/h3lib/lib/h3Index.c:190-195`). A `uint64_t` in lowercase hex is at most 16 characters, so 17 bytes
-including the NUL. This belongs in `BufferSizes.hpp` alongside the H1 constants, with the same
-test-pinning treatment; too small a buffer yields `E_MEMORY_BOUNDS`, not a crash, so the failure is at
-least clean.
+including the NUL. `cpp/core/BufferSizes.hpp` pins that as `kH3ToStringBufferSize` alongside the H1
+constants, and `cpp/test/BufferSizesTest.cpp` pins it from both sides: 17 bytes succeed for an
+all-ones index, 16 return `E_MEMORY_BOUNDS`. Too small a buffer yields `E_MEMORY_BOUNDS`, not a crash,
+so the failure is at least clean.

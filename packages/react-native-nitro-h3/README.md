@@ -367,6 +367,8 @@ The exact bundled H3 version can be verified in:
 packages/react-native-nitro-h3/third_party/h3/H3_VERSION
 ```
 
+That file also ships in the published npm tarball, as `third_party/h3/H3_VERSION`.
+
 ---
 
 ## 🤝 Contributing
