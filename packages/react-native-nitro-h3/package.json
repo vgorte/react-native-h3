@@ -1,6 +1,6 @@
 {
   "name": "react-native-nitro-h3",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Fast H3 geospatial indexing for React Native, powered by Nitro Modules",
   "main": "lib/index",
   "module": "lib/index",
