@@ -25,8 +25,10 @@ machine-code execution on iOS and Android for maximum performance.
 ## ✨ Features
 
 - 🔄 **Full API Parity:** Mirrors the 64 functions of `h3-js` 4.5.0 under the same names, plus four
-  `Async` variants, `configure`, and a small batch surface beyond parity. Backed by a rigorous
-  parity test suite covering every resolution, pentagons, and poles.
+  `Async` variants and `configure`. Backed by a rigorous parity test suite covering every
+  resolution, pentagons, and poles.
+- 🧮 **Batch API:** `latLngsToCells` and `cellsToLatLngs` index or read a whole typed array in a
+  single native call, an additive surface `h3-js` does not offer.
 - ⚡ **Zero Conversion Overhead:** Cell indexes are returned as `bigint` rather than hexadecimal
   strings, completely eliminating string-conversion bottlenecks on the hot path.
 - 🚀 **Zero-Copy Architecture:** Cell sets are returned as `BigUint64Array`, a direct view onto the
@@ -50,13 +52,6 @@ single copy.
 
 The widest gap measured on a Samsung Galaxy S23 on 2026-08-29 is **375.6× on `compactCells`**, over
 a `k=20` disk of 1,261 cells, with every result verified identical to `h3-js`'s.
-
-| Workload | react-native-nitro-h3 | h3-js | Speedup |
-|---|---:|---:|---:|
-| `latLngToCell` x 100,000 | 76.3 ms | 937.0 ms | 12.3× |
-| `polygonToCells`, San Francisco, res 12 | 231.8 ms | 31,179.7 ms | 134.5× |
-| `compactCells`, `k=20` disk | 0.085 ms | 31.9 ms | 375.6× |
-| `cellToBoundary` x 100,000 | 346.6 ms | 2,020.8 ms | 5.8× |
 
 > **Methodology:** Measured on a Samsung Galaxy S23 (`SM-S911U1`, Android 16, API 36) in a Release
 > build, React Native 0.87.0 with Hermes 250829098.0.16, against `h3-js` 4.5.0, on 2026-08-29: both
@@ -190,9 +185,38 @@ const cells = latLngsToCells(coords, 9) // BigUint64Array, one cell per pair
 const centres = cellsToLatLngs(cells) // Float64Array, [lat, lng] per cell
 ```
 
-Both fail fast: the first invalid element throws an `H3Error` whose message names its index, such as
-`cells[1]: Cell argument was not valid (code: 5)`. An empty input returns an empty result. The Cell
-Ceiling below applies to both, counted in cells, which is one cell per coordinate pair.
+### `latLngsToCells`
+
+```ts
+function latLngsToCells(coords: Float64Array, res: number): BigUint64Array
+```
+
+Indexes a whole coordinate set in one native call. `coords` is interleaved
+`[lat0, lng0, lat1, lng1, ...]` in degrees, latitude first, the reverse of the GeoJSON order.
+Returns one cell per pair, in input order.
+
+- An odd `coords.length` throws an `H3Error` reading `A coordinate set must hold an even number of
+  doubles`.
+- A rejected pair throws an `H3Error` whose message carries its index, as in `coords[3]: ...`.
+- A `res` outside `0` to `15` is rejected on the first pair, so the message reads
+  `coords[0]: Resolution argument was outside of acceptable range (code: 4)`.
+- An empty `coords` returns an empty `BigUint64Array`, and `res` is never judged.
+- The Cell Ceiling below applies, counted in cells: one cell per pair.
+
+### `cellsToLatLngs`
+
+```ts
+function cellsToLatLngs(cells: BigUint64Array): Float64Array
+```
+
+Reads the centres of a whole cell set in one native call. Returns interleaved
+`[lat0, lng0, lat1, lng1, ...]` in degrees, latitude first again, two entries per cell, which is the
+flat coordinate buffer circle layers and heatmaps consume.
+
+- An invalid cell throws an `H3Error` whose message carries its index, such as
+  `cells[1]: Cell argument was not valid (code: 5)`.
+- An empty `cells` returns an empty `Float64Array`, and no element is validated.
+- The Cell Ceiling below applies, counted in cells, and is checked before the first centre is read.
 
 ## 🛡️ The Cell Ceiling (Opt-In)
 
