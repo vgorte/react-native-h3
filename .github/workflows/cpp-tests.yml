@@ -20,7 +20,7 @@ jobs:
       matrix:
         target: [tests, tests_asan, parity_probe]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Configure
         run: cmake -S packages/react-native-nitro-h3/cpp/test -B build/host -DCMAKE_BUILD_TYPE=Debug
       - name: Build
@@ -36,7 +36,7 @@ jobs:
     # benchmark gate in this ecosystem has a device story.
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Configure
         run: cmake -S packages/react-native-nitro-h3/cpp/test -B build/bench -DCMAKE_BUILD_TYPE=Release
       - name: Build
