@@ -56,7 +56,7 @@ text { fill: #8b949e }
 <text x="414" y="376" font-size="11">plain C calls, no marshalling</text>
 
 <rect class="box" x="24" y="398" width="752" height="66" rx="6"/>
-<text class="strong" x="48" y="428" font-size="15" font-weight="600">H3 C core, v4.5.0</text>
+<text class="strong" x="48" y="428" font-size="15" font-weight="600">H3 C core</text>
 <text x="48" y="448" font-size="12">vendored in the repository and compiled into the app, Apache-2.0</text>
 <text x="752" y="428" font-size="12" text-anchor="end">third_party/h3</text>
 
