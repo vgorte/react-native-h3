@@ -10,7 +10,7 @@
         "@release-it/conventional-changelog": "^12.0.0",
         "@types/bun": "^1.4.0",
         "release-it": "^21.0.2",
-        "typescript": "^5.6.0",
+        "typescript": "^6.0.3",
       },
     },
     "apps/example": {
@@ -48,7 +48,7 @@
         "metro-config": "^0.87.0",
         "metro-resolver": "^0.87.0",
         "react-native-harness": "1.4.1",
-        "typescript": "^5.6.0",
+        "typescript": "^6.0.3",
       },
     },
     "packages/react-native-nitro-h3": {
@@ -64,7 +64,7 @@
         "react": "19.2.3",
         "react-native": "0.87.0",
         "react-native-nitro-modules": "0.37.1",
-        "typescript": "^5.6.0",
+        "typescript": "^6.0.3",
       },
       "peerDependencies": {
         "react": "*",
@@ -1812,7 +1812,7 @@
 
     "typedarray": ["typedarray@0.0.6", "", {}, "sha512-/aCDEGatGvZ2BIk+HmLf4ifCJFwvKFNb9/JeZPMulfgFracn9QFcAf5GO8B/mweUjSoblS5In0cWhqpfs/5PQA=="],
 
-    "typescript": ["typescript@5.9.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="],
+    "typescript": ["typescript@6.0.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw=="],
 
     "undici": ["undici@7.29.0", "", {}, "sha512-IDxfleLmmbSskfWSUATiN1nfn2rDuvnMOqb5CWR92iIfojA0Ud+ulOAAEQ57LPr9rWmsreUyf5lwyao+7GNNVw=="],
 

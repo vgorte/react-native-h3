@@ -44,7 +44,7 @@
     "metro-config": "^0.87.0",
     "metro-resolver": "^0.87.0",
     "react-native-harness": "1.4.1",
-    "typescript": "^5.6.0"
+    "typescript": "^6.0.3"
   },
   "engines": {
     "node": ">= 22.11.0"
