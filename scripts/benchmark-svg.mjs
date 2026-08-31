@@ -8,7 +8,7 @@
  * The JSON is the `BENCHMARK_JSON` line the example app's benchmark screen logs on a Release build,
  * reassembled from its chunks, pretty-printed and committed. Rows without an `h3-js` reference carry
  * no factor and are left out. A run whose payload could not be recovered is transcribed by hand, and
- * then carries a `source` line the captions repeat and a per-row `factor` the screen displayed,
+ * then carries a `source` field naming that and a per-row `factor` the screen displayed,
  * because a factor recomputed from rounded medians drifts from the one that was measured.
  *
  * Usage:
@@ -302,9 +302,6 @@ function caption(payload, bars, scaledBy) {
       `against h3-js ${h3js}, ${date}.`,
     `Median of ${runCounts(bars)} after ${warmUps(warmupRuns)}. Bars are scaled per ${scaledBy}.`,
   ]
-  if (payload.source !== undefined) {
-    lines.push(`Source: ${payload.source}.`)
-  }
   return lines
 }
 

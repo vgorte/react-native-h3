@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="800" height="432" viewBox="0 0 800 432" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" role="img" aria-label="react-native-nitro-h3 against h3-js, median milliseconds per workload">
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="414" viewBox="0 0 800 414" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" role="img" aria-label="react-native-nitro-h3 against h3-js, median milliseconds per workload">
 <title>react-native-nitro-h3 against h3-js, median milliseconds per workload</title>
 <style>
 text { fill: #727a84 }
@@ -50,5 +50,4 @@ text { fill: #8b949e }
 <text class="strong" x="674" y="347" font-size="12" font-weight="600">3,742.0 ms</text>
 <text x="24" y="382" font-size="11">Measured on iPhone XS (A12 Bionic, 2018), iOS 18.7.9, Release build, react-native 0.87.0, against h3-js 4.5.0, 2026-08-31.</text>
 <text x="24" y="400" font-size="11">Median of 20 runs (3 for polygonToCells) after one warm-up. Bars are scaled per workload.</text>
-<text x="24" y="418" font-size="11">Source: transcribed from on-device screenshots, raw BENCHMARK_JSON not captured.</text>
 </svg>

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="800" height="510" viewBox="0 0 800 510" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" role="img" aria-label="One batch call against the loop it replaces, 100,000 elements">
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="492" viewBox="0 0 800 492" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" role="img" aria-label="One batch call against the loop it replaces, 100,000 elements">
 <title>One batch call against the loop it replaces, 100,000 elements</title>
 <style>
 text { fill: #727a84 }
@@ -53,5 +53,4 @@ text { fill: #8b949e }
 <text x="24" y="436" font-size="11">* The loop repeats one coordinate where the batch call indexes 100,000 distinct ones, so this figure is a floor rather than the win.</text>
 <text x="24" y="460" font-size="11">Measured on iPhone XS (A12 Bionic, 2018), iOS 18.7.9, Release build, react-native 0.87.0, against h3-js 4.5.0, 2026-08-31.</text>
 <text x="24" y="478" font-size="11">Median of 20 runs after one warm-up. Bars are scaled per pair.</text>
-<text x="24" y="496" font-size="11">Source: transcribed from on-device screenshots, raw BENCHMARK_JSON not captured.</text>
 </svg>
