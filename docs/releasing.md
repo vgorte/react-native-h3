@@ -11,7 +11,7 @@
 
 ## Quick release checklist
 
-1. **CI is green on `main`.** All seven core workflows on the last push to `main`.
+1. **CI is green on `main`.** All eight core workflows on the last push to `main`.
 2. **iOS is validated locally.** `bun example pods` first, then
    `scripts/device-ios.sh default|asan|tsan` and `scripts/build-ios-variants.sh`.
 3. **Benchmarks are current**, if performance may have shifted. Release build, physical phone only.
@@ -32,13 +32,13 @@
 ### 1. Verify CI is green
 
 The `main` branch must be completely green. Path filters apply to pull requests only, so the last
-push to `main` reports the true status of all seven core workflows: `CI`, `Nitrogen drift`,
-`Lint C++`, `C++ tests`, `Parity`, `Build Android`, and `Harness Android`.
+push to `main` reports the true status of all eight core workflows: `CI`, `Nitrogen drift`,
+`Lint C++`, `C++ tests`, `Parity`, `Build Android`, `Harness Android`, and `iOS pod lockfile`.
 
 ### 2. Local iOS validation
 
-The macOS workflows are not part of CI yet (see After going public below), so iOS validation is run
-locally prior to release.
+CI checks the pod lockfile on macOS, but the iOS builds and the harness suite are not part of it
+(see After going public below), so iOS validation is run locally prior to release.
 
 Start with a pod install, so the example app picks up any C++ files added since the last one:
 
@@ -284,15 +284,18 @@ The README renders correctly on both GitHub and npm. Every image and link in it 
 repository is public. The npm version badge (`shields.io`) reported "package not found" until the
 first tarball reached the registry.
 
-### 2. Enable macOS / iOS CI workflows (open)
+### 2. Enable macOS / iOS CI workflows (partly done)
 
-The iOS harness workflow (covering the three flavors of `scripts/device-ios.sh`) and the build
-workflow (covering the two framework variants) are still omitted from CI.
+`iOS pod lockfile` covers the cheapest part: it runs `pod install` on a macOS runner and fails when
+`apps/example/ios/Podfile.lock` has drifted, which nothing caught between releases before. The iOS
+harness workflow (covering the three flavors of `scripts/device-ios.sh`) and the build workflow
+(covering the two framework variants) are still omitted.
 
-- **The reason:** macOS runner minutes bill at 10× the Linux rate, which is why both were left out
-  while the repository was private.
-- **The action:** those minutes are free for public repositories now, so adding both workflows is
-  the next CI task. Until then, step 2 of the detailed procedure runs them by hand.
+- **The reason:** macOS runner minutes bill at 10× the Linux rate, which is why all three were left
+  out while the repository was private.
+- **The action:** those minutes are free for public repositories now, and the lockfile job has
+  proven the macOS runner path. Adding the remaining two is the next CI task; until then, step 2 of
+  the detailed procedure runs them by hand.
 
 ### 3. Enforce branch protection on `main` (done)
 
