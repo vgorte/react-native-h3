@@ -42,7 +42,7 @@ jobs:
       - name: Set minSdk
         run: sed -i "s/minSdkVersion = 24/minSdkVersion = ${{ matrix.min-sdk }}/g" apps/example/android/build.gradle
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           distribution: zulu
           java-version: '17'
