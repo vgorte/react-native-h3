@@ -2,9 +2,7 @@ version: 2
 
 updates:
   - package-ecosystem: "bun"
-    directories:
-      - "/"
-      - "/packages/react-native-nitro-h3"
+    directory: "/"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -22,6 +20,11 @@ updates:
       - dependency-name: "h3-js"
       - dependency-name: "react"
       - dependency-name: "react-native"
+      - dependency-name: "@react-native/*"
+      - dependency-name: "@react-native-community/*"
+      - dependency-name: "metro"
+      - dependency-name: "metro-*"
+      - dependency-name: "hermes-compiler"
 
   - package-ecosystem: "github-actions"
     directory: "/"
