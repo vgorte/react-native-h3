@@ -74,8 +74,8 @@ non-parity row would misrepresent.
 - **No parity-table row.** `docs/h3-function-table.md` is derived from upstream h3-js 4.5.0, so only
   `__tests__/exports.test.ts` gains the name and its count.
 - **Its own comparison.** It is still a probe operation, so the surface check stays exact, but it is
-  compared against the h3-js scalar it batches or replaces, in its own file next to
-  `parity/batches.test.ts`, rather than as a `parity/corpus.ts` row.
+  compared against the h3-js scalar it batches or replaces, in its own comparison file
+  (`parity/batches.test.ts` for today's pair), rather than as a `parity/corpus.ts` row.
 - **Documented as additive.** `packages/react-native-nitro-h3/docs/h3-js-divergences.md` records that
   it exists here and not in h3-js, proved by a test in `parity/divergences.test.ts`, and the README
   documents it outside the parity claim.

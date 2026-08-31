@@ -180,6 +180,7 @@ both were on wired USB power for the whole run.
 |---|---|
 | Device | Samsung Galaxy S23 (`SM-S911U1`), Qualcomm `kalama` |
 | Platform | Android 16, API 36 |
+| Run date | 2026-08-31, 00:50 to 01:00 CEST; the raw payload's `date` field reads 2026-08-30, the UTC date |
 | Build Type | Release |
 | React Native | 0.87.0, Hermes 250829098.0.16 |
 | Target | `h3-js` 4.5.0 (the same H3 v4.5.0 C core this package vendors) |
@@ -252,7 +253,7 @@ Read the two pairs differently, because only one of them is input-matched:
   bound, never as the win. A `W1` variant fed the same 100,000 distinct coordinates is the clean way
   to get the real figure, and that variant does not exist yet.
 - **The saving is bridge crossings, not a faster inner loop.** Host measurements put the native work
-  of a batch call within about 1 % of the native work of the loop it replaces, so what the batch
+  of a batch call within about 2 % of the native work of the loop it replaces, so what the batch
   removes is the per-element crossing: roughly 0.42 and 0.89 microseconds per element on the A12,
   0.30 and 0.83 on the Galaxy S23.
 - **`cellsToLatLngs` wins more than `latLngsToCells`** on both devices, because its scalar sibling
