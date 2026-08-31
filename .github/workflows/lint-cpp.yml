@@ -17,7 +17,7 @@ jobs:
   clang-format:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       # The PyPI wheel is the reproducible way to a major-21 build: the runner's apt only carries
       # whatever Ubuntu ships, and a venv sidesteps the distro's externally-managed pip.
       - name: Install clang-format 21

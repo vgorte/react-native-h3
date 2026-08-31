@@ -36,7 +36,7 @@ jobs:
     steps:
       # A pull request checks out a detached merge commit, and release-it refuses to run without a
       # branch under HEAD; the head branch has one, and the dry run never pushes to it.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.head_ref || github.ref_name }}
       - uses: oven-sh/setup-bun@v2
@@ -84,7 +84,7 @@ jobs:
           fi
 
       # The conventional-changelog plugin reads the history back to the previous tag
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
