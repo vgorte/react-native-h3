@@ -37,9 +37,7 @@ This Code of Conduct applies within all community spaces, and also applies when 
 ## Enforcement
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be reported to the
-project maintainer via their GitHub profile:
-
-https://github.com/vgorte
+project maintainer via their [GitHub profile](https://github.com/vgorte).
 
 All complaints will be reviewed and investigated promptly and fairly.
 
