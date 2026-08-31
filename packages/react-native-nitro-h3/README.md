@@ -191,11 +191,8 @@ const centres = cellsToLatLngs(cells) // Float64Array, [lat, lng] per cell
 
 ![One batch call against the loop it replaces, 100,000 elements](img/benchmark-batch.svg)
 
-The saving is the bridge crossings that no longer happen. On an iPhone XS, `cellsToLatLngs` reads
-100,000 centres in 23.4 ms where this package's own `cellToLatLng` loop takes 112.2 ms.
-`latLngsToCells` indexes 100,000 pairs in 54.3 ms against 96.0 ms for the loop, and that 1.77× is a
-floor rather than the win: the loop repeats one coordinate where the batch call indexes 100,000
-distinct ones. Same conditions as the Benchmarks section above, full data in
+The saving is the bridge crossings that no longer happen. Same conditions as the Benchmarks
+section above, full data in
 [docs/benchmark.md](https://github.com/vgorte/react-native-nitro-h3/blob/main/docs/benchmark.md).
 
 ### `latLngsToCells`
