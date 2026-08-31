@@ -1,0 +1,67 @@
+name: iOS pod lockfile
+
+on:
+  workflow_dispatch:
+  # Only the release path's `after:bump` hook refreshes `Podfile.lock`, so between releases nothing
+  # notices when it goes stale. The `NitroH3` checksum hashes the evaluated podspec, which reads
+  # `description`, `version` and `license` from `package.json` and its file list from
+  # `sources.json`, so a docs-only edit invalidates the lockfile just as a dependency bump does.
+  pull_request:
+    paths:
+      - 'packages/react-native-nitro-h3/package.json'
+      - 'packages/react-native-nitro-h3/*.podspec'
+      - 'packages/react-native-nitro-h3/nitrogen/generated/ios/**'
+      - 'packages/react-native-nitro-h3/third_party/h3/sources.json'
+      - 'apps/example/package.json'
+      - 'apps/example/Gemfile'
+      - 'apps/example/Gemfile.lock'
+      - 'apps/example/ios/Podfile'
+      - 'apps/example/ios/Podfile.lock'
+      - 'package.json'
+      - 'bun.lock'
+      - '.github/workflows/ios-pods.yml'
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-pods-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pods:
+    # CocoaPods only ships on the macOS runner image, the same reason `release.yml` publishes there.
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14  # <-- pinned: `latest` turns an upstream release into a red build
+
+      # The Podfile resolves `react_native_pods.rb` through `node -p` and React Native codegen runs
+      # inside `pod install`, so Node has to be present and pinned the way `release.yml` pins it.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - run: bun install --frozen-lockfile
+
+      # Not the runner's preinstalled Ruby: `Gemfile.lock` carries Bundler 4 checksums that a
+      # Bundler 2 cannot read, and the image's own CocoaPods is not the version this project pins,
+      # which would rewrite the `COCOAPODS:` line and fail the job over nothing.
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '4.0.6'  # <-- exact: `Gemfile.lock` records `RUBY VERSION ruby 4.0.6`
+          working-directory: apps/example
+          bundler-cache: true  # <-- installs the pinned Bundler and gems, and caches them
+
+      - run: bun example pods
+
+      # Scoped to the one file: Bundler and React Native codegen both write outside it, and none of
+      # that is pod resolution.
+      - name: Pod lockfile is up to date
+        run: git diff --exit-code -- apps/example/ios/Podfile.lock
