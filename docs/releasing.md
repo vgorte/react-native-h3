@@ -30,9 +30,9 @@ The `main` branch must be completely green. Path filters apply to pull requests 
 push to `main` reports the true status of all seven core workflows: `CI`, `Nitrogen drift`,
 `Lint C++`, `C++ tests`, `Parity`, `Build Android`, and `Harness Android`.
 
-### 2. Local iOS Validation (Pre-Public Repo)
+### 2. Local iOS Validation
 
-Because macOS CI minutes are expensive on private repositories, iOS validation is currently run
+The macOS workflows are not part of CI yet (see After Going Public below), so iOS validation is run
 locally prior to release.
 
 Run the three device checks (targeting the `iPhone 17 Pro` simulator, iOS 26.5) to guarantee the
@@ -63,9 +63,11 @@ scripts/build-ios-variants.sh
 If performance characteristics might have shifted, regenerate the benchmarks. CI does not produce
 these figures and cannot.
 
-> **Hardware Rule:** The published payload comes from an Android **Release** build on a physical
-> Samsung Galaxy S23. A run on a simulator or an emulator serves for comparison only and is not
-> published; that holds until iOS figures are published in their own right.
+> **Hardware Rule:** A published figure comes from a **Release** build on a physical phone. The
+> README carries the iPhone XS run, and
+> [docs/benchmark.md](https://github.com/vgorte/react-native-nitro-h3/blob/main/docs/benchmark.md)
+> carries that run beside a Samsung Galaxy S23 one. A run on a simulator or an emulator serves for
+> comparison only and is never published.
 
 **Extracting logs:** Follow the steps in
 [Regenerating the Benchmarks](https://github.com/vgorte/react-native-nitro-h3/blob/main/docs/benchmark.md#-regenerating-the-benchmarks).
@@ -75,12 +77,15 @@ On Android, `adb logcat` prints the chunked payload:
 adb logcat | grep BENCHMARK_JSON
 ```
 
-On iOS in Release mode, the chunked payload is only visible at the debug level:
+On an iOS simulator in Release mode, the chunked payload is only visible at the debug level:
 
 ```sh
 xcrun simctl spawn booted log stream --level debug \
   --predicate 'eventMessage CONTAINS "BENCHMARK_JSON"'
 ```
+
+A physical iOS device needs the capture set up before the run starts, because relaunching the app to
+reach its log discards the results.
 
 ### 4. Verify Docs, Icons & Vendored C-Core
 
@@ -105,7 +110,7 @@ cd packages/react-native-nitro-h3
 npm pack --dry-run
 ```
 
-The `prepack` guard runs first. Expect it to print `Pack list OK: 215 files` before npm lists the
+The `prepack` guard runs first. Expect it to print `Pack list OK: 222 files` before npm lists the
 simulated tarball contents.
 
 `lib/` contains build outputs ignored by git, which is why `bun run build` comes first.
@@ -200,7 +205,7 @@ them runs per dispatch, selected by the `dry_run` input (which defaults to check
 
 - **`Rehearse`:** Executes `./scripts/release.sh --dry-run --ci`, which is precisely what the local
   `bun release --dry-run --ci` maps to. It needs no npm identity and no secret beyond the default
-  `GITHUB_TOKEN`, so it is green on the private repository today. It additionally runs on every
+  `GITHUB_TOKEN`. It additionally runs on every
   pull request that touches `release.yml`, `scripts/release.sh`, the root `package.json` or the
   package `package.json`, which are the four files that can silently break a release.
 - **`Publish`:** Dispatch only, and never selected while `dry_run` is checked. Its first step runs
@@ -231,48 +236,48 @@ counterpart once on npmjs.com:
 npm skips attestation generation entirely under `--dry-run`, so the flag stays inert during every
 rehearsal, local ones included.
 
-> **🥚 First Release (`v0.1.0`):** This is the single exception to the Golden Rule. A trusted
+> **🥚 First Release (`v0.1.0`, done):** this was the single exception to the Golden Rule. A trusted
 > publisher can only be configured on a package that already exists in the registry, so the very
-> first tarball has to come from the maintainer's terminal:
+> first tarball came from the maintainer's terminal on 2026-08-30:
 >
 > ```sh
 > npm login
 > bun release 0.1.0 --npm.publishArgs= --npm.allowSameVersion
 > ```
 >
-> `--npm.publishArgs=` drops `--provenance` for this one run, because npm refuses to generate an
-> attestation outside a supported CI runner. `--npm.allowSameVersion` is needed because
-> `packages/react-native-nitro-h3/package.json` already carries `0.1.0`. That first release therefore
-> ships without a provenance attestation. Configure the trusted publisher immediately afterwards;
-> every release from `v0.1.1` onwards goes through the workflow and is attested.
+> `--npm.publishArgs=` dropped `--provenance` for that one run, because npm refuses to generate an
+> attestation outside a supported CI runner, and `--npm.allowSameVersion` was needed because
+> `packages/react-native-nitro-h3/package.json` already carried `0.1.0`. That release therefore ships
+> without a provenance attestation. Every release from `v0.1.1` onwards goes through the workflow and
+> is attested.
 
-## 🌅 Post-Launch: The "First Public Release" Checklist
+## 🌅 After Going Public
 
-Once the repository is switched from Private to Public, these three tasks must be completed
-immediately:
+The repository has been public since 2026-08-30. Two of the three tasks that switch brings are done;
+the third is still open.
 
-### 1. Verify Assets & Badges
+### 1. Verify Assets & Badges (done)
 
-Verify the README renders correctly on both GitHub and npm.
+The README renders correctly on both GitHub and npm.
 
-- The logo and the benchmark chart are repository-relative paths (`img/logo.svg`,
-  `img/benchmark.svg`). GitHub resolves them against the repository root, and npm rewrites them to
-  the repository's raw URL via the `repository` field, which serves them only once the repository
-  is public.
-- The npm version and downloads badges (`shields.io`) report "package not found" until the first
-  tarball is actually published to the registry.
+- The logo and the two benchmark charts are repository-relative paths (`img/logo.svg`,
+  `img/benchmark.svg`, `img/benchmark-batch.svg`). GitHub resolves them against the repository root,
+  and npm rewrites them to the repository's raw URL via the `repository` field, which serves them
+  only once the repository is public.
+- The npm version badge (`shields.io`) reported "package not found" until the first tarball reached
+  the registry.
 
-### 2. Enable macOS / iOS CI Workflows
+### 2. Enable macOS / iOS CI Workflows (open)
 
-Currently, the iOS harness workflow (covering the three flavors of `scripts/device-ios.sh`) and the
-build workflow (covering the two framework variants) are intentionally omitted from CI.
+The iOS harness workflow (covering the three flavors of `scripts/device-ios.sh`) and the build
+workflow (covering the two framework variants) are still omitted from CI.
 
-- **The Reason:** macOS runner minutes bill at 10× the Linux rate on private repositories.
-- **The Action:** Once the repository is public, these minutes become free for open-source
-  projects. Adding both workflows to the automated CI pipeline is the first CI task.
+- **The Reason:** macOS runner minutes bill at 10× the Linux rate, which is why both were left out
+  while the repository was private.
+- **The Action:** those minutes are free for public repositories now, so adding both workflows is
+  the next CI task. Until then, Step 2 of the Pre-Flight Checklist runs them by hand.
 
-### 3. Enforce Branch Protection on `main`
+### 3. Enforce Branch Protection on `main` (done)
 
-Add a strict branch ruleset on `main`. While the repository is private, this isn't strictly
-necessary, but a public repository without branch protection allows anyone with write access to
-accidentally (or maliciously) force-push over the commit history.
+`main` carries a ruleset that refuses deletion and force pushes. It deliberately does not require a
+pull request, because the `Publish` job pushes the version bump commit straight to `main`.

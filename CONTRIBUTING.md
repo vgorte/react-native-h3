@@ -56,11 +56,29 @@ of them fails a gate rather than merely leaving a gap.
    call the `h3ops::` function, convert the result back. No computation here.
 5. **`src/<domain>.ts`** wraps the call with its JSDoc and `rethrowAsH3Error`, and `src/index.ts`
    re-exports it in alphabetical order.
-6. **`__tests__/exports.test.ts`** asserts the exported surface exactly, name by name and by count,
-   against `docs/h3-function-table.md`. Both files gain the new name.
+6. **`__tests__/exports.test.ts`** asserts the exported surface exactly, name by name and by count.
+   A function that mirrors an h3-js one gains a row in `docs/h3-function-table.md` as well; an
+   additive one does not, because that table enumerates the h3-js 4.5.0 surface.
 7. **`parity/corpus.ts`** and `cpp/test/ParityProbe.cpp` add the operation to the h3-js comparison,
    unless it has no h3-js counterpart, in which case
-   `packages/react-native-nitro-h3/docs/h3-js-divergences.md` says why.
+   `packages/react-native-nitro-h3/docs/h3-js-divergences.md` says why. Every export but the four
+   `Async` variants and `configure` is a probe operation, which is what keeps the surface check in
+   `parity/probe.test.ts` exact.
+
+## Adding an additive operation
+
+An operation h3-js does not have, `latLngsToCells` and `cellsToLatLngs` today, crosses the same seven
+places with three differences. Route it this way rather than through the parity table, which a
+non-parity row would misrepresent.
+
+- **No parity-table row.** `docs/h3-function-table.md` is derived from upstream h3-js 4.5.0, so only
+  `__tests__/exports.test.ts` gains the name and its count.
+- **Its own comparison.** It is still a probe operation, so the surface check stays exact, but it is
+  compared against the h3-js scalar it batches or replaces, in its own file next to
+  `parity/batches.test.ts`, rather than as a `parity/corpus.ts` row.
+- **Documented as additive.** `packages/react-native-nitro-h3/docs/h3-js-divergences.md` records that
+  it exists here and not in h3-js, proved by a test in `parity/divergences.test.ts`, and the README
+  documents it outside the parity claim.
 
 ## Conventions
 

@@ -24,13 +24,20 @@
 | C functions declared in `h3api.h.in` | **79** (`grep -c "^DECLSPEC"` = 79; the 3 other `DECLSPEC` grep hits are the `#define`s at lines 44/46/49) |
 | h3-js `export`s | 58 = 2 constants (`UNITS`, `POLYGON_TO_CELLS_FLAGS`) + 56 functions |
 | h3-js user-facing *operations* | **54** (56 functions minus the 2 JS-only split-long helpers) |
-| Public TS functions we ship | **64** (= 54 - 5 unit-dispatch + 13 unit-suffixed + `cellToString` + `cellFromString`) |
+| Public TS parity functions we ship | **64** (= 54 - 5 unit-dispatch + 13 unit-suffixed + `cellToString` + `cellFromString`) |
 | Distinct C functions bound | **75** (79 declared - 4 deliberately unbound) |
 | C functions deliberately unbound | **4** |
 
 Note on the "62": the design's 62 counts the 54 h3-js operations with the 5 unit-dispatch ones expanded
 (54 - 5 + 13 = 62), then adds `cellToString` / `cellFromString` on top. 62 + 2 = **64** exported TS
 symbols. Both numbers are correct; they just count different things. This table has 64 rows.
+
+Note on the exported surface: the 64 above are the *parity* functions, the ones this table enumerates
+from upstream. The package also exports the 2 additive batch functions `latLngsToCells` and
+`cellsToLatLngs`, which h3-js does not have and which therefore have no row here, plus 4 `Async`
+variants of functions already listed and `configure`. `__tests__/exports.test.ts` asserts the whole
+surface of 71 names; `packages/react-native-nitro-h3/docs/h3-js-divergences.md` records the additive
+pair.
 
 Notation used below:
 
