@@ -50,13 +50,17 @@ single copy.
 
 ![react-native-nitro-h3 against h3-js, median milliseconds per workload](img/benchmark.svg)
 
-The widest gap measured on a Samsung Galaxy S23 on 2026-08-29 is **375.6× on `compactCells`**, over
-a `k=20` disk of 1,261 cells, with every result verified identical to `h3-js`'s.
+The widest gap measured on an iPhone XS on 2026-08-31 is **807× on `compactCells`**, over a `k=20`
+disk of 1,261 cells, with every measured result verified identical to `h3-js`'s. The Android
+figures, measured on a Samsung Galaxy S23, are in
+[docs/benchmark.md](https://github.com/vgorte/react-native-nitro-h3/blob/main/docs/benchmark.md)
+beside these.
 
-> **Methodology:** Measured on a Samsung Galaxy S23 (`SM-S911U1`, Android 16, API 36) in a Release
-> build, React Native 0.87.0 with Hermes 250829098.0.16, against `h3-js` 4.5.0, on 2026-08-29: both
+> **Methodology:** Measured on an iPhone XS (Apple A12, 2018) running iOS 18.7.9 in a Release build,
+> React Native 0.87.0 with Hermes 250829098.0.16, against `h3-js` 4.5.0, on 2026-08-31: both
 > libraries in the same app and the same Hermes instance, medians of 20 runs, three for
-> `polygonToCells`, after one warm-up, every result compared for equivalence. Full data and method:
+> `polygonToCells`, after one warm-up, every result compared for equivalence. The medians are
+> transcribed from the device screen, so they carry no percentiles. Full data and method:
 > [docs/benchmark.md](https://github.com/vgorte/react-native-nitro-h3/blob/main/docs/benchmark.md).
 
 ## 📦 Installation
@@ -184,6 +188,15 @@ points.forEach((point, i) => {
 const cells = latLngsToCells(coords, 9) // BigUint64Array, one cell per pair
 const centres = cellsToLatLngs(cells) // Float64Array, [lat, lng] per cell
 ```
+
+![One batch call against the loop it replaces, 100,000 elements](img/benchmark-batch.svg)
+
+The saving is the bridge crossings that no longer happen. On an iPhone XS, `cellsToLatLngs` reads
+100,000 centres in 23.4 ms where this package's own `cellToLatLng` loop takes 112.2 ms.
+`latLngsToCells` indexes 100,000 pairs in 54.3 ms against 96.0 ms for the loop, and that 1.77× is a
+floor rather than the win: the loop repeats one coordinate where the batch call indexes 100,000
+distinct ones. Same conditions as the Benchmarks section above, full data in
+[docs/benchmark.md](https://github.com/vgorte/react-native-nitro-h3/blob/main/docs/benchmark.md).
 
 ### `latLngsToCells`
 
