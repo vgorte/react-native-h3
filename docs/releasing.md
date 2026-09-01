@@ -36,6 +36,11 @@ push to `main` reports the true status of all nine core workflows: `CI`, `Nitrog
 `Lint C++`, `C++ tests`, `Parity`, `Build Android`, `Harness Android`, `iOS pod lockfile`, and
 `Build iOS`.
 
+A tenth workflow, `Fuzz nightly`, runs on a schedule rather than on push, so it never appears in
+that status. Check its latest run in the Actions tab before releasing. GitHub disables a scheduled
+workflow after 60 days without repository activity; if it shows as disabled, re-enable it and
+dispatch a run by hand.
+
 ### 2. Local iOS validation
 
 CI checks the pod lockfile and builds both framework linkages on macOS, but the harness suite is

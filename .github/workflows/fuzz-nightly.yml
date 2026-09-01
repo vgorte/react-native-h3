@@ -1,0 +1,81 @@
+name: Fuzz nightly
+
+on:
+  schedule:
+    # 03:17 UTC; GitHub disables a scheduled workflow after 60 days without repository activity.
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fuzz:
+    name: Fuzz ${{ matrix.target }}
+    runs-on: ubuntu-latest
+    # One job per target rather than one step per target: the ten minutes are then spent in
+    # parallel, and a finding in one target leaves the other three unaffected.
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [fuzz_cell_buffers, fuzz_polygon_rings, fuzz_scalar_ops, fuzz_cell_strings]
+    env:
+      CC: clang
+      CXX: clang++
+      SEEDS: packages/react-native-nitro-h3/cpp/fuzz/corpus/${{ matrix.target }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Configure
+        run: |
+          cmake -S packages/react-native-nitro-h3/cpp/test -B build/fuzz \
+            -DCMAKE_BUILD_TYPE=Debug -DH3_BUILD_FUZZERS=ON
+      - name: Build
+        run: cmake --build build/fuzz -j --target ${{ matrix.target }}
+      # Restore and save are the separate actions on purpose: a cache key is immutable, so the
+      # combined action's static key would freeze the corpus at whatever night one produced.
+      - name: Restore corpus
+        uses: actions/cache/restore@v6
+        with:
+          path: corpus/${{ matrix.target }}
+          key: fuzz-corpus-${{ matrix.target }}-${{ github.run_id }}
+          restore-keys: fuzz-corpus-${{ matrix.target }}-
+      - name: Fuzz
+        run: |
+          set -o pipefail
+          mkdir -p corpus/${{ matrix.target }} findings
+          ./build/fuzz/${{ matrix.target }} corpus/${{ matrix.target }} "$SEEDS" \
+            -max_total_time=600 -max_len=4096 -rss_limit_mb=4096 -timeout=25 \
+            -artifact_prefix=findings/ 2>&1 | tee findings/fuzz.log
+      # A true minimisation: `-merge=1` into an existing directory only ever adds, so the corpus
+      # would grow without bound. The merge target is a fresh empty directory each night.
+      - name: Minimise corpus
+        if: always()
+        run: |
+          set -o pipefail
+          rm -rf corpus-min && mkdir -p corpus-min findings
+          ./build/fuzz/${{ matrix.target }} -merge=1 -max_len=4096 -rss_limit_mb=4096 -timeout=25 \
+            corpus-min corpus/${{ matrix.target }} "$SEEDS" 2>&1 | tee findings/merge.log
+          rm -rf corpus/${{ matrix.target }}
+          mv corpus-min corpus/${{ matrix.target }}
+      # The job is designed to go red on a finding, and the default post-job save is skipped on
+      # failure, which would discard exactly the most interesting corpus state.
+      - name: Save corpus
+        if: always()
+        uses: actions/cache/save@v6
+        with:
+          path: corpus/${{ matrix.target }}
+          key: fuzz-corpus-${{ matrix.target }}-${{ github.run_id }}
+      - name: Upload findings
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: fuzz-nightly-${{ matrix.target }}
+          if-no-files-found: ignore
+          path: |
+            findings/crash-*
+            findings/leak-*
+            findings/timeout-*
+            findings/oom-*
+            findings/slow-unit-*
+            findings/fuzz.log
+            findings/merge.log
