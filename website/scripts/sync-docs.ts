@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs'
-import { copyFile, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { copyFile, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { dirname, join, posix } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { BASE, EXCLUDED, PAGES, type Page, REPO } from '../pages'
@@ -117,8 +117,11 @@ async function main() {
     throw new Error(`not mapped in website/pages.ts and not excluded: ${unmapped.join(', ')}`)
   }
 
-  await rm(CONTENT, { recursive: true, force: true })
+  // The landing page is written by hand and lives in the same tree, so only generated pages go.
   await mkdir(CONTENT, { recursive: true })
+  for (const entry of await readdir(CONTENT)) {
+    if (entry !== 'index.mdx') await rm(join(CONTENT, entry), { recursive: true, force: true })
+  }
   for (const page of PAGES) {
     const sourcePath = join(ROOT, page.source)
     if (!existsSync(sourcePath)) throw new Error(`${page.source} does not exist`)

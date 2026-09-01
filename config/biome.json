@@ -16,6 +16,8 @@
       "!**/lib",
       "!**/node_modules",
       "!**/build",
+      "!**/website/dist",
+      "!**/website/.astro",
       "!**/.cxx",
       "!**/.gradle",
       "!**/.harness",
