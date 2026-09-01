@@ -5,51 +5,7 @@
 > cost. Measured figures live in [benchmark.md](benchmark.md); this page explains the behaviour
 > behind them.
 
-## 📦 The Batch API in Detail
-
-`latLngsToCells` and `cellsToLatLngs` run a scalar operation over a whole typed array in one native
-call, for the workloads where per-call overhead dominates. They are not part of the `h3-js` parity
-surface: `h3-js` exports no counterpart, which
-[h3-js-divergences.md](h3-js-divergences.md#the-additive-batch-calls) records and a test asserts.
-
-The saving is the crossing, not a faster inner loop. Host measurements put the native work of a
-batch call within about 2 % of the native work of the loop it replaces, so what disappears is the
-per-element boundary crossing.
-
-### `latLngsToCells`
-
-```ts
-function latLngsToCells(coords: Float64Array, res: number): BigUint64Array
-```
-
-Indexes a whole coordinate set in one native call. `coords` is interleaved
-`[lat0, lng0, lat1, lng1, ...]` in degrees, latitude first, the reverse of the GeoJSON order.
-Returns one cell per pair, in input order.
-
-- An odd `coords.length` throws an `H3Error` reading `A coordinate set must hold an even number of
-  doubles`.
-- A rejected pair throws an `H3Error` whose message carries its index, as in `coords[3]: ...`.
-- A `res` outside `0` to `15` is rejected on the first pair, so the message reads
-  `coords[0]: Resolution argument was outside of acceptable range (code: 4)`.
-- An empty `coords` returns an empty `BigUint64Array`, and `res` is never judged.
-- The cell ceiling below applies, counted in cells: one cell per pair.
-
-### `cellsToLatLngs`
-
-```ts
-function cellsToLatLngs(cells: BigUint64Array): Float64Array
-```
-
-Reads the centres of a whole cell set in one native call. Returns interleaved
-`[lat0, lng0, lat1, lng1, ...]` in degrees, latitude first again, two entries per cell, which is the
-flat coordinate buffer circle layers and heatmaps consume.
-
-- An invalid cell throws an `H3Error` whose message carries its index, such as
-  `cells[1]: Cell argument was not valid (code: 5)`.
-- An empty `cells` returns an empty `Float64Array`, and no element is validated.
-- The cell ceiling below applies, counted in cells, and is checked before the first centre is read.
-
-### When a Batch Call Pays
+## 📦 When a Batch Call Pays
 
 100,000 elements is a favourable size by construction. Below a few hundred, one crossing plus a
 typed-array allocation is a larger share of the total, and that crossover is unmeasured. Building
