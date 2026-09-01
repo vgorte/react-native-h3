@@ -9,6 +9,9 @@
 Cell collections use `BigUint64Array`:
 
 ```ts
+import { gridDisk, latLngToCell } from 'react-native-nitro-h3'
+
+const cell = latLngToCell(37.7749, -122.4194, 9)
 const cells = gridDisk(cell, 10)
 
 console.log(cells instanceof BigUint64Array) // true
@@ -41,7 +44,7 @@ const centres = cellsToLatLngs(cells)
 
 Coordinates use interleaved `[latitude, longitude]` pairs.
 
-These APIs are additive and are not part of the `h3-js` compatibility surface. They are intended for workloads where repeatedly crossing the JS/native boundary would otherwise dominate execution time.
+These APIs are additive and are not part of the `h3-js` compatibility surface, which [Divergences from h3-js 4.5.0](../h3-js-divergences.md#the-additive-batch-calls) records and a test asserts. They are intended for workloads where repeatedly crossing the JS/native boundary would otherwise dominate execution time.
 
 The saving is the crossing, not a faster inner loop. Host measurements put the native work of a
 batch call within about 2 % of the native work of the loop it replaces, so what disappears is the
@@ -84,7 +87,7 @@ flat coordinate buffer circle layers and heatmaps consume.
 
 ![One batch call against the loop it replaces, 100,000 elements](../../img/benchmark-batch.svg)
 
-The saving is the bridge crossings that no longer happen. Same conditions as the Performance section above, full data in [docs/benchmark.md](../benchmark.md).
+The saving is the bridge crossings that no longer happen. Same conditions as the headline benchmark: iPhone XS, iOS 18.7.9, React Native 0.87.0, Hermes, 20-run median, 2026-08-31. Full data in [Benchmark report](../benchmark.md).
 
 Whether a batch call pays for a given input size is covered in
 [Performance guide](../performance.md#when-a-batch-call-pays), and the measured rows are `W11` and

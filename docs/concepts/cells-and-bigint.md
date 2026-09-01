@@ -9,6 +9,8 @@
 H3 indexes are represented as JavaScript `bigint` values:
 
 ```ts
+import { latLngToCell } from 'react-native-nitro-h3'
+
 const cell = latLngToCell(37.7749, -122.4194, 9)
 
 console.log(cell)
@@ -20,6 +22,8 @@ This avoids converting every H3 index to and from a hexadecimal string on the ho
 When a string representation is required, for example when communicating with a backend, convert only at the application boundary:
 
 ```ts
+import { cellFromString, cellToString } from 'react-native-nitro-h3'
+
 const hex = cellToString(cell)
 const restored = cellFromString(hex)
 ```
