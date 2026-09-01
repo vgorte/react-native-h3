@@ -10,9 +10,6 @@ Most H3 operations are intentionally synchronous.
 
 For small native calls, the cost of moving work to another thread can exceed the cost of the H3 operation itself.
 
-Everything else is synchronous by design. A thread hop (context switch) often costs more time than
-the H3 C library call it was meant to move off the main thread.
-
 ## The four async variants
 
 Four expensive operations provide async variants:
@@ -41,6 +38,9 @@ Available async functions:
 Those are the only operations heavy enough to cross Nitro's 50 ms rule of thumb, where a call
 starts costing visible frames.
 
+Everything else is synchronous by design. A thread hop (context switch) often costs more time than
+the H3 C library call it was meant to move off the main thread.
+
 ## Guarantees
 
 **Buffer safety.** An async variant copies any input cell set before work starts on the background
@@ -52,7 +52,7 @@ codes, as their synchronous siblings.
 
 ## What the hop costs
 
-**What the hop costs.** On the iPhone XS, `polygonToCellsAsync` adds about 11 ms to the 234 ms
+On the iPhone XS, `polygonToCellsAsync` adds about 11 ms to the 234 ms
 `polygonToCells` call, while `uncompactCellsAsync` is indistinguishable from its synchronous sibling
 at 3.8 ms. On the Galaxy S23 the same hop costs about 68 ms on a 176 ms call, and 1.4 ms on a 3.5 ms
 one. The rows are `W3` and `W8` in [benchmark.md](../benchmark.md).
