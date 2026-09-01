@@ -19,8 +19,10 @@ Pod::Spec.new do |s|
     "third_party/h3/include/*.h",
   ]
 
-  # The gtest suites build under `cpp/test/CMakeLists.txt`, never inside the app
-  s.exclude_files = "cpp/test/**/*"
+  # The gtest suites build under `cpp/test/CMakeLists.txt`, never inside the app;
+  # the fuzz harnesses build under `cpp/fuzz/CMakeLists.txt` and define symbols
+  # (LLVMFuzzerTestOneInput, LLVMFuzzerInitialize) that duplicate across harnesses
+  s.exclude_files = ["cpp/test/**/*", "cpp/fuzz/**/*"]
 
   s.pod_target_xcconfig = {
     "HEADER_SEARCH_PATHS" => "\"$(PODS_TARGET_SRCROOT)/third_party/h3/include\" \"$(PODS_TARGET_SRCROOT)/cpp\"",

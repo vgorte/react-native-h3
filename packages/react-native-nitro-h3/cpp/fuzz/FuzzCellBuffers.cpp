@@ -29,6 +29,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   const double res = static_cast<double>(data[0] % 18) - 1.0;
 
   const size_t count = (size - 1) / sizeof(uint64_t);
+  static_assert(sizeof(uint64_t) == sizeof(double));
   // two separately typed buffers: one block read as both types would violate strict aliasing
   std::vector<uint64_t> cells(count);
   std::vector<double> coords(count);
