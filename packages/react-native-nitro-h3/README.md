@@ -29,7 +29,6 @@ The result is a native H3 binding designed for performance-sensitive React Nativ
 * 🧵 **Async variants**: move expensive operations to a background thread when appropriate.
 * 🛡️ **Optional cell ceiling**: reject unexpectedly large result sets before allocation.
 * ✅ **`h3-js` API parity**: 64 functions under the same names, with a short list of documented divergences.
-* 🧩 **Legacy Architecture compatible**: the New Architecture is not required.
 
 ---
 
@@ -340,7 +339,7 @@ For contributors and maintainers:
 
 | Platform      | Requirement                    |
 | ------------- | ------------------------------ |
-| React Native  | **0.75+**                      |
+| React Native  | **0.76+**                      |
 | Nitro Modules | **0.37+**                      |
 | C++           | C++20-compatible toolchain     |
 | iOS           | React Native deployment target |
@@ -349,9 +348,7 @@ For contributors and maintainers:
 | Android SDK   | **compileSdk 36**              |
 | Android NDK   | **27.1.12297006**              |
 
-> 🧩 **The New Architecture is not required.**
-
-React Native 0.75 to 0.81 can run the package on the Legacy Architecture. From React Native 0.82 onward, React Native ships with the New Architecture only.
+The package requires the New Architecture, the default since React Native 0.76. The iOS and Android build workflows compile the example app against React Native 0.87.0.
 
 ---
 
