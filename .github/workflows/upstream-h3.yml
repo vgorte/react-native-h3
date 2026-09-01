@@ -1,0 +1,66 @@
+name: Upstream H3 release check
+
+on:
+  schedule:
+    # Monday 06:00 UTC: a quiet time, away from weekday CI load.
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  check:
+    name: Check for a newer upstream release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Read the pinned tag
+        id: pinned
+        run: |
+          tag="$(sed -n "s/^const H3_TAG = '\(.*\)'$/\1/p" scripts/vendor-h3.ts)"
+          if [ -z "$tag" ]; then
+            echo "could not extract H3_TAG from scripts/vendor-h3.ts" >&2
+            exit 1
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      - name: Fetch the latest upstream release
+        id: latest
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # `/releases/latest` already excludes pre-releases and drafts.
+        run: |
+          tag="$(gh api repos/uber/h3/releases/latest --jq .tag_name)"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      - name: Compare and open an issue if upstream is ahead
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PINNED: ${{ steps.pinned.outputs.tag }}
+          LATEST: ${{ steps.latest.outputs.tag }}
+        run: |
+          if [ "$PINNED" = "$LATEST" ]; then
+            echo "up to date at $PINNED"
+            exit 0
+          fi
+
+          # A plain inequality only tells the tags apart, not which one is newer, and it must not
+          # fire while the pinned tag is briefly ahead of what `/latest` reports; `sort -V` settles
+          # both by picking the actually older of the two.
+          older="$(printf '%s\n%s\n' "$PINNED" "$LATEST" | sort -V | head -1)"
+          if [ "$older" != "$PINNED" ]; then
+            echo "pinned tag $PINNED is not older than upstream $LATEST, nothing to do"
+            exit 0
+          fi
+
+          title="Upstream H3 release $LATEST available (vendored: $PINNED)"
+          existing="$(gh issue list --state open --search "\"$title\" in:title" --json title --jq '.[].title')"
+          if [ -n "$existing" ]; then
+            echo "an issue already exists: $existing"
+            exit 0
+          fi
+
+          gh issue create --title "$title" --body "Upstream H3 has released [$LATEST](https://github.com/uber/h3/releases/tag/$LATEST), and this repository still vendors $PINNED. Bump it with \`bun run vendor:h3\`, then run the parity suite and the native tests before merging."
