@@ -120,7 +120,7 @@ export const EXCLUDED: readonly string[] = [
   'docs/research/',
 ]
 
-/** Starlight sidebar: one group per entry of `GROUPS`, pages in table order. */
+/** Builds the Starlight sidebar: one group per entry of `GROUPS`, pages in table order. */
 export function sidebar() {
   return GROUPS.map((label) => ({
     label,
@@ -131,7 +131,7 @@ export function sidebar() {
   }))
 }
 
-/** `'/concepts/cells-and-bigint/'` becomes `'concepts/cells-and-bigint'`. */
+/** Turns `'/concepts/cells-and-bigint/'` into `'concepts/cells-and-bigint'`. */
 export function slugOf(route: string): string {
   return route.replace(/^\/|\/$/g, '')
 }

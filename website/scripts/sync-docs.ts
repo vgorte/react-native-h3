@@ -8,6 +8,7 @@ const WEBSITE = dirname(dirname(fileURLToPath(import.meta.url)))
 const ROOT = dirname(WEBSITE)
 const CONTENT = join(WEBSITE, 'src', 'content', 'docs')
 const IMAGES = ['logo.svg', 'architecture.svg', 'benchmark.svg', 'benchmark-batch.svg']
+const FENCE = /^(```|~~~)/
 
 /** Returns the H1 text and the body without it. Exactly one H1 outside fenced blocks is required. */
 export function splitTitle(markdown: string): { title: string; body: string } {
@@ -16,7 +17,7 @@ export function splitTitle(markdown: string): { title: string; body: string } {
   let title = ''
   let titleIndex = -1
   for (const [index, line] of lines.entries()) {
-    if (/^(```|~~~)/.test(line)) inFence = !inFence
+    if (FENCE.test(line)) inFence = !inFence
     if (inFence || !line.startsWith('# ')) continue
     if (titleIndex !== -1) throw new Error(`second H1 at line ${index + 1}: ${line}`)
     title = line.slice(2).trim()
@@ -56,14 +57,14 @@ export function rewriteLinks(body: string, page: Page, base: string): string {
   return body
     .split('\n')
     .map((line) => {
-      if (/^(```|~~~)/.test(line)) inFence = !inFence
+      if (FENCE.test(line)) inFence = !inFence
       if (inFence) return line
       return line.replace(/\]\(([^)\s]+)\)/g, (_, target: string) => `](${rewrite(target)})`)
     })
     .join('\n')
 }
 
-/** The YAML block Starlight needs. Values go through `JSON.stringify`, which is valid YAML. */
+/** Writes the YAML block Starlight needs. Values go through `JSON.stringify`, which is valid YAML. */
 export function frontmatter(page: Page, title: string, lastUpdated: string | null): string {
   const lines = [
     '---',
@@ -80,7 +81,7 @@ export function frontmatter(page: Page, title: string, lastUpdated: string | nul
   return lines.join('\n')
 }
 
-/** Frontmatter plus the rewritten body. */
+/** Returns the frontmatter followed by the rewritten body. */
 export function transform(
   markdown: string,
   page: Page,
@@ -106,6 +107,16 @@ function isExcluded(repoPath: string): boolean {
 }
 
 async function main() {
+  // The gate runs first so a docs file nobody mapped leaves the generated tree as it was.
+  const mapped = new Set(PAGES.map((page) => page.source))
+  const unmapped: string[] = []
+  for await (const file of new Bun.Glob('docs/**/*.md').scan({ cwd: ROOT })) {
+    if (!mapped.has(file) && !isExcluded(file)) unmapped.push(file)
+  }
+  if (unmapped.length > 0) {
+    throw new Error(`not mapped in website/pages.ts and not excluded: ${unmapped.join(', ')}`)
+  }
+
   await rm(CONTENT, { recursive: true, force: true })
   await mkdir(CONTENT, { recursive: true })
   for (const page of PAGES) {
@@ -125,14 +136,6 @@ async function main() {
   await copyFile(join(ROOT, 'img', 'logo.svg'), join(WEBSITE, 'src', 'assets', 'logo.svg'))
   await copyFile(join(ROOT, 'img', 'logo.svg'), join(WEBSITE, 'public', 'favicon.svg'))
 
-  const mapped = new Set(PAGES.map((page) => page.source))
-  const unmapped: string[] = []
-  for await (const file of new Bun.Glob('docs/**/*.md').scan({ cwd: ROOT })) {
-    if (!mapped.has(file) && !isExcluded(file)) unmapped.push(file)
-  }
-  if (unmapped.length > 0) {
-    throw new Error(`not mapped in website/pages.ts and not excluded: ${unmapped.join(', ')}`)
-  }
   console.log(`synced ${PAGES.length} pages into ${CONTENT}`)
 }
 

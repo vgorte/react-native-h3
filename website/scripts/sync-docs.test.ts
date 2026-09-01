@@ -1,11 +1,16 @@
 import { describe, expect, test } from 'bun:test'
-import { PAGES } from '../pages'
+import { PAGES, type Page } from '../pages'
 import { frontmatter, rewriteLinks, splitTitle, stripLeadingEmoji, transform } from './sync-docs'
 
 const base = '/react-native-nitro-h3'
-const perf = PAGES.find((page) => page.route === '/performance/')!
-const api = PAGES.find((page) => page.route === '/api/')!
-const concept = PAGES.find((page) => page.route === '/concepts/cells-and-bigint/')!
+const pageFor = (route: string): Page => {
+  const page = PAGES.find((entry) => entry.route === route)
+  if (!page) throw new Error(`no page for ${route}`)
+  return page
+}
+const perf = pageFor('/performance/')
+const api = pageFor('/api/')
+const concept = pageFor('/concepts/cells-and-bigint/')
 
 describe('splitTitle', () => {
   test('takes the first H1 and removes it from the body', () => {
