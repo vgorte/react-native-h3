@@ -40,7 +40,7 @@ The result is a native H3 binding designed for performance-sensitive React Nativ
 
 In this iPhone XS benchmark, the largest measured difference was:
 
-### **807× faster**
+### **862× faster**
 
 for `compactCells` on a `k=20` disk containing 1,261 cells.
 
@@ -48,13 +48,13 @@ All measured results were verified against `h3-js` 4.5.0 for equivalence.
 
 | Operation | `react-native-nitro-h3` | `h3-js` | Factor |
 | --------- | ----------------------: | ------: | -----: |
-| `compactCells` (`k=20` disk) | 0.100 ms | 81.0 ms | 807× |
-| `polygonToCells` (San Francisco, res 12) | 233.8 ms | 78,805.6 ms | 337× |
-| `latLngsToCells` (100k pairs, batch) | 54.3 ms | 2,515.2 ms | 46× |
-| `cellsToLatLngs` (100k cells, batch) | 23.4 ms | 1,313.6 ms | 56× |
-| `latLngToCell` (100k calls) | 96.0 ms | 2,448.6 ms | 25× |
+| `compactCells` (`k=20` disk) | 0.085 ms | 72.9 ms | 862× |
+| `polygonToCells` (San Francisco, res 12) | 220.7 ms | 75,309.8 ms | 341× |
+| `latLngsToCells` (100k pairs, batch) | 53.9 ms | 2,514.7 ms | 47× |
+| `cellsToLatLngs` (100k cells, batch) | 23.3 ms | 1,315.3 ms | 56× |
+| `latLngToCell` (100k calls) | 91.5 ms | 2,156.9 ms | 24× |
 
-**Benchmark:** iPhone XS · Apple A12 · iOS 18.7.9 · Release build · React Native 0.87.0 · Hermes · 20-run median · 2026-08-31.
+**Benchmark:** iPhone XS · Apple A12 · iOS 18.7.9 · Release build · React Native 0.87.0 · Hermes · 20-run median · 2026-09-01.
 
 > ⚠️ Benchmark numbers are workload- and device-dependent. They are representative measurements, not guaranteed speedups.
 

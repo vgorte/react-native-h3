@@ -24,33 +24,33 @@ text { fill: #8b949e }
 <text class="strong" x="24" y="88" font-size="14" font-weight="600">latLngsToCells, 100,000 coordinate pairs</text>
 <text x="144" y="109" font-size="12" text-anchor="end">one batch call</text>
 <rect x="154" y="96" width="11" height="18" rx="3" fill="#3b82f6"/>
-<text x="173" y="109" font-size="12" font-weight="600"><tspan class="strong">54.3 ms</tspan><tspan class="factor" dx="10">46× faster</tspan></text>
+<text x="173" y="109" font-size="12" font-weight="600"><tspan class="strong">53.9 ms</tspan><tspan class="factor" dx="10">46.6× faster</tspan></text>
 <text x="144" y="133" font-size="12" text-anchor="end">h3-js</text>
 <rect class="reference" x="154" y="120" width="512" height="18" rx="3" fill="#7d8590"/>
-<text class="strong" x="674" y="133" font-size="12" font-weight="600">2,515.2 ms</text>
+<text class="strong" x="674" y="133" font-size="12" font-weight="600">2,514.7 ms</text>
 <text class="strong" x="24" y="168" font-size="14" font-weight="600">cellsToLatLngs, 100,000 cells</text>
 <text x="144" y="189" font-size="12" text-anchor="end">one batch call</text>
 <rect x="154" y="176" width="9" height="18" rx="3" fill="#3b82f6"/>
-<text x="171" y="189" font-size="12" font-weight="600"><tspan class="strong">23.4 ms</tspan><tspan class="factor" dx="10">56× faster</tspan></text>
+<text x="171" y="189" font-size="12" font-weight="600"><tspan class="strong">23.3 ms</tspan><tspan class="factor" dx="10">56.3× faster</tspan></text>
 <text x="144" y="213" font-size="12" text-anchor="end">h3-js</text>
 <rect class="reference" x="154" y="200" width="512" height="18" rx="3" fill="#7d8590"/>
-<text class="strong" x="674" y="213" font-size="12" font-weight="600">1,313.6 ms</text>
+<text class="strong" x="674" y="213" font-size="12" font-weight="600">1,315.3 ms</text>
 <text class="strong" x="24" y="258" font-size="15" font-weight="600">Against this package's own per-call loop</text>
 <text class="strong" x="24" y="284" font-size="14" font-weight="600">latLngsToCells against a latLngToCell loop</text>
 <text x="144" y="305" font-size="12" text-anchor="end">one batch call</text>
-<rect x="154" y="292" width="290" height="18" rx="3" fill="#3b82f6"/>
-<text x="452" y="305" font-size="12" font-weight="600"><tspan class="strong">54.3 ms</tspan><tspan class="factor" dx="10">1.77× faster *</tspan></text>
+<rect x="154" y="292" width="302" height="18" rx="3" fill="#3b82f6"/>
+<text x="464" y="305" font-size="12" font-weight="600"><tspan class="strong">53.9 ms</tspan><tspan class="factor" dx="10">1.7× faster *</tspan></text>
 <text x="144" y="329" font-size="12" text-anchor="end">per-call loop</text>
 <rect class="reference" x="154" y="316" width="512" height="18" rx="3" fill="#7d8590"/>
-<text class="strong" x="674" y="329" font-size="12" font-weight="600">96.0 ms</text>
+<text class="strong" x="674" y="329" font-size="12" font-weight="600">91.5 ms</text>
 <text class="strong" x="24" y="364" font-size="14" font-weight="600">cellsToLatLngs against a cellToLatLng loop</text>
 <text x="144" y="385" font-size="12" text-anchor="end">one batch call</text>
 <rect x="154" y="372" width="107" height="18" rx="3" fill="#3b82f6"/>
-<text x="269" y="385" font-size="12" font-weight="600"><tspan class="strong">23.4 ms</tspan><tspan class="factor" dx="10">4.79× faster</tspan></text>
+<text x="269" y="385" font-size="12" font-weight="600"><tspan class="strong">23.3 ms</tspan><tspan class="factor" dx="10">4.8× faster</tspan></text>
 <text x="144" y="409" font-size="12" text-anchor="end">per-call loop</text>
 <rect class="reference" x="154" y="396" width="512" height="18" rx="3" fill="#7d8590"/>
-<text class="strong" x="674" y="409" font-size="12" font-weight="600">112.2 ms</text>
+<text class="strong" x="674" y="409" font-size="12" font-weight="600">112.0 ms</text>
 <text x="24" y="436" font-size="11">* The loop repeats one coordinate where the batch call indexes 100,000 distinct ones, so this figure is a floor rather than the win.</text>
-<text x="24" y="460" font-size="11">Measured on iPhone XS (A12 Bionic, 2018), iOS 18.7.9, Release build, react-native 0.87.0, against h3-js 4.5.0, 2026-08-31.</text>
+<text x="24" y="460" font-size="11">Measured on iPhone XS (iPhone11,2), iOS 18.7.9, Release build, react-native 0.87.0, against h3-js 4.5.0, 2026-09-01.</text>
 <text x="24" y="478" font-size="11">Median of 20 runs after one warm-up. Bars are scaled per pair.</text>
 </svg>
