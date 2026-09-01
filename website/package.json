@@ -1,0 +1,18 @@
+{
+  "name": "react-native-nitro-h3-website",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "sync": "bun scripts/sync-docs.ts",
+    "og": "bun scripts/render-og.ts",
+    "dev": "bun run sync && astro dev",
+    "build": "bun run sync && astro build",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "@astrojs/starlight": "0.41.11",
+    "astro": "7.2.10",
+    "sharp": "0.35.4",
+    "starlight-links-validator": "0.25.3"
+  }
+}
