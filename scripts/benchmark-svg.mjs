@@ -6,7 +6,7 @@
  * this package's own per-call loop.
  *
  * The JSON is the `BENCHMARK_JSON` line the example app's benchmark screen logs on a Release build,
- * reassembled from its chunks, pretty-printed and committed. Rows without an `h3-js` reference carry
+ * reassembled from its chunks by `benchmark-device.ts`. Rows without an `h3-js` reference carry
  * no factor and are left out. A run whose payload could not be recovered is transcribed by hand, and
  * then carries a `source` field naming that and a per-row `factor` the screen displayed,
  * because a factor recomputed from rounded medians drifts from the one that was measured.
@@ -19,6 +19,7 @@
 import { readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { failPayload, validatePayload } from './benchmark-payload.ts'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const INPUT = join(ROOT, 'apps', 'example', 'benchmark.json')
@@ -130,76 +131,11 @@ function formatFactor(factor) {
 }
 
 function fail(field, expectation) {
-  throw new Error(`${INPUT}: \`${field}\` ${expectation}`)
-}
-
-function requireString(value, field) {
-  if (typeof value !== 'string' || value.length === 0) {
-    fail(field, 'must be a non-empty string')
-  }
-}
-
-function validate(payload) {
-  if (payload == null || typeof payload !== 'object') {
-    fail('payload', 'must be an object')
-  }
-  if (!Array.isArray(payload.rows) || payload.rows.length === 0) {
-    fail('rows', 'must be a non-empty array')
-  }
-  payload.rows.forEach((row, index) => {
-    const at = `rows[${index}]`
-    if (row == null || typeof row !== 'object') {
-      fail(at, 'must be an object')
-    }
-    requireString(row.workload, `${at}.workload`)
-    requireString(row.detail, `${at}.detail`)
-    if (!Number.isInteger(row.runs) || row.runs <= 0) {
-      fail(`${at}.runs`, 'must be an integer greater than 0')
-    }
-    // a zero median is real, below clock resolution; `toBars` skips it
-    if (!Number.isFinite(row.millis) || row.millis < 0) {
-      fail(`${at}.millis`, 'must be a finite number of 0 or more')
-    }
-    const reference = row.referenceMillis
-    if (reference !== null && (typeof reference !== 'number' || !Number.isFinite(reference))) {
-      fail(`${at}.referenceMillis`, 'must be a finite number or null')
-    }
-    // optional, and only a transcribed payload carries it; see the header comment
-    const factor = row.factor
-    if (factor != null && (!Number.isFinite(factor) || factor <= 0)) {
-      fail(`${at}.factor`, 'must be a finite number greater than 0, or absent')
-    }
-  })
-  if (payload.source !== undefined) {
-    requireString(payload.source, 'source')
-  }
-  const measuredOn = payload.measuredOn
-  if (measuredOn == null || typeof measuredOn !== 'object') {
-    fail('measuredOn', 'must be an object')
-  }
-  for (const field of ['platform', 'osVersion', 'build', 'reactNative', 'h3js', 'date']) {
-    requireString(measuredOn[field], `measuredOn.${field}`)
-  }
-  // the screen only reads a model on Android, so a payload without one stays valid
-  if (measuredOn.device !== undefined) {
-    requireString(measuredOn.device, 'measuredOn.device')
-  }
-  if (!Number.isInteger(measuredOn.warmupRuns) || measuredOn.warmupRuns < 0) {
-    fail('measuredOn.warmupRuns', 'must be an integer of 0 or more')
-  }
-  // a Debug build is several times slower on the native side, so its factors are not comparable
-  if (measuredOn.build.startsWith('Debug')) {
-    fail(
-      'measuredOn.build',
-      'is `Debug`: a Debug build is several times slower on the native side and its numbers must ' +
-        'not be published, re-run the benchmark screen in a Release build',
-    )
-  }
-  return payload
+  failPayload(INPUT, field, expectation)
 }
 
 function readPayload() {
-  return validate(JSON.parse(readFileSync(INPUT, 'utf8')))
+  return validatePayload(JSON.parse(readFileSync(INPUT, 'utf8')), INPUT)
 }
 
 // the leading `W\d+` is an id, not part of the name a reader wants to see

@@ -14,6 +14,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
   ) -> Bool {
+    mirrorReactNativeLogsToStandardError()
+
     let delegate = ReactNativeDelegate()
     let factory = RCTReactNativeFactory(delegate: delegate)
     delegate.dependencyProvider = RCTAppDependencyProvider()
@@ -30,6 +32,19 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     )
 
     return true
+  }
+}
+
+/**
+ * Mirrors every React Native log message to stderr, next to the default `os_log` function.
+ * `xcrun devicectl device process launch --console` reads stdout and stderr only, so a device
+ * run captures the same lines `logcat` carries on Android.
+ */
+private func mirrorReactNativeLogsToStandardError() {
+  RCTAddLogFunction { _, _, _, _, message in
+    guard let message else { return }
+    fputs(message + "\n", stderr)
+    fflush(stderr)
   }
 }
 

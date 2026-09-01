@@ -21,10 +21,16 @@ Release build on a physical phone.
 
 ## Headline metric
 
-The README reports the largest measured speedup: `compactCells` at 807× on the iPhone XS.
+The README reports the largest measured speedup: `compactCells` at 862× on the iPhone XS.
 
 This workload is intentionally included because it exposes the cost of crossing the
 JavaScript/Emscripten boundary with large cell sets.
+
+Read that factor with its own median in mind. `compactCells` finishes in 0.085 ms on the iPhone XS,
+at the resolution of the clock, so a jitter of a few hundredths of a millisecond moves the factor by
+tens of percent: across the two iPhone XS runs on record it landed at 807× and 862×. `polygonToCells`
+is the stable large factor. Its 220.7 ms median sits far above clock resolution, and the same two
+runs put it at 337× and 341×.
 
 The complete workload matrix is reported below.
 
@@ -133,13 +139,16 @@ The set is chosen so the headline rows can be read in context rather than alone:
 
 ![react-native-nitro-h3 against h3-js, median milliseconds per workload](../img/benchmark.svg)
 
-Both runs are hand-run on a physical phone in a Release build. CI does not produce these figures: an
-emulator on a shared runner says nothing about a phone. All timing figures represent the median
-execution time in milliseconds, and the speedup factor is the `h3-js` median divided by the
-`react-native-nitro-h3` median. Both devices ran the same binary, built from commit `7f5d93d`, and
-both were on wired USB power for the whole run.
+Both runs come from a physical phone in a Release build, driven end to end by
+`bun run benchmark:device`. CI does not produce these figures: an emulator on a shared runner says
+nothing about a phone. All timing figures represent the median execution time in milliseconds, and
+the speedup factor is the `h3-js` median divided by the `react-native-nitro-h3` median, computed from
+the unrounded medians in the payload. Both devices ran the same code, built by
+`scripts/build-device-release.sh` from `main` at `1d79ef7` plus the log mirror in
+`apps/example/ios/H3Example/AppDelegate.swift` that the capture needs, which is outside the measured
+code path. Both phones were on wired USB power for the whole run.
 
-### iPhone XS, iOS 18.7.9, 2026-08-31
+### iPhone XS, iOS 18.7.9, 2026-09-01
 
 | Field | Value |
 |---|---|
@@ -148,7 +157,8 @@ both were on wired USB power for the whole run.
 | Build Type | Release |
 | React Native | 0.87.0, Hermes 250829098.0.16 |
 | Target | `h3-js` 4.5.0 (the same H3 v4.5.0 C core this package vendors) |
-| Duration | 1,262 seconds |
+| Capture | `bun run benchmark:device`; the payload is committed as `apps/example/benchmark.json` |
+| Duration | 1,213 seconds |
 | Passes | 1 warm-up pass, then 20 timed runs per workload (3 for the two `W3` rows and `W2d`, 1,000 single calls for `W0`) |
 | Power | wired USB throughout, and therefore charging, with the screen on and the Benchmark tab in the foreground |
 | Thermal | not recorded: iOS 18.7.9 exposes neither battery level nor thermal state to the host |
@@ -156,85 +166,88 @@ both were on wired USB power for the whole run.
 
 | Workload | react-native-nitro-h3 | h3-js | Speedup | Eq. | Detail |
 |---|---:|---:|---:|:-:|---|
-| **W0:** `latLngToCell` (per call) | **0.004 ms** | 0.033 ms | **7.6×** | ✅ | 1,000 distinct inputs, 0.0002 ms baseline subtracted, p95 0.008 ms against 0.048 ms |
-| **W1:** `latLngToCell` (100k) | **96.0 ms** | 2,448.6 ms | **25×** | ✅ | Returns `89283082803ffff` |
-| **W2:** `gridDisk(k=20)` (1,000×) | **32.6 ms** | 5,562.4 ms | **171×** | ✅ | 1,261 cells per call |
-| **W2a:** `gridDisk(k=1)` (1,000×) | **2.2 ms** | 31.4 ms | **14×** | ✅ | 7 cells per call |
-| **W2b:** `gridDisk(k=5)` (1,000×) | **3.8 ms** | 404.5 ms | **105×** | ✅ | 91 cells per call |
-| **W2c:** `gridDisk(k=10)` (1,000×) | **7.8 ms** | 1,450.3 ms | **187×** | ✅ | 331 cells per call |
-| **W2d:** `gridDisk(k=50)` (1,000×) | **176.8 ms** | 34,036.4 ms | **192×** | ✅ | 7,651 cells per call |
-| **W3:** `polygonToCells` (SF, res 12) | **233.8 ms** | 78,805.6 ms | **337×** | ✅ | 412,377 cells |
-| **W3:** `polygonToCellsAsync` (SF, res 12) | **244.7 ms** | n/a | n/a | ✅ | 412,377 cells |
-| **W4:** `compactCells` (k=20 disk) | **0.100 ms** | 81.0 ms | **807×** | ✅ | 1,261 cells in, 163 cells out |
-| **W5:** `cellsToMultiPolygon` (k=20 disk) | **2.0 ms** | 406.8 ms | **203×** | ✅ | 1 polygon |
-| **W6:** `cellToLatLng` (100k) | **112.2 ms** | 1,298.4 ms | **12×** | ✅ | Over 1,261 distinct cells |
-| **W7:** `cellToBoundary` (100k) | **425.3 ms** | 3,742.0 ms | **8.8×** | ✅ | Over 1,261 distinct cells |
-| **W8:** `uncompactCells` (SF res 9 to res 12) | **3.8 ms** | 1,238.0 ms | **325×** | ✅ | 190 cells in, 410,914 cells out |
-| **W8:** `uncompactCellsAsync` (SF res 9 to res 12) | **3.8 ms** | n/a | n/a | ✅ | 190 cells in, 410,914 cells out |
-| **W9:** `cellToChildren` (res 5 to res 10) | **0.225 ms** | 48.9 ms | **217×** | ✅ | 16,807 children of `85283083fffffff` |
-| **W10:** `gridPathCells` (Berlin to Hamburg, res 9, 1,000×) | **314.9 ms** | 16,253.9 ms | **52×** | ✅ | 914 cells per path |
-| **W11:** `latLngsToCells` (100k pairs) | **54.3 ms** | 2,515.2 ms | **46×** | ✅ | 100,000 pairs in one call against 100,000 `h3-js` calls |
-| **W12:** `cellsToLatLngs` (100k cells) | **23.4 ms** | 1,313.6 ms | **56×** | ✅ | 100,000 cells in one call against 100,000 `h3-js` calls |
+| **W0:** `latLngToCell` (per call) | **0.0042 ms** | 0.046 ms | **10.9×** | ✅ | 1,000 distinct inputs, 0.0002 ms baseline subtracted, p95 0.0063 ms against 0.048 ms |
+| **W1:** `latLngToCell` (100k) | **91.5 ms** | 2,156.9 ms | **23.6×** | ✅ | Returns `89283082803ffff` |
+| **W2:** `gridDisk(k=20)` (1,000×) | **27.7 ms** | 4,907.5 ms | **176.9×** | ✅ | 1,261 cells per call |
+| **W2a:** `gridDisk(k=1)` (1,000×) | **2.4 ms** | 30.0 ms | **12.5×** | ✅ | 7 cells per call |
+| **W2b:** `gridDisk(k=5)` (1,000×) | **3.9 ms** | 363.1 ms | **92.6×** | ✅ | 91 cells per call |
+| **W2c:** `gridDisk(k=10)` (1,000×) | **8.6 ms** | 1,352.4 ms | **157.6×** | ✅ | 331 cells per call |
+| **W2d:** `gridDisk(k=50)` (1,000×) | **174.7 ms** | 31,924.9 ms | **182.8×** | ✅ | 7,651 cells per call |
+| **W3:** `polygonToCells` (SF, res 12) | **220.7 ms** | 75,309.8 ms | **341.2×** | ✅ | 412,377 cells |
+| **W3:** `polygonToCellsAsync` (SF, res 12) | **214.5 ms** | n/a | n/a | ✅ | 412,377 cells |
+| **W4:** `compactCells` (k=20 disk) | **0.085 ms** | 72.9 ms | **862.1×** | ✅ | 1,261 cells in, 163 cells out |
+| **W5:** `cellsToMultiPolygon` (k=20 disk) | **2.0 ms** | 374.0 ms | **187.5×** | ✅ | 1 polygon |
+| **W6:** `cellToLatLng` (100k) | **112.0 ms** | 1,303.1 ms | **11.6×** | ✅ | Over 1,261 distinct cells |
+| **W7:** `cellToBoundary` (100k) | **425.6 ms** | 3,679.8 ms | **8.6×** | ✅ | Over 1,261 distinct cells |
+| **W8:** `uncompactCells` (SF res 9 to res 12) | **3.9 ms** | 1,234.3 ms | **320.4×** | ✅ | 190 cells in, 410,914 cells out |
+| **W8:** `uncompactCellsAsync` (SF res 9 to res 12) | **4.1 ms** | n/a | n/a | ✅ | 190 cells in, 410,914 cells out |
+| **W9:** `cellToChildren` (res 5 to res 10) | **0.213 ms** | 48.2 ms | **226.4×** | ✅ | 16,807 children of `85283083fffffff` |
+| **W10:** `gridPathCells` (Berlin to Hamburg, res 9, 1,000×) | **298.4 ms** | 16,279.5 ms | **54.6×** | ✅ | 914 cells per path |
+| **W11:** `latLngsToCells` (100k pairs) | **53.9 ms** | 2,514.7 ms | **46.6×** | ✅ | 100,000 pairs in one call against 100,000 `h3-js` calls |
+| **W12:** `cellsToLatLngs` (100k cells) | **23.3 ms** | 1,315.3 ms | **56.3×** | ✅ | 100,000 cells in one call against 100,000 `h3-js` calls |
 
-**Data provenance.** The figures above are transcribed from the on-device results screen, so the
-medians carry the precision the screen renders: one decimal above a millisecond, three below. No
-percentiles are reported for this run beyond `W0`, and the Speedup column is the factor the screen
-computed from the unrounded medians. `apps/example/benchmark.json` records this in its `source`
-field.
+**Data provenance.** The figures above come from the captured payload, `apps/example/benchmark.json`,
+which `bun run benchmark:device` assembled from the app's log while the run was still on screen. The
+payload stores the unrounded median, p95, minimum and maximum of every row. The table rounds the
+medians for display, one decimal above a millisecond and three below, and the Speedup column is
+computed from the unrounded medians, so it can differ in the last digit from a factor recomputed
+from the rounded figures shown here.
 
-### Samsung Galaxy S23, Android 16, 2026-08-31
+### Samsung Galaxy S23, Android 16, 2026-09-01
 
 | Field | Value |
 |---|---|
 | Device | Samsung Galaxy S23 (`SM-S911U1`), Qualcomm `kalama` |
-| Platform | Android 16, API 36 |
-| Run date | 2026-08-31, 00:50 to 01:00 CEST; the raw payload's `date` field reads 2026-08-30, the UTC date |
+| Platform | Android 16, API 36 (the payload's `osVersion` field carries the API level) |
+| Run date | 2026-09-01, about 22:20 to 22:30 CEST |
 | Build Type | Release |
 | React Native | 0.87.0, Hermes 250829098.0.16 |
 | Target | `h3-js` 4.5.0 (the same H3 v4.5.0 C core this package vendors) |
-| Duration | 567.1 seconds |
+| Capture | `bun run benchmark:device`; the payload is kept outside the repository, see Source of truth above |
+| Duration | 608.4 seconds |
 | Passes | 1 warm-up pass, then 20 timed runs per workload (3 for the two `W3` rows and `W2d`, 1,000 single calls for `W0`) |
-| Power | wired USB throughout on an already full battery, with the screen kept on and the Benchmark tab in the foreground |
-| Thermal | entered the run at `Thermal Status: 0` and never left it; battery temperature rose from 30.9 °C to a 37.6 °C plateau at minute six, so the second half of the run measured a thermally steady phone |
+| Power | wired USB throughout, and therefore charging, with the screen kept on and the Benchmark tab in the foreground |
+| Thermal | not recorded: the capture keeps every other device command off the phone while the run is timed |
 | Equivalence | 19 of 19 rows |
 
 | Workload | react-native-nitro-h3 | h3-js | Speedup | p95 (RN) | p95 (JS) | Eq. | Detail |
 |---|---:|---:|---:|---:|---:|:-:|---|
-| **W0:** `latLngToCell` (per call) | **0.0023 ms** | 0.0269 ms | **11.5×** | 0.0043 ms | 0.0353 ms | ✅ | 1,000 distinct inputs, 0.0002 ms baseline subtracted |
-| **W1:** `latLngToCell` (100k) | **78.2 ms** | 930.1 ms | **11.9×** | 78.4 ms | 937.2 ms | ✅ | Returns `89283082803ffff` |
-| **W2:** `gridDisk(k=20)` (1,000×) | **21.3 ms** | 2,278.7 ms | **106.8×** | 32.2 ms | 2,286.0 ms | ✅ | 1,261 cells per call |
-| **W2a:** `gridDisk(k=1)` (1,000×) | **2.4 ms** | 21.0 ms | **8.7×** | 3.0 ms | 24.9 ms | ✅ | 7 cells per call |
-| **W2b:** `gridDisk(k=5)` (1,000×) | **3.7 ms** | 164.0 ms | **44.4×** | 4.8 ms | 164.6 ms | ✅ | 91 cells per call |
-| **W2c:** `gridDisk(k=10)` (1,000×) | **9.6 ms** | 589.7 ms | **61.6×** | 16.8 ms | 594.0 ms | ✅ | 331 cells per call |
-| **W2d:** `gridDisk(k=50)` (1,000×) | **122.3 ms** | 14,118.6 ms | **115.5×** | 126.6 ms | 15,062.7 ms | ✅ | 7,651 cells per call |
-| **W3:** `polygonToCells` (SF, res 12) | **176.0 ms** | 25,568.8 ms | **145.3×** | 177.3 ms | 26,768.3 ms | ✅ | 412,377 cells |
-| **W3:** `polygonToCellsAsync` (SF, res 12) | **244.3 ms** | n/a | n/a | 246.9 ms | n/a | ✅ | 412,377 cells |
-| **W4:** `compactCells` (k=20 disk) | **0.138 ms** | 28.4 ms | **205.9×** | 0.173 ms | 29.4 ms | ✅ | 1,261 cells in, 163 cells out |
-| **W5:** `cellsToMultiPolygon` (k=20 disk) | **1.9 ms** | 146.9 ms | **78.7×** | 2.5 ms | 147.1 ms | ✅ | 1 polygon |
-| **W6:** `cellToLatLng` (100k) | **103.1 ms** | 639.2 ms | **6.2×** | 103.8 ms | 666.8 ms | ✅ | Over 1,261 distinct cells |
-| **W7:** `cellToBoundary` (100k) | **327.9 ms** | 2,021.7 ms | **6.2×** | 328.8 ms | 2,126.4 ms | ✅ | Over 1,261 distinct cells |
-| **W8:** `uncompactCells` (SF res 9 to res 12) | **3.5 ms** | 787.9 ms | **227.7×** | 4.4 ms | 795.2 ms | ✅ | 190 cells in, 410,914 cells out |
-| **W8:** `uncompactCellsAsync` (SF res 9 to res 12) | **4.8 ms** | n/a | n/a | 6.1 ms | n/a | ✅ | 190 cells in, 410,914 cells out |
-| **W9:** `cellToChildren` (res 5 to res 10) | **0.125 ms** | 26.6 ms | **213.5×** | 0.137 ms | 28.2 ms | ✅ | 16,807 children of `85283083fffffff` |
-| **W10:** `gridPathCells` (Berlin to Hamburg, res 9, 1,000×) | **202.3 ms** | 8,247.5 ms | **40.8×** | 205.0 ms | 8,776.5 ms | ✅ | 914 cells per path |
-| **W11:** `latLngsToCells` (100k pairs) | **47.7 ms** | 1,376.8 ms | **28.9×** | 49.6 ms | 1,386.5 ms | ✅ | 100,000 pairs in one call against 100,000 `h3-js` calls |
-| **W12:** `cellsToLatLngs` (100k cells) | **19.9 ms** | 679.3 ms | **34.1×** | 20.0 ms | 852.5 ms | ✅ | 100,000 cells in one call against 100,000 `h3-js` calls |
+| **W0:** `latLngToCell` (per call) | **0.0027 ms** | 0.021 ms | **7.9×** | 0.0039 ms | 0.035 ms | ✅ | 1,000 distinct inputs, 0.0002 ms baseline subtracted |
+| **W1:** `latLngToCell` (100k) | **76.1 ms** | 930.7 ms | **12.2×** | 76.3 ms | 940.4 ms | ✅ | Returns `89283082803ffff` |
+| **W2:** `gridDisk(k=20)` (1,000×) | **19.9 ms** | 2,299.4 ms | **115.4×** | 25.3 ms | 2,303.1 ms | ✅ | 1,261 cells per call |
+| **W2a:** `gridDisk(k=1)` (1,000×) | **3.0 ms** | 18.9 ms | **6.2×** | 5.8 ms | 26.2 ms | ✅ | 7 cells per call |
+| **W2b:** `gridDisk(k=5)` (1,000×) | **3.4 ms** | 164.4 ms | **48.7×** | 5.1 ms | 164.9 ms | ✅ | 91 cells per call |
+| **W2c:** `gridDisk(k=10)` (1,000×) | **10.4 ms** | 591.7 ms | **57.1×** | 21.0 ms | 595.5 ms | ✅ | 331 cells per call |
+| **W2d:** `gridDisk(k=50)` (1,000×) | **108.9 ms** | 14,394.9 ms | **132.2×** | 108.9 ms | 14,498.8 ms | ✅ | 7,651 cells per call |
+| **W3:** `polygonToCells` (SF, res 12) | **178.5 ms** | 29,671.7 ms | **166.2×** | 181.7 ms | 32,143.5 ms | ✅ | 412,377 cells |
+| **W3:** `polygonToCellsAsync` (SF, res 12) | **275.1 ms** | n/a | n/a | 290.0 ms | n/a | ✅ | 412,377 cells |
+| **W4:** `compactCells` (k=20 disk) | **0.110 ms** | 35.2 ms | **321.4×** | 0.202 ms | 36.2 ms | ✅ | 1,261 cells in, 163 cells out |
+| **W5:** `cellsToMultiPolygon` (k=20 disk) | **2.1 ms** | 183.5 ms | **87.4×** | 2.4 ms | 187.5 ms | ✅ | 1 polygon |
+| **W6:** `cellToLatLng` (100k) | **129.1 ms** | 786.9 ms | **6.1×** | 130.2 ms | 842.0 ms | ✅ | Over 1,261 distinct cells |
+| **W7:** `cellToBoundary` (100k) | **418.9 ms** | 2,420.8 ms | **5.8×** | 432.8 ms | 2,464.6 ms | ✅ | Over 1,261 distinct cells |
+| **W8:** `uncompactCells` (SF res 9 to res 12) | **4.3 ms** | 900.1 ms | **211.7×** | 5.6 ms | 954.5 ms | ✅ | 190 cells in, 410,914 cells out |
+| **W8:** `uncompactCellsAsync` (SF res 9 to res 12) | **4.9 ms** | n/a | n/a | 7.8 ms | n/a | ✅ | 190 cells in, 410,914 cells out |
+| **W9:** `cellToChildren` (res 5 to res 10) | **0.218 ms** | 36.2 ms | **165.7×** | 0.315 ms | 37.3 ms | ✅ | 16,807 children of `85283083fffffff` |
+| **W10:** `gridPathCells` (Berlin to Hamburg, res 9, 1,000×) | **248.4 ms** | 8,267.6 ms | **33.3×** | 263.4 ms | 8,816.9 ms | ✅ | 914 cells per path |
+| **W11:** `latLngsToCells` (100k pairs) | **48.6 ms** | 1,384.4 ms | **28.5×** | 54.2 ms | 1,397.6 ms | ✅ | 100,000 pairs in one call against 100,000 `h3-js` calls |
+| **W12:** `cellsToLatLngs` (100k cells) | **24.9 ms** | 800.8 ms | **32.1×** | 26.2 ms | 806.0 ms | ✅ | 100,000 cells in one call against 100,000 `h3-js` calls |
 
 > **Rows Under 10 Milliseconds:** `W0`, `W2a` to `W2c`, `W4`, `W5`, `W8` and `W9` finish in under
 > ten milliseconds on the native side, and each device figure is a single run. Repeating a run on the
-> same device with the same build moved the factors of those rows by up to half; the rows in the
-> hundreds of milliseconds moved considerably less. Read a factor as an order of magnitude, not as a
-> constant.
+> same device with the same build moved the factors of those rows by up to about half: the Galaxy
+> S23's `compactCells` factor moved from 205.9× to 321.4× between two runs on an own-side change of
+> 0.028 ms. The rows in the hundreds of milliseconds moved considerably less. Read a factor as an
+> order of magnitude, not as a constant.
 
 > **The First Workload:** `W0` runs first and times a single call rather than a pass, so both of
 > its medians are measured on a phone that has just come out of idle.
 
 > **The Cost of a Thread Hop:** `polygonToCellsAsync` has no `h3-js` counterpart. `h3-js` does
 > not offer async variants, and timing its synchronous call as if it were async would skew the
-> comparison. Instead, this row documents the cost of offloading work to a background thread: about
-> 11 ms on the 234 ms `W3` call on the iPhone XS, where `W8` is indistinguishable from its
-> synchronous sibling at 3.8 ms, and about 68 ms on the 176 ms `W3` call on the Galaxy S23, with
-> 1.4 ms on its 3.5 ms `W8` call.
+> comparison. Instead, this row documents the cost of offloading work to a background thread. On
+> the iPhone XS that cost is inside the noise: the async `W3` call came in at 214.5 ms against
+> 220.7 ms for the synchronous one, and `W8` at 4.1 ms against 3.9 ms. On the Galaxy S23 it is about
+> 97 ms on the 178.5 ms `W3` call and 0.7 ms on the 4.3 ms `W8` call.
 
 ### The Batch Rows
 
@@ -246,26 +259,26 @@ over the same amount of work in the same run.
 
 | Operation | per-call loop | one batch call | batch wins |
 |---|---:|---:|---:|
-| coordinate to cell, 100,000, iPhone XS | `W1` 96.0 ms | `W11` 54.3 ms | **1.77×** |
-| cell to centre, 100,000, iPhone XS | `W6` 112.2 ms | `W12` 23.4 ms | **4.79×** |
-| coordinate to cell, 100,000, Galaxy S23 | `W1` 78.2 ms | `W11` 47.7 ms | **1.64×** |
-| cell to centre, 100,000, Galaxy S23 | `W6` 103.1 ms | `W12` 19.9 ms | **5.18×** |
+| coordinate to cell, 100,000, iPhone XS | `W1` 91.5 ms | `W11` 53.9 ms | **1.70×** |
+| cell to centre, 100,000, iPhone XS | `W6` 112.0 ms | `W12` 23.3 ms | **4.80×** |
+| coordinate to cell, 100,000, Galaxy S23 | `W1` 76.1 ms | `W11` 48.6 ms | **1.57×** |
+| cell to centre, 100,000, Galaxy S23 | `W6` 129.1 ms | `W12` 24.9 ms | **5.18×** |
 
 Read the two pairs differently, because only one of them is input-matched:
 
 - **`W6` against `W12` is a clean pair.** The `h3-js` sides bracket each other closely on both
-  devices, 1,298.4 ms against 1,313.6 ms on the iPhone XS and 639.2 ms against 679.3 ms on the
+  devices, 1,303.1 ms against 1,315.3 ms on the iPhone XS and 786.9 ms against 800.8 ms on the
   Galaxy S23, which is the evidence that the two workloads are comparable despite `W6` cycling 1,261
   distinct cells where `W12` uses 100,000.
 - **`W1` against `W11` is not, and its figure is a floor.** `W1` repeats one coordinate 100,000
   times where `W11` uses 100,000 distinct ones, so the batch call does the harder work. The `h3-js`
-  sides show it: 2.7 % apart on the iPhone XS, 48 % apart on the Galaxy S23. Quote 1.77× as a lower
+  sides show it: 17 % apart on the iPhone XS, 49 % apart on the Galaxy S23. Quote 1.70× as a lower
   bound, never as the win. A `W1` variant fed the same 100,000 distinct coordinates is the clean way
   to get the real figure, and that variant does not exist yet.
 - **The saving is bridge crossings, not a faster inner loop.** Host measurements put the native work
   of a batch call within about 2 % of the native work of the loop it replaces, so what the batch
-  removes is the per-element crossing: roughly 0.42 and 0.89 microseconds per element on the A12,
-  0.30 and 0.83 on the Galaxy S23.
+  removes is the per-element crossing: roughly 0.38 and 0.89 microseconds per element on the A12,
+  0.28 and 1.04 on the Galaxy S23.
 - **`cellsToLatLngs` wins more than `latLngsToCells`** on both devices, because its scalar sibling
   returns a fresh coordinate object per call, which is the expensive crossing, where the batch
   returns one `Float64Array`.
@@ -327,46 +340,64 @@ the array of strings it builds forces even an M5 Pro into swap.
 
 ## Regenerating the Benchmarks
 
-To reproduce these numbers yourself:
+To reproduce these numbers yourself, on a physical phone in a Release build:
 
-### 1. Build and Run
+### 1. Build and Install
 
-Build the example app in Release mode and open the Benchmark screen. Press **Run benchmark**. The
-run takes about nine minutes on a Galaxy S23 and about twenty-one on an iPhone XS; the screen stays
-usable between samples, but each `h3-js` `W3` pass blocks the JavaScript thread for tens of seconds.
-
-On a physical iOS device, capture the payload before the run rather than after it: relaunching the
-app to reach the log discards the results, which live only in the screen's own state.
-
-### 2. Extract the Payload
-
-When finished, the screen prints a Markdown table to the log, then a caption naming the platform,
-the build type and the versions, then the raw JSON payload.
-
-Because the iOS unified log truncates a message at about a kilobyte, the payload is chunked into
-lines of the form:
-
-```text
-BENCHMARK_JSON <i>/<total> |<chunk>|
-```
-
-The chunking does not depend on the platform, so an Android run prints the same lines to `logcat`.
-
-**Note:** The `|` bars pin both edges of each chunk, because the log trims outer whitespace. Take
-the text between the bars, in numerical order, and concatenate it with nothing in between.
-
-### 3. Process and Validate
-
-Save the concatenated result as `apps/example/benchmark.json` (pretty-printed with 2 spaces). Then
-run:
+`scripts/build-device-release.sh` builds the example app in Release and installs it on the device
+you name. On iOS it signs with the team you export, because the tracked project file carries none.
 
 ```sh
+H3_IOS_TEAM_ID=ABCDE12345 scripts/build-device-release.sh ios <device-udid>
+scripts/build-device-release.sh android <adb-serial>
+```
+
+### 2. Capture the Payload
+
+`bun run benchmark:device` drives the run and writes the payload the screen logs. It needs the
+`agent-device` CLI on the path, and on a physical iOS device the three runner variables the
+reference `.mcp.json` carries: `AGENT_DEVICE_IOS_TEAM_ID`, `AGENT_DEVICE_IOS_RUNNER_APP_BUNDLE_ID`
+and `AGENT_DEVICE_IOS_RUNNER_TEST_BUNDLE_ID`.
+
+The same three variables have to be in the environment of the `agent-device` background daemon. The
+first `agent-device` call of a session spawns that daemon and it outlives the call, so a daemon
+started without them builds the runner with ids this team cannot sign. The script refuses to start
+in that case and names the process to stop.
+
+```sh
+bun run benchmark:device --platform ios --udid <device-udid> --out run.json
+bun run benchmark:device --platform android --serial <adb-serial> --out run.json
+```
+
+The script opens the app in its own automation session, starts log capture, presses **Benchmark**
+and then **Run benchmark**, and waits for the payload to appear in the captured log. It writes
+`run.json` and the raw log beside it as `run.device.log`, then prints the row count, the equivalence
+count, the duration and the widest factor. `--timeout-minutes` defaults to 45, against about ten
+minutes for a Galaxy S23 run and about twenty for an iPhone XS.
+
+Two rules the script exists to enforce, because breaking either costs the whole run:
+
+- The automation runner is installed and log capture is started **before** the first tap. On a
+  physical iOS device, starting capture relaunches the app through `devicectl --console`, which
+  reads stdout and stderr only; `apps/example/ios/H3Example/AppDelegate.swift` mirrors every React
+  Native log line to stderr so the payload reaches the host at all.
+- Nothing relaunches the app **after** a run. The results live only in the screen's React state, so
+  a relaunch discards them. On a timeout or an error the script saves a screenshot beside `--out`
+  and exits non-zero, leaving the app exactly as it stands.
+
+### 3. Render the Charts
+
+Review the run, then copy it to `apps/example/benchmark.json` and render:
+
+```sh
+cp run.json apps/example/benchmark.json
 bun run benchmark:svg
 ```
 
 The script validates the JSON (and refuses a `Debug` payload), renders both charts
 (`img/benchmark.svg` and `img/benchmark-batch.svg`), and prints the widest factor of the payload as a
-`HEADLINE` line.
+`HEADLINE` line. `bun run benchmark:device` refuses to write `apps/example/benchmark.json` unless
+`--publish` is passed, so an unreviewed run cannot overwrite the published payload by accident.
 
 ### 4. Publish
 
@@ -380,3 +411,24 @@ rather than one recomputed from the rounded medians.
 
 > **Pre-Flight Check:** Before publishing, check the caption. If it says `Debug` or carries a
 > `RESULTS DIFFER FROM h3-js` warning, the run is compromised and must not be published.
+
+### Extracting a Payload by Hand
+
+When the automation is unavailable and the run is driven by hand, the payload still has to come out
+of a log. The screen prints a Markdown table, then the caption, then the payload itself.
+
+Because the iOS unified log truncates a message at about a kilobyte, the payload is chunked into
+lines of the form:
+
+```text
+BENCHMARK_JSON <i>/<total> |<chunk>|
+```
+
+The chunking does not depend on the platform, so an Android run prints the same lines to `logcat`.
+The `|` bars pin both edges of each chunk, because the log trims outer whitespace. Take the text
+between the bars, in numerical order, concatenate it with nothing in between, and save the result
+pretty-printed with 2 spaces.
+
+Start the log capture before the run on either platform, and never relaunch the app to reach a log
+afterwards: the results live only in the screen's own state, and a relaunch discards them. A run
+whose payload is lost that way has to be repeated.
