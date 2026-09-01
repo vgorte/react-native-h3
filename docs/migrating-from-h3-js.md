@@ -1,6 +1,6 @@
 # 🔄 Migrating from h3-js
 
-> **Audience: `h3-js` users moving an app to `react-native-nitro-h3`.** The 64 `h3-js` 4.5.0
+> **Audience: `h3-js` users moving an app to `react-native-nitro-h3`.** 64 `h3-js` 4.5.0
 > functions keep their names. What changes is the shape of a cell and of a cell set, and this page
 > shows each change as a before and after. The exhaustive, test-backed list of every divergence is
 > [Divergences from h3-js 4.5.0](./h3-js-divergences.md).
@@ -23,7 +23,9 @@ A `bigint` cannot be passed to `JSON.stringify` and does not compare equal to a 
 the application boundary, not on the hot path:
 
 ```ts
-import { cellFromString, cellToString } from 'react-native-nitro-h3'
+import { cellFromString, cellToString, latLngToCell } from 'react-native-nitro-h3'
+
+const cell = latLngToCell(37.7749, -122.4194, 9)
 
 const hex = cellToString(cell) // "89283082803ffff"
 const restored = cellFromString(hex) // 0x89283082803ffffn
