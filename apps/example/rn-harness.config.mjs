@@ -20,8 +20,12 @@ const config = {
   runners: [
     applePlatform({
       name: 'ios',
-      // Device name and runtime version as `xcrun simctl list` reports them.
-      device: appleSimulator('iPhone 17 Pro', '26.5'),
+      // Device name and runtime version as `xcrun simctl list` reports them. `scripts/device-ios.sh`
+      // exports both, so CI can name whatever simulator its runner image ships.
+      device: appleSimulator(
+        process.env.H3_IOS_SIMULATOR ?? 'iPhone 17 Pro',
+        process.env.H3_IOS_RUNTIME ?? '26.5',
+      ),
       // The Xcode template derives this from `PRODUCT_NAME`.
       bundleId: 'org.reactjs.native.example.H3Example',
     }),
