@@ -19,6 +19,11 @@ jobs:
       fail-fast: false
       matrix:
         target: [tests, tests_asan, parity_probe]
+    # `-fno-sanitize-recover=undefined` on the sanitised targets is what aborts the run; this is the
+    # backstop should that flag ever be dropped, plus the frames UBSan otherwise leaves out of the
+    # one-line report. Inert for the two uninstrumented targets.
+    env:
+      UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
     steps:
       - uses: actions/checkout@v7
       - name: Configure
