@@ -56,6 +56,45 @@ suites above it do not, because both need a compiled binary:
   compares it against h3-js 4.5.0 over every resolution 0 cell, all sixteen resolutions, all 192
   pentagons, the poles and the antimeridian. A difference it finds is a difference in what ships.
 
+## Fuzzing
+
+Four libFuzzer targets under `packages/react-native-nitro-h3/cpp/fuzz` drive the Nitro-free layer
+with raw bytes: cell arrays, polygon rings, scalar arguments and index strings. They are off by
+default, because `-fsanitize=fuzzer` is a Clang feature and AppleClang ships no libFuzzer runtime, so
+a Mac needs Homebrew's LLVM. Configuring without it fails at CMake time with the same advice.
+
+```sh
+brew install llvm
+cmake -S packages/react-native-nitro-h3/cpp/test -B build/fuzz -DH3_BUILD_FUZZERS=ON \
+  -DCMAKE_C_COMPILER="$(brew --prefix llvm)/bin/clang" \
+  -DCMAKE_CXX_COMPILER="$(brew --prefix llvm)/bin/clang++"
+cmake --build build/fuzz -j --target \
+  fuzz_cell_buffers fuzz_polygon_rings fuzz_scalar_ops fuzz_cell_strings
+```
+
+Pass a scratch directory as the **first** corpus argument and the committed seeds as the second.
+libFuzzer writes every input it keeps into the first directory, and the seed directory is part of
+the checkout:
+
+```sh
+mkdir -p /tmp/h3-fuzz/fuzz_scalar_ops
+./build/fuzz/fuzz_scalar_ops /tmp/h3-fuzz/fuzz_scalar_ops \
+  packages/react-native-nitro-h3/cpp/fuzz/corpus/fuzz_scalar_ops \
+  -max_total_time=60 -max_len=4096 -rss_limit_mb=4096 -timeout=25
+```
+
+The seeds matter: nearly every operation checks its index first, and random bytes are almost never a
+valid one, so an unseeded run barely gets past the front door.
+
+A run ends clean or it does not. A `std::runtime_error` is how the binding refuses an input and the
+harnesses swallow it; every other exception and every sanitizer report is a finding, and libFuzzer
+writes the input that produced it into the working directory. A finding that reproduces only inside
+`third_party/h3` under an input the binding accepts is an upstream bug: archive the input, report it
+at uber/h3, and drop the affected operation from the harness until the fix lands.
+
+Continuous integration runs a 60-second pass per target on every pull request that touches `cpp/`,
+and a nightly workflow runs ten minutes per target against a corpus that carries over between runs.
+
 ## Adding an H3 operation
 
 Every operation crosses seven places, in this order. Each one has a reason to exist, and skipping
