@@ -22,16 +22,16 @@ Three things are cheap on this path and expensive on the other:
 - **No marshalling below the boundary.** The `h3ops` layer validates arguments, sizes the result and
   applies the cell ceiling, then makes plain C calls into the vendored core.
 
-The difference is largest where `h3-js` handles the most strings: `compactCells` on a `k=20` disk
-of 1,261 cells is 807× faster on the iPhone XS (iOS 18.7.9, React Native 0.87.0, Hermes, 20-run
-median, 2026-08-31). Where a call does little work per element, the factor is smaller:
-`latLngToCell` over 100,000 calls is 25×. Both rows are in [Benchmark report](benchmark.md).
+The difference is largest where `h3-js`'s string handling dominates the work the call does:
+`compactCells` on a `k=20` disk of 1,261 cells is 807× faster on the iPhone XS (iOS 18.7.9, React
+Native 0.87.0, Hermes, 20-run median, 2026-08-31). Where a call does little work per element, the
+factor is smaller: `latLngToCell` over 100,000 calls is 25×. Both rows are in
+[Benchmark report](benchmark.md).
 
 ## When a Batch Call Pays
 
 The batch rows in the benchmark run one native call against the JavaScript loop it replaces, over
-100,000 elements.
-100,000 elements is a favourable size by construction. Below a few hundred, one crossing plus a
+100,000 elements. That size is favourable by construction. Below a few hundred, one crossing plus a
 typed-array allocation is a larger share of the total, and that crossover is unmeasured. Building
 the input `Float64Array` is not timed on either side either, so a caller who assembles one from
 JavaScript objects pays for that on top. The measured rows are `W11` and `W12` in
