@@ -29,6 +29,72 @@ jobs:
       - name: Run
         run: printf '__ops\n' | ./build/host/${{ matrix.target }}
 
+  fuzz-smoke:
+    name: Fuzz smoke
+    runs-on: ubuntu-latest
+    env:
+      CC: clang
+      CXX: clang++
+      CORPUS: packages/react-native-nitro-h3/cpp/fuzz/corpus
+    steps:
+      - uses: actions/checkout@v7
+      - name: Configure
+        run: |
+          cmake -S packages/react-native-nitro-h3/cpp/test -B build/fuzz \
+            -DCMAKE_BUILD_TYPE=Debug -DH3_BUILD_FUZZERS=ON
+      - name: Build
+        run: |
+          cmake --build build/fuzz -j --target \
+            fuzz_cell_buffers fuzz_polygon_rings fuzz_scalar_ops fuzz_cell_strings
+      # One step per target, each with its own working directory and artifact prefix, so that a
+      # crash in one target does not skip the other three.
+      - name: Fuzz cell buffers
+        if: always()
+        run: |
+          set -o pipefail
+          mkdir -p run/fuzz_cell_buffers
+          ./build/fuzz/fuzz_cell_buffers run/fuzz_cell_buffers "$CORPUS/fuzz_cell_buffers" \
+            -max_total_time=60 -max_len=4096 -rss_limit_mb=4096 -timeout=25 \
+            -artifact_prefix=run/fuzz_cell_buffers/ 2>&1 | tee run/fuzz_cell_buffers/fuzz.log
+      - name: Fuzz polygon rings
+        if: always()
+        run: |
+          set -o pipefail
+          mkdir -p run/fuzz_polygon_rings
+          ./build/fuzz/fuzz_polygon_rings run/fuzz_polygon_rings "$CORPUS/fuzz_polygon_rings" \
+            -max_total_time=60 -max_len=4096 -rss_limit_mb=4096 -timeout=25 \
+            -artifact_prefix=run/fuzz_polygon_rings/ 2>&1 | tee run/fuzz_polygon_rings/fuzz.log
+      - name: Fuzz scalar operations
+        if: always()
+        run: |
+          set -o pipefail
+          mkdir -p run/fuzz_scalar_ops
+          ./build/fuzz/fuzz_scalar_ops run/fuzz_scalar_ops "$CORPUS/fuzz_scalar_ops" \
+            -max_total_time=60 -max_len=4096 -rss_limit_mb=4096 -timeout=25 \
+            -artifact_prefix=run/fuzz_scalar_ops/ 2>&1 | tee run/fuzz_scalar_ops/fuzz.log
+      - name: Fuzz index strings
+        if: always()
+        run: |
+          set -o pipefail
+          mkdir -p run/fuzz_cell_strings
+          ./build/fuzz/fuzz_cell_strings run/fuzz_cell_strings "$CORPUS/fuzz_cell_strings" \
+            -max_total_time=60 -max_len=4096 -rss_limit_mb=4096 -timeout=25 \
+            -artifact_prefix=run/fuzz_cell_strings/ 2>&1 | tee run/fuzz_cell_strings/fuzz.log
+      # libFuzzer also exits nonzero for operational failures, so a missing crash file is tolerated.
+      - name: Upload findings
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: fuzz-smoke-findings
+          if-no-files-found: ignore
+          path: |
+            run/*/crash-*
+            run/*/leak-*
+            run/*/timeout-*
+            run/*/oom-*
+            run/*/slow-unit-*
+            run/*/fuzz.log
+
   benchmark:
     name: Host benchmark (informational)
     runs-on: ubuntu-latest
