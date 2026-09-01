@@ -1,19 +1,43 @@
 # 🧮 Performance Guide
 
-> **Audience: package users.** This page carries the detail the README summarises: the exact
-> contract of the batch calls, how the optional cell ceiling is sized, and what the async variants
-> cost. Measured figures live in [benchmark.md](benchmark.md); this page explains the behaviour
-> behind them.
+> **Audience: package users who want to know where the speed comes from and where it stops.** This
+> page explains the data path that makes a call cheap, when a batch call pays, and how the optional
+> cell ceiling keeps a large request from killing the process. Measured figures live in
+> [Benchmark report](benchmark.md); this page explains the behaviour behind them.
 
-## 📦 When a Batch Call Pays
+## Why native
 
+`react-native-nitro-h3` vendors the H3 C library (v4.5.0) and calls it from C++ through Nitro
+Modules. `h3-js` runs the same C library compiled to WebAssembly inside the JavaScript engine, and
+every cell that crosses into it is a hexadecimal string.
+
+![The data path from JavaScript through Nitro Modules and the h3ops C++ layer to the vendored H3 C core](../img/architecture.svg)
+
+Three things are cheap on this path and expensive on the other:
+
+- **One crossing per call, not one per element.** A `BigUint64Array` result is one `ArrayBuffer`
+  that JavaScript views in place. `h3-js` returns a `string[]`, one allocation per cell.
+- **No string conversion.** A cell is a 64-bit integer on both sides of the boundary. `h3-js`
+  formats and parses a hexadecimal string per cell on the way in and out.
+- **No marshalling below the boundary.** The `h3ops` layer validates arguments, sizes the result and
+  applies the cell ceiling, then makes plain C calls into the vendored core.
+
+The difference is largest where `h3-js` handles the most strings: `compactCells` on a `k=20` disk
+of 1,261 cells is 807× faster on the iPhone XS (iOS 18.7.9, React Native 0.87.0, Hermes, 20-run
+median, 2026-08-31). Where a call does little work per element, the factor is smaller:
+`latLngToCell` over 100,000 calls is 25×. Both rows are in [Benchmark report](benchmark.md).
+
+## When a Batch Call Pays
+
+The batch rows in the benchmark run one native call against the JavaScript loop it replaces, over
+100,000 elements.
 100,000 elements is a favourable size by construction. Below a few hundred, one crossing plus a
 typed-array allocation is a larger share of the total, and that crossover is unmeasured. Building
 the input `Float64Array` is not timed on either side either, so a caller who assembles one from
 JavaScript objects pays for that on top. The measured rows are `W11` and `W12` in
 [benchmark.md](benchmark.md).
 
-## 🛡️ The Cell Ceiling in Detail
+## The Cell Ceiling in Detail
 
 There is no cell limit until you set one: a call returns whatever you ask for, exactly as `h3-js`
 does. Sizes grow fast, and a cell costs 8 bytes in the returned `BigUint64Array`.
