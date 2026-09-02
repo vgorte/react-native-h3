@@ -11,7 +11,12 @@ export default defineConfig({
       title: 'react-native-nitro-h3',
       description: 'Fast H3 geospatial indexing for React Native, powered by Nitro Modules.',
       logo: { src: './src/assets/logo.svg' },
-      social: [{ icon: 'github', label: 'GitHub', href: REPO }],
+      social: [
+        { icon: 'github', label: 'GitHub', href: REPO },
+        { icon: 'npm', label: 'npm', href: 'https://www.npmjs.com/package/react-native-nitro-h3' },
+      ],
+      components: { Footer: './src/components/Footer.astro' },
+      customCss: ['./src/styles/custom.css'],
       lastUpdated: true,
       head: [
         { tag: 'meta', attrs: { property: 'og:image', content: `${SITE}${BASE}/og-logo.png` } },
