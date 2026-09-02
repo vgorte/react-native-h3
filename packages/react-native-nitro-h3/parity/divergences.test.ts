@@ -12,6 +12,13 @@ import { join } from 'node:path'
 import h3 from 'h3-js'
 import type * as api from '../src/index'
 import {
+  ContainmentMode,
+  type ContainmentModeName,
+  type ContainmentModeValue,
+  type LatLng,
+  type Ring,
+} from '../src/types'
+import {
   EXTREME_COORDINATES,
   PENTAGON_NEIGHBOURHOODS,
   PENTAGONS,
@@ -26,14 +33,67 @@ type Expect<T extends true> = T
 /** Answers `true` only when the two types are the same in both directions. */
 type IsExactly<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false
 
-// the probe speaks JSON, so `tsc` is what proves this package's half of the two shape rows; the
-// h3-js half is asserted at run time in `divergence: the shape of the public surface`.
+/** Answers `true` only when `A` cannot be assigned to `B`, proving a rejected shape. */
+type IsNotAssignable<A, B> = [A] extends [B] ? false : true
+
+// the probe speaks JSON, so `tsc` is what proves this package's half of every shape row; the h3-js
+// half is asserted at run time in `divergence: the shape of the public surface`.
 export type CellIsABigint = Expect<IsExactly<ReturnType<typeof api.latLngToCell>, bigint>>
 export type CellSetIsATypedArray = Expect<
   IsExactly<ReturnType<typeof api.gridDisk>, BigUint64Array>
 >
+export type CentreIsAnObject = Expect<IsExactly<ReturnType<typeof api.cellToLatLng>, LatLng>>
+export type BoundaryIsObjects = Expect<IsExactly<ReturnType<typeof api.cellToBoundary>, LatLng[]>>
+export type EdgeBoundaryIsObjects = Expect<
+  IsExactly<ReturnType<typeof api.directedEdgeToBoundary>, LatLng[]>
+>
+export type VertexIsAnObject = Expect<IsExactly<ReturnType<typeof api.vertexToLatLng>, LatLng>>
+export type MultiPolygonIsObjects = Expect<
+  IsExactly<ReturnType<typeof api.cellsToMultiPolygon>, LatLng[][][]>
+>
+export type RingsAreTuples = Expect<
+  IsNotAssignable<number[][][], Parameters<typeof api.polygonToCells>[0]>
+>
+export type ASingleLoopIsRejected = Expect<
+  IsNotAssignable<number[][], Parameters<typeof api.polygonToCells>[0]>
+>
+export type GridDiskDistancesIsTypedArrays = Expect<
+  IsExactly<ReturnType<typeof api.gridDiskDistances>, BigUint64Array[]>
+>
+export type GreatCircleDistanceTakesFourScalars = Expect<
+  IsExactly<Parameters<typeof api.greatCircleDistanceKm>, [number, number, number, number]>
+>
+// the four functions h3-js gives a GeoJSON flag take no such argument here
+export type BoundaryTakesNoFlag = Expect<IsExactly<Parameters<typeof api.cellToBoundary>, [bigint]>>
+export type EdgeBoundaryTakesNoFlag = Expect<
+  IsExactly<Parameters<typeof api.directedEdgeToBoundary>, [bigint]>
+>
+export type MultiPolygonTakesNoFlag = Expect<
+  IsExactly<Parameters<typeof api.cellsToMultiPolygon>, [BigUint64Array]>
+>
+export type PolygonToCellsTakesNoFlag = Expect<
+  IsExactly<Parameters<typeof api.polygonToCells>, [Ring[], number]>
+>
+export type ExperimentalTakesNoFlag = Expect<
+  IsExactly<
+    Parameters<typeof api.polygonToCellsExperimental>,
+    [Ring[], number, ContainmentModeValue | ContainmentModeName]
+  >
+>
 
 const CELL = '89283082803ffff'
+
+/** The triangle h3-js's own test suite uses, as `[lat, lng]` pairs. */
+const SAN_FRANCISCO: [number, number][] = [
+  [37.813319, -122.408987],
+  [37.719806, -122.354474],
+  [37.815157, -122.479877],
+]
+
+/** The same triangle in GeoJSON order, which is what the h3-js flags expect. */
+const SAN_FRANCISCO_GEOJSON: [number, number][] = SAN_FRANCISCO.map(
+  ([lat, lng]) => [lng, lat] as [number, number],
+)
 
 /** Carries directed edge mode bits and direction `0`, which no real edge ever has. */
 const EDGE_WITH_NO_DIRECTION = '109283082803ffff'
@@ -605,5 +665,108 @@ describe.skipIf(skipWithoutProbe)('divergence: the shape of the public surface',
     const disk = h3.gridDisk(CELL, 1)
     expect(Array.isArray(disk)).toBe(true)
     expect(typeof (disk[0] as string)).toBe('string')
+  })
+
+  test('the five coordinate functions answer arrays in h3-js', () => {
+    // the `LatLng` object this package answers is proved by `tsc` in the assertions above
+    const vertex = h3.cellToVertexes(CELL)[0] as string
+    const edge = h3.originToDirectedEdges(CELL)[0] as string
+    expect(h3.cellToLatLng(CELL)).toHaveLength(2)
+    expect(Array.isArray(h3.cellToLatLng(CELL))).toBe(true)
+    expect(Array.isArray(h3.cellToBoundary(CELL)[0])).toBe(true)
+    expect(Array.isArray(h3.vertexToLatLng(vertex))).toBe(true)
+    expect(Array.isArray(h3.directedEdgeToBoundary(edge)[0])).toBe(true)
+    expect(Array.isArray(h3.cellsToMultiPolygon([CELL])[0]?.[0]?.[0])).toBe(true)
+  })
+
+  test('the GeoJSON output flags exist in h3-js, where the types above take none', () => {
+    // the flag closes the loop and swaps to `[lng, lat]`, which is the ambiguity this package avoids
+    const open = h3.cellToBoundary(CELL)
+    const closed = h3.cellToBoundary(CELL, true)
+    expect(open).toHaveLength(6)
+    expect(closed).toHaveLength(7)
+    expect(closed[0]).toEqual(closed[closed.length - 1] as [number, number])
+    expect(closed[0]).toEqual([open[0]?.[1], open[0]?.[0]] as [number, number])
+    const edge = h3.originToDirectedEdges(CELL)[0] as string
+    expect(h3.directedEdgeToBoundary(edge, true)[0]).toEqual([
+      h3.directedEdgeToBoundary(edge)[0]?.[1],
+      h3.directedEdgeToBoundary(edge)[0]?.[0],
+    ] as [number, number])
+    expect(h3.cellsToMultiPolygon([CELL], true)[0]?.[0]).toHaveLength(7)
+    expect(h3.polygonToCells([SAN_FRANCISCO_GEOJSON], 7, true)).toHaveLength(7)
+    expect(
+      h3.polygonToCellsExperimental([SAN_FRANCISCO_GEOJSON], 7, 'containmentCenter', true),
+    ).toHaveLength(7)
+  })
+
+  test('h3-js takes a single loop unwrapped, where Ring[] is required here', () => {
+    expect(h3.polygonToCells(SAN_FRANCISCO, 7)).toHaveLength(7)
+    expect(h3.polygonToCells([SAN_FRANCISCO], 7)).toHaveLength(7)
+    // the probe takes rings only, and answers the same seven cells for the wrapped form
+    expect(
+      answer(`polygonToCells ${SAN_FRANCISCO.map(([lat, lng]) => `${lat},${lng}`).join(';')} 7`),
+    ).toHaveLength(7)
+  })
+
+  test('greatCircleDistance is two arrays and a unit string in h3-js', () => {
+    const ops = answer('__ops') as string[]
+    expect(ops).toContain('greatCircleDistanceKm')
+    expect(ops).not.toContain('greatCircleDistance')
+    expect(Object.keys(h3)).toContain('greatCircleDistance')
+    expect(Object.keys(h3)).not.toContain('greatCircleDistanceKm')
+    const ours = answer('greatCircleDistanceKm 0 0 1 1') as number
+    expect(ours).toBeCloseTo(h3.greatCircleDistance([0, 0], [1, 1], 'km'), 10)
+  })
+
+  test('gridDiskDistances answers arrays of strings in h3-js', () => {
+    // the `BigUint64Array[]` this package answers is proved by `tsc` in the assertions above
+    const rings = h3.gridDiskDistances(CELL, 1)
+    expect(rings).toHaveLength(2)
+    expect(rings[0]).toEqual([CELL])
+    expect(rings[1]).toHaveLength(6)
+    expect(typeof (rings[1] as string[])[0]).toBe('string')
+  })
+
+  test('UNITS and POLYGON_TO_CELLS_FLAGS exist in h3-js, ContainmentMode only here', () => {
+    const ops = answer('__ops') as string[]
+    expect(Object.keys(h3.UNITS)).toEqual(['m', 'm2', 'km', 'km2', 'rads', 'rads2'])
+    expect(Object.keys(h3.POLYGON_TO_CELLS_FLAGS)).toEqual([
+      'containmentCenter',
+      'containmentFull',
+      'containmentOverlapping',
+      'containmentOverlappingBbox',
+    ])
+    for (const name of ['UNITS', 'POLYGON_TO_CELLS_FLAGS']) {
+      expect(ops, name).not.toContain(name)
+    }
+    expect(Object.keys(h3)).not.toContain('ContainmentMode')
+    expect(ContainmentMode).toEqual({
+      center: 0,
+      full: 1,
+      overlapping: 2,
+      overlappingBbox: 3,
+    })
+  })
+
+  test('h3-js takes a cell as a split-long pair as well as a string', () => {
+    // `H3IndexInput` is `string | number[]`; this package takes a `bigint` and nothing else
+    const split = h3.h3IndexToSplitLong(CELL)
+    expect(split).toHaveLength(2)
+    expect(h3.getResolution(split)).toBe(9)
+    expect(h3.getResolution(CELL)).toBe(9)
+  })
+
+  test('an h3-js failure is a plain Error whose code is always a number', () => {
+    // this package throws an `H3Error` class whose `code` is `undefined` for its own refusals,
+    // which `__tests__/H3Error.test.ts` asserts
+    let thrown: unknown
+    try {
+      h3.getNumCells(16)
+    } catch (error) {
+      thrown = error
+    }
+    expect(thrown).toBeInstanceOf(Error)
+    expect((thrown as Error).name).toBe('Error')
+    expect(typeof (thrown as { code: unknown }).code).toBe('number')
   })
 })

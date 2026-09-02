@@ -10,10 +10,12 @@ h3-js 4.5.0 bundles exactly the H3 C library this package vendors, so it is an o
 approximation, and `parity/` compares the two over all 122 resolution 0 cells, all sixteen
 resolutions, all 192 pentagons with their neighbourhoods, the poles, the antimeridian and seeded
 random coordinates. Every row and section below is proved by a test in
-`parity/divergences.test.ts`, which asserts both sides; the two type-surface rows are proved there
+`parity/divergences.test.ts`, which asserts both sides; the type-surface rows are proved there
 for h3-js at run time and for this package by `tsc`, because the probe the suite drives speaks JSON.
 The additive batch section leans on `parity/batches.test.ts` as well, which is where the two calls are
-compared with h3-js element for element. Everything not listed here is identical.
+compared with h3-js element for element.
+This package covers the `h3-js` 4.5.0 operation set under the same names and answers typed results.
+The list below is exhaustive: everything not listed here is identical.
 
 ## Input this package refuses and h3-js answers
 
@@ -95,14 +97,24 @@ worst case measured over the corpus, and each is asserted at two to four times i
 
 ## Shape and surface
 
-These are the differences a migration notices first. `README.md` explains each one.
+These are the differences a migration notices first, and the list is complete. `README.md` explains
+the ones a call site meets on the first day.
 
 | Case | This package | h3-js |
 | --- | --- | --- |
 | A cell | `bigint` | hexadecimal `string` |
 | A cell set | `BigUint64Array` | `string[]` |
+| A cell argument | a `bigint` and nothing else | a hexadecimal `string` or a `[lower, upper]` pair of 32-bit numbers, the `H3IndexInput` type |
+| A coordinate | a `LatLng` object, `{ lat, lng }`, from `cellToLatLng`, `cellToBoundary`, `directedEdgeToBoundary`, `vertexToLatLng` and `cellsToMultiPolygon` | a `CoordPair` array, `[lat, lng]`, from all five |
+| GeoJSON output | no counterpart | `formatAsGeoJson` on `cellToBoundary`, `directedEdgeToBoundary` and `cellsToMultiPolygon` closes the loop and answers `[lng, lat]`; `isGeoJson` on `polygonToCells` and `polygonToCellsExperimental` reads `[lng, lat]` input |
+| A polygon | `Ring[]`, so a single loop is still wrapped in an array, and `Ring` is a tuple type that a bare `number[][]` fails `tsc` against | `number[][] \| number[][][]`, so a single loop may be passed unwrapped and a ring is a plain `number[][]` |
 | Units | separate functions (`cellAreaKm2`) | a string argument (`cellArea(cell, 'km2')`), and an `E_UNKNOWN_UNIT` this package cannot raise |
+| `greatCircleDistance` | four scalars with the unit in the name: `greatCircleDistanceKm(lat1, lng1, lat2, lng2)` | two arrays and a unit string: `greatCircleDistance([lat1, lng1], [lat2, lng2], 'km')` |
+| `gridDiskDistances` | one `BigUint64Array` per ring, so `BigUint64Array[]` | one `H3Index[]` per ring, so `string[][]` |
+| `UNITS`, `POLYGON_TO_CELLS_FLAGS` | no counterpart: the unit is in the function name and a containment mode is a number | two frozen objects of strings |
+| `ContainmentMode` | a frozen object of H3's four `ContainmentMode` numbers | no counterpart |
 | `polygonToCellsExperimental` flags | a `ContainmentMode` number, or the h3-js name | the name only |
+| `H3Error` | a class, so `instanceof` identifies it, whose `code` is `undefined` for an input this package refused itself | a plain `Error` with a numeric `code` property, typed as `{ message, code }` |
 | `constructCell` | `(baseCellNumber, digits, res)`, h3-js's order rather than the C library's | `(baseCellNumber, digits, res)` |
 | `cellToString`, `cellFromString` | convert between `bigint` and hexadecimal | no counterpart: h3-js cells already are strings |
 | `h3IndexToSplitLong`, `splitLongToH3Index` | no counterpart | work around the lack of 64-bit integers in an emscripten build |
