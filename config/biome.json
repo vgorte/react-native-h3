@@ -7,7 +7,7 @@
   "files": {
     "includes": [
       "**",
-      "!**/.claude",
+      "!.claude",
       "!**/docs/research",
       "!**/vendor",
       "!**/.mcp.json",
@@ -16,6 +16,8 @@
       "!**/lib",
       "!**/node_modules",
       "!**/build",
+      "!**/website/dist",
+      "!**/website/.astro",
       "!**/.cxx",
       "!**/.gradle",
       "!**/.harness",
