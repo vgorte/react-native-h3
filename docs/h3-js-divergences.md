@@ -84,6 +84,20 @@ An invalid element is refused the way every other input is, with the index in th
 (`cells[1]: Cell argument was not valid (code: 5)`), and the optional cell ceiling applies to both,
 counted in cells.
 
+## The error contract
+
+Every failure this package raises is an `H3Error`. Its `code` is the contract and its `message` is
+informational.
+
+`code` carries H3's own numeric error code when H3 reported the failure, and is `undefined` when this
+package refused the input before H3 saw it. Branch on `code`, and treat `undefined` as this package's
+own refusal. The numbers are H3's, listed in the
+[H3 error table](https://h3geo.org/docs/library/errors#table-of-error-codes).
+
+`message` is H3's `describeH3Error` wording, or this package's own wording for an input it refused
+itself. It may change when the vendored H3 version changes, and the two rows below show that h3-js's
+copy of the same table has already drifted from it. Do not parse it.
+
 ## Wording
 
 | Case | This package | h3-js | Why |

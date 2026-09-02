@@ -78,6 +78,33 @@ describe('H3Error', () => {
       expect((error as H3Error).code).toBeUndefined()
     }
   })
+
+  test('code is the contract: a number from H3, undefined for our own refusal', () => {
+    const fromH3: [string, number][] = [
+      ['Cell argument was not valid (code: 5)', 5],
+      ['Resolution argument was outside of acceptable range (code: 4)', 4],
+      ['Mode or flags argument was not valid (code: 15)', 15],
+    ]
+    const ourOwn = [
+      'Polygon coordinates must be finite numbers',
+      'Polygon coordinates must be within [-90, 90] latitude and [-180, 180] longitude',
+      'k must be an integer',
+    ]
+    for (const [message, code] of fromH3) {
+      try {
+        rethrowAsH3Error(new Error(message))
+      } catch (error) {
+        expect((error as H3Error).code, message).toBe(code)
+      }
+    }
+    for (const message of ourOwn) {
+      try {
+        rethrowAsH3Error(new Error(message))
+      } catch (error) {
+        expect((error as H3Error).code, message).toBeUndefined()
+      }
+    }
+  })
 })
 
 describe('H3Error on the async path', () => {
