@@ -90,13 +90,14 @@ console.log(cellToString(cell)) // "89283082803ffff"
 | Platform      | Requirement                    |
 | ------------- | ------------------------------ |
 | React Native  | **0.76+**                      |
-| Nitro Modules | **0.37+**                      |
+| Nitro Modules | **0.37.0 or newer**            |
 | C++           | C++20-compatible toolchain     |
 | iOS           | React Native deployment target |
 | Xcode         | recent stable release          |
 | Android       | **minSdk 24**                  |
 | Android SDK   | **compileSdk 36**              |
 | Android NDK   | **27.1.12297006**              |
+| H3 C library  | **4.5.0**, vendored            |
 
 The package requires the New Architecture, the default since React Native 0.76. The iOS and Android build workflows compile the example app against React Native 0.87.0.
 

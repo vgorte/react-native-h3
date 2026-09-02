@@ -354,9 +354,8 @@ export function BenchmarkScreen(): React.JSX.Element {
     <ScrollView contentContainerStyle={styles.content}>
       <Text style={styles.title}>Benchmark</Text>
       <Text style={styles.note}>
-        Run this in a Release build. Numbers from a Debug build must not go in the README. The suite
-        takes about nine minutes on a Galaxy S23 and about twenty-one minutes on an iPhone XS, and
-        the app only answers between measurements. Leaving this tab abandons the run.
+        Run this in a Release build. Numbers from a Debug build must not go in the README. The app
+        only answers between measurements, and leaving this tab abandons the run.
       </Text>
       <Pressable style={styles.button} onPress={run} disabled={running}>
         <Text style={styles.buttonLabel}>{running ? 'Running' : 'Run benchmark'}</Text>

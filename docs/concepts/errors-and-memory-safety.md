@@ -24,22 +24,26 @@ try {
 }
 ```
 
-Errors originating from H3 preserve the numeric H3 error code. Validation performed by the binding itself uses the same `H3Error` type.
+`code` is the stable half of the contract. It carries H3's numeric error code when H3 reported the
+failure, and is `undefined` when the package refused the input before H3 saw it.
 
-When a failure originates from the native H3 library, the message is pulled directly from C++
-(`describeH3Error`) and includes the exact numeric code, matching `h3-js` 1:1.
+`message` is informational. It comes from H3's `describeH3Error`, or from this package's own wording
+for an input it refused itself, and may change when the vendored H3 version changes, so branch on
+`code` rather than on the text.
 
 - **Native codes.** Standard H3 errors append `(code: N)` to the message and expose the `.code`
-  property.
+  property. The numbers are H3's own, listed in the
+  [H3 error table](https://h3geo.org/docs/library/errors#table-of-error-codes).
 - **Binding exceptions.** Errors this package raises itself, before the call reaches the H3 C
   library (argument validation such as a non-integer resolution, or a breach of a configured cell
   ceiling), also throw `H3Error`, but leave the `.code` property `undefined`.
 - **Async parity.** Async variants throw the exact same errors and messages as their synchronous
   siblings.
 
-Every deliberate divergence from `h3-js`, including the strict validation this package applies at
-the C++ boundary, is listed with the `h3-js` answer beside it and proved by a test in
-[h3-js-divergences.md](../h3-js-divergences.md).
+The contract in full, with the messages `h3-js` has already drifted from, is
+[The error contract](../h3-js-divergences.md#the-error-contract). The same guide lists every
+deliberate divergence from `h3-js`, including the strict validation this package applies at the C++
+boundary, with the `h3-js` answer beside it and what proves each one.
 
 ## The optional cell ceiling
 

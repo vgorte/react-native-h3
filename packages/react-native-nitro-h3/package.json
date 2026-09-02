@@ -81,7 +81,7 @@
   "peerDependencies": {
     "react": "*",
     "react-native": "*",
-    "react-native-nitro-modules": "^0.37.0"
+    "react-native-nitro-modules": ">=0.37.0"
   },
   "dependencies": {
     "@babel/runtime": "^7.25.0"

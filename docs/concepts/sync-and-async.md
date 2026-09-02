@@ -38,6 +38,12 @@ Available async functions:
 Those are the only operations heavy enough to cross Nitro's 50 ms rule of thumb, where a call
 starts costing visible frames.
 
+`polygonToCellsExperimentalAsync` binds the same experimental H3 API as
+`polygonToCellsExperimental`, so its results may change in a minor version of the underlying C
+library. It is one of four exports that follow the upstream H3 library rather than this package's
+own compatibility promise, listed in
+[Functions that follow upstream H3](../h3-js-divergences.md#functions-that-follow-upstream-h3).
+
 Everything else is synchronous by design. A thread hop (context switch) often costs more time than
 the H3 C library call it was meant to move off the main thread.
 

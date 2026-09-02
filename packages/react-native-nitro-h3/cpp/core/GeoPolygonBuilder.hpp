@@ -26,8 +26,9 @@ class GeoPolygonBuilder final {
 public:
   /**
    * Builds the graph from GeoJSON-shaped rings in degrees, the outer boundary first and any holes
-   * after it, each point a `[latitude, longitude]` pair. Throws `std::runtime_error` when a point
-   * is not a pair of finite numbers, and accepts an empty ring list as an empty polygon.
+   * after it, each point a `[latitude, longitude]` pair. Throws `std::runtime_error` when a point is
+   * not a pair of finite numbers inside `[-90, 90]` latitude and `[-180, 180]` longitude, and
+   * accepts an empty ring list as an empty polygon.
    */
   explicit GeoPolygonBuilder(const std::vector<std::vector<std::vector<double>>>& rings);
 

@@ -1,12 +1,15 @@
 /**
  * Represents a failure raised by any function in this package.
  *
- * It carries a message and, for a failure H3 itself reported, the numeric error code, exactly as
- * h3-js does. The wording comes from H3's own `describeH3Error`, so it matches upstream
- * documentation.
+ * {@linkcode H3Error.code} is the stable half of the contract and the message is informational: the
+ * wording comes from H3's own `describeH3Error` and may change when the vendored H3 version
+ * changes.
  */
 export class H3Error extends Error {
-  /** Holds the H3 error code, or `undefined` when the failure is this package's own. */
+  /**
+   * Holds H3's numeric error code, or `undefined` when this package refused the input before H3 saw
+   * it. Branch on this rather than on the message text.
+   */
   readonly code: number | undefined
 
   constructor(message: string, code?: number) {

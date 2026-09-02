@@ -10,10 +10,15 @@ h3-js 4.5.0 bundles exactly the H3 C library this package vendors, so it is an o
 approximation, and `parity/` compares the two over all 122 resolution 0 cells, all sixteen
 resolutions, all 192 pentagons with their neighbourhoods, the poles, the antimeridian and seeded
 random coordinates. Every row and section below is proved by a test in
-`parity/divergences.test.ts`, which asserts both sides; the two type-surface rows are proved there
-for h3-js at run time and for this package by `tsc`, because the probe the suite drives speaks JSON.
+`parity/divergences.test.ts`, except the error contract's package half, proved in
+`__tests__/H3Error.test.ts`, and the section on functions that follow upstream H3, which quotes the
+vendored sources instead of asserting against a test. Where `parity/divergences.test.ts` does the
+proving, it asserts both sides; the type-surface rows are proved there for h3-js at run time and for
+this package by `tsc`, because the probe the suite drives speaks JSON.
 The additive batch section leans on `parity/batches.test.ts` as well, which is where the two calls are
-compared with h3-js element for element. Everything not listed here is identical.
+compared with h3-js element for element.
+This package covers the `h3-js` 4.5.0 operation set under the same names and answers typed results.
+The list below is exhaustive: everything not listed here is identical.
 
 ## Input this package refuses and h3-js answers
 
@@ -22,10 +27,11 @@ compared with h3-js element for element. Everything not listed here is identical
 | An invalid cell index, to any operation taking one but the nine exemptions | throws `E_CELL_INVALID` (code 5) | reads the bits and answers: `cellArea('1', 'km2')` is `4106166.33`, `gridDisk('1', 1)` is six cells | H3 checks only the base cell range on most paths (`h3Index.c:1120`), so a malformed index yields a plausible answer rather than an error. Validating once at the boundary is what makes the rest of the binding able to trust its input. |
 | An invalid directed edge, such as one whose direction bits are `0` | throws `E_DIR_EDGE_INVALID` (code 6) | `getDirectedEdgeOrigin` answers with a cell | Every reader in `directedEdge.c` goes through `getDirectedEdgeOrigin`, which checks the mode bits and nothing else (`directedEdge.c:157`). |
 | An invalid vertex, such as a cell index | throws `E_VERTEX_INVALID` (code 8) | `vertexToLatLng` answers with a coordinate | `vertexToLatLng` clears the mode bits of whatever it is handed and measures the result (`vertex.c:326`). |
-| A `k`, resolution, vertex number or child position that is not an integer | throws this package's own wording, with no `code`: `k must be an integer`, `Resolution must be an integer between 0 and 15`, `Vertex number must be an integer`, `Child position must be an integer` | truncates and answers: `gridDisk(cell, 1.5)` is the `k` of 1 disk, `cellToParent(cell, 1.5)` is the resolution 1 parent, `cellToVertex(cell, 0.5)` is vertex `0`, `childPosToCell(1.5, cell, 10)` is child `1` | emscripten's argument marshalling truncates the double. A silently different answer is worse than a refusal. |
+| A `k`, resolution, vertex number, child position or local IJ coordinate that is not an integer | throws this package's own wording, with no `code`: `k must be an integer`, `Resolution must be an integer between 0 and 15`, `Vertex number must be an integer`, `Child position must be an integer`, `Local IJ coordinates must be integers` | truncates and answers: `gridDisk(cell, 1.5)` is the `k` of 1 disk, `cellToParent(cell, 1.5)` is the resolution 1 parent, `cellToVertex(cell, 0.5)` is vertex `0`, `childPosToCell(1.5, cell, 10)` is child `1`, `localIjToCell(origin, { i: 1.5, j: 0 })` is the same cell as `{ i: 1, j: 0 }` | emscripten's argument marshalling truncates the double. A silently different answer is worse than a refusal. |
 | A resolution that is not an integer, where h3-js validates in JavaScript (`getHexagonAreaAvg*`, `getHexagonEdgeLengthAvg*`, `getNumCells`) | throws `Resolution must be an integer between 0 and 15`, with no `code` | throws `E_RES_DOMAIN` (code 4) with `, value: 1.5` appended | H3 never sees the argument, so there is no H3 error to report. |
 | A polygon point that is not a `[lat, lng]` pair | throws `Each polygon point must be a [latitude, longitude] pair` | throws `E_FAILED` (code 1) | Saying what a point has to be is more useful than a generic failure. |
 | A polygon coordinate that is not finite | throws `Polygon coordinates must be finite numbers` | throws `E_FAILED` (code 1) | As above. |
+| A polygon coordinate outside the globe | throws `Polygon coordinates must be within [-90, 90] latitude and [-180, 180] longitude`, with no `code` | normalises and answers: `polygonToCells([[[91, 0], [0, 0], [1, 1]]], 3)` is 41 cells | H3 builds a polygon's bounding box from raw vertex extrema with no range check (`polygonAlgos.h:176`), so one vertex off the globe engulfs it: the experimental fill then scans the whole cell hierarchy, measured at about 36 seconds for a five-point ring on an Apple M-series host at `-O3`. Rejecting rather than wrapping keeps a ring across the antimeridian where it was drawn. |
 | `compactCells` over a set with an invalid member | throws `E_CELL_INVALID` (code 5) | throws `E_RES_MISMATCH` (code 12), because H3 reads the invalid member as another resolution | The boundary check runs before H3 sees the set. |
 | `uncompactCells` over a set with an invalid member | throws `E_CELL_INVALID` (code 5) | throws `E_MEMORY_BOUNDS` (code 14) after sizing the output from the invalid member, an allocation that leaves its emscripten heap unusable for the rest of the process | As above. |
 | `constructCell` with a digit count that is not the resolution | throws `constructCell needs exactly res digits`, with no `code` | throws `E_DIGIT_DOMAIN` (code 18) with `, value: 3` | H3 never sees the digit count, so it cannot report on it. |
@@ -47,6 +53,23 @@ with no `code`, where h3-js allocates all 4,005,541 cells and has no such contro
 cell-producing call sizes its result before allocating anything, which is what makes the refusal
 possible at all.
 
+## Functions that follow upstream H3
+
+Four exports track the H3 C library rather than this package's own compatibility promise. Their
+names, argument order and return types are covered like every other export. The cells and
+coordinates they answer are upstream's to change, and may change when the vendored H3 version
+changes.
+
+| Function | What upstream says |
+| --- | --- |
+| `polygonToCellsExperimental` | "This is an experimental-only API and is subject to change in minor versions" (`h3api.h:325`) |
+| `polygonToCellsExperimentalAsync` | binds the same C function, so the same sentence applies |
+| `cellToLocalIj` | "This function's output is not guaranteed to be compatible across different versions of H3" (`localij.c:523`) |
+| `localIjToCell` | reads the coordinates `cellToLocalIj` produces, so the same sentence applies |
+
+Local IJ coordinates are not a serialisation format. Do not store them, and do not send them between
+systems that may run different H3 versions.
+
 ## The additive batch calls
 
 `latLngsToCells` and `cellsToLatLngs` run a scalar operation over a whole typed array in one native
@@ -63,6 +86,20 @@ it grows one this section fails rather than ages.
 An invalid element is refused the way every other input is, with the index in the message
 (`cells[1]: Cell argument was not valid (code: 5)`), and the optional cell ceiling applies to both,
 counted in cells.
+
+## The error contract
+
+Every failure this package raises is an `H3Error`. Its `code` is the contract and its `message` is
+informational.
+
+`code` carries H3's own numeric error code when H3 reported the failure, and is `undefined` when this
+package refused the input before H3 saw it. Branch on `code`, and treat `undefined` as this package's
+own refusal. The numbers are H3's, listed in the
+[H3 error table](https://h3geo.org/docs/library/errors#table-of-error-codes).
+
+`message` is H3's `describeH3Error` wording, or this package's own wording for an input it refused
+itself. It may change when the vendored H3 version changes, and the two rows below show that h3-js's
+copy of the same table has already drifted from it. Do not parse it.
 
 ## Wording
 
@@ -94,16 +131,29 @@ worst case measured over the corpus, and each is asserted at two to four times i
 
 ## Shape and surface
 
-These are the differences a migration notices first. `README.md` explains each one.
+These are the differences a migration notices first, and the list is complete.
+[Cell indexes and bigint](./concepts/cells-and-bigint.md#api-compatibility-with-h3-js) explains the
+ones a call site meets on the first day.
 
 | Case | This package | h3-js |
 | --- | --- | --- |
 | A cell | `bigint` | hexadecimal `string` |
 | A cell set | `BigUint64Array` | `string[]` |
+| A cell argument | a `bigint` and nothing else | a hexadecimal `string` or a `[lower, upper]` pair of 32-bit numbers, the `H3IndexInput` type |
+| A coordinate | a `LatLng` object, `{ lat, lng }`, from `cellToLatLng`, `cellToBoundary`, `directedEdgeToBoundary`, `vertexToLatLng` and `cellsToMultiPolygon` | a `CoordPair` array, `[lat, lng]`, from all five |
+| GeoJSON output | no counterpart | `formatAsGeoJson` on `cellToBoundary`, `directedEdgeToBoundary` and `cellsToMultiPolygon` closes the loop and answers `[lng, lat]`; `isGeoJson` on `polygonToCells` and `polygonToCellsExperimental` reads `[lng, lat]` input |
+| A polygon | `Ring[]`, so a single loop is still wrapped in an array, and `Ring` is a tuple type that a bare `number[][]` fails `tsc` against | `number[][] \| number[][][]`, so a single loop may be passed unwrapped and a ring is a plain `number[][]` |
 | Units | separate functions (`cellAreaKm2`) | a string argument (`cellArea(cell, 'km2')`), and an `E_UNKNOWN_UNIT` this package cannot raise |
+| `greatCircleDistance` | four scalars with the unit in the name: `greatCircleDistanceKm(lat1, lng1, lat2, lng2)` | two arrays and a unit string: `greatCircleDistance([lat1, lng1], [lat2, lng2], 'km')` |
+| `localIjToCell` | an origin and two coordinate scalars: `localIjToCell(origin, i, j)` | an origin and a `CoordIJ` object: `localIjToCell(origin, coords)` |
+| `gridDiskDistances` | one `BigUint64Array` per ring, so `BigUint64Array[]` | one `H3Index[]` per ring, so `string[][]` |
+| `UNITS`, `POLYGON_TO_CELLS_FLAGS` | no counterpart: the unit is in the function name and a containment mode is a number | two frozen objects of strings |
+| `ContainmentMode` | a frozen object of H3's four `ContainmentMode` numbers | no counterpart |
 | `polygonToCellsExperimental` flags | a `ContainmentMode` number, or the h3-js name | the name only |
+| `H3Error` | a class, so `instanceof` identifies it, whose `code` is `undefined` for an input this package refused itself | a plain `Error` with a numeric `code` property for an H3 failure, typed as `{ message, code }` |
 | `constructCell` | `(baseCellNumber, digits, res)`, h3-js's order rather than the C library's | `(baseCellNumber, digits, res)` |
 | `cellToString`, `cellFromString` | convert between `bigint` and hexadecimal | no counterpart: h3-js cells already are strings |
+| The four `Async` variants | `polygonToCellsAsync`, `polygonToCellsExperimentalAsync`, `cellsToMultiPolygonAsync` and `uncompactCellsAsync` run the operation on a background thread and answer a `Promise` of what the synchronous call answers | no counterpart |
 | `h3IndexToSplitLong`, `splitLongToH3Index` | no counterpart | work around the lack of 64-bit integers in an emscripten build |
 
 The containment mode number and the h3-js name are proved to cover the same cells. The name form

@@ -16,7 +16,12 @@ namespace h3core {
 
 namespace {
 
-// rejects only what H3 cannot express; H3 normalises a coordinate outside the globe and answers
+// H3 builds a polygon's bounding box from raw vertex extrema with no range check
+// (`polygonAlgos.h:176`), so one vertex off the globe engulfs it and both fills scan the whole cell
+// hierarchy. Rejecting rather than wrapping keeps a ring across the antimeridian where it was drawn.
+constexpr double kMaxLatitudeDegrees = 90.0;
+constexpr double kMaxLongitudeDegrees = 180.0;
+
 std::vector<::LatLng> toRadians(const std::vector<std::vector<double>>& ring) {
   std::vector<::LatLng> verts;
   verts.reserve(ring.size());
@@ -29,6 +34,9 @@ std::vector<::LatLng> toRadians(const std::vector<std::vector<double>>& ring) {
     if (!std::isfinite(lat) || !std::isfinite(lng)) {
       // H3 answers `E_FAILED` for one of these and a nonsense cell for the other.
       throwInvalidArgument("Polygon coordinates must be finite numbers");
+    }
+    if (std::fabs(lat) > kMaxLatitudeDegrees || std::fabs(lng) > kMaxLongitudeDegrees) {
+      throwInvalidArgument("Polygon coordinates must be within [-90, 90] latitude and [-180, 180] longitude");
     }
     ::LatLng vertex{};
     vertex.lat = ::degsToRads(lat);

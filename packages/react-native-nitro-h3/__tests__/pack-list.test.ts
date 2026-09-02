@@ -1,4 +1,6 @@
 import { describe, expect, test } from 'bun:test'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { checkPackList, foreignModuleDeclarations } from '../../../scripts/check-pack'
 
 describe('npm pack list', () => {
@@ -45,5 +47,15 @@ describe('npm pack list', () => {
   test('accepts tsc output and a self-named module declaration', () => {
     expect(foreignModuleDeclarations('export declare const x: number\n', 'a')).toEqual([])
     expect(foreignModuleDeclarations('declare module "a" {}\n', 'a')).toEqual([])
+  })
+})
+
+describe('peer dependencies', () => {
+  test('the Nitro range admits every future minor, because a 0.x caret does not', () => {
+    // `^0.37.0` excludes `0.38.0`, so every Nitro minor would put consumers outside the range
+    const manifest = JSON.parse(
+      readFileSync(join(import.meta.dir, '..', 'package.json'), 'utf8'),
+    ) as { peerDependencies: Record<string, string> }
+    expect(manifest.peerDependencies['react-native-nitro-modules']).toBe('>=0.37.0')
   })
 })

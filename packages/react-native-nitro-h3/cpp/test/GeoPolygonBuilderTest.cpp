@@ -38,6 +38,19 @@ Rings rectangleWithHole() {
           {{37.80, -122.45}, {37.80, -122.40}, {37.75, -122.40}, {37.75, -122.45}}};
 }
 
+/**
+ * Returns the outer ring of the polygon that timed the fuzz target out on 2026-09-01, decoded from
+ * `cpp/fuzz/corpus/fuzz_polygon_rings/out-of-range-vertex.bin`. Three of its five vertices are off
+ * the globe.
+ */
+Rings archivedFuzzTimeout() {
+  return {{{-1.1800951262666012e+59, 9.012857568406849e-188},
+           {3.454720682027424e+184, 1.3123356562301087e-290},
+           {37.8, -122.5},
+           {37.8, -122.3},
+           {37.7, 5.003070314163925e+147}}};
+}
+
 // asserts the wording rather than any error, because an unguarded argument either answers a
 // plausible value or fails with a different code, and both would satisfy a bare `EXPECT_THROW`.
 template <typename Call> void expectMessage(const char* label, const char* message, Call&& call) {
@@ -126,12 +139,31 @@ TEST(GeoPolygonBuilder, RejectsANonFiniteCoordinate) {
                 [infinity] { h3core::GeoPolygonBuilder builder({{{37.8, infinity}}}); });
 }
 
-TEST(GeoPolygonBuilder, AcceptsACoordinateOutsideTheGlobe) {
-  // H3 normalises rather than rejects: h3-js `polygonToCells([[[91, 0], [0, 0], [1, 1]]], 3)`
-  // answers `41` cells, so this binding does not invent a rejection upstream does not have.
-  const h3core::GeoPolygonBuilder builder({{{91.0, 0.0}, {0.0, 0.0}, {1.0, 1.0}}});
+TEST(GeoPolygonBuilder, RejectsACoordinateOutsideTheGlobe) {
+  // h3-js `polygonToCells([[[91, 0], [0, 0], [1, 1]]], 3)` answers `41` cells, so this is a
+  // deliberate divergence rather than a refusal both sides make.
+  const char* message = "Polygon coordinates must be within [-90, 90] latitude and [-180, 180] longitude";
+  expectMessage("a latitude of 91", message,
+                [] { h3core::GeoPolygonBuilder builder({{{91.0, 0.0}, {0.0, 0.0}, {1.0, 1.0}}}); });
+  expectMessage("a longitude of -181", message,
+                [] { h3core::GeoPolygonBuilder builder({{{0.0, -181.0}, {0.0, 0.0}, {1.0, 1.0}}}); });
+  expectMessage("inside a hole", message, [] {
+    h3core::GeoPolygonBuilder builder({{{37.8, -122.4}, {37.7, -122.3}, {37.6, -122.2}}, {{90.5, -122.45}}});
+  });
+}
+
+TEST(GeoPolygonBuilder, AcceptsTheExactBoundsOfTheGlobe) {
+  // the check is inclusive, so a pole and the antimeridian stay expressible
+  const h3core::GeoPolygonBuilder builder({{{90.0, -180.0}, {-90.0, 180.0}, {0.0, 0.0}}});
   EXPECT_EQ(builder.polygon()->geoloop.numVerts, 3);
-  EXPECT_EQ(h3ops::polygonToCells({{{91.0, 0.0}, {0.0, 0.0}, {1.0, 1.0}}}, 3).count(), 41);
+}
+
+TEST(RegionsOps, RefusesTheArchivedFuzzTimeoutInsteadOfScanningTheHierarchy) {
+  // unbounded, the experimental fill spends about 36 s on this ring on an Apple M-series host at
+  // `-O3`, because `bboxFromGeoLoop` lets one vertex off the globe engulf it (`polyfill.c:557`).
+  const char* message = "Polygon coordinates must be within [-90, 90] latitude and [-180, 180] longitude";
+  expectMessage("classic", message, [] { h3ops::polygonToCells(archivedFuzzTimeout(), 7); });
+  expectMessage("experimental", message, [] { h3ops::polygonToCellsExperimental(archivedFuzzTimeout(), 7, 1); });
 }
 
 TEST(RegionsOps, PolygonToCellsMatchesH3Js) {

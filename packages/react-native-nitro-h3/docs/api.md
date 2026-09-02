@@ -372,6 +372,9 @@ function localIjToCell(origin: bigint, i: number, j: number): bigint
 Finds the cell at local IJ coordinates relative to an origin, inverting
 `cellToLocalIj`.
 
+The coordinates come from `cellToLocalIj`, whose output H3 does not guarantee across its
+own versions, so do not read them from storage written by a different H3 version.
+
 - `origin`: The anchoring cell.
 - `i`: The `i` coordinate, which must be an integer.
 - `j`: The `j` coordinate, which must be an integer.
@@ -552,7 +555,7 @@ reverses; a ring is not closed, so its first point is not repeated at the end.
 
 Returns: The cells covering the polygon, as a view onto the native buffer.
 
-Throws: `H3Error` if a point is not a finite `[latitude, longitude]` pair, the resolution is out of range, or the result would exceed a cell ceiling set with `configure`.
+Throws: `H3Error` if a point is not a `[latitude, longitude]` pair of finite numbers inside `[-90, 90]` latitude and `[-180, 180]` longitude, the resolution is out of range, or the result would exceed a cell ceiling set with `configure`.
 
 ### polygonToCellsExperimental
 
@@ -1117,7 +1120,7 @@ synchronous call is cheaper, because it has no hop at all.
 
 Returns: The cells covering the polygon, as a view onto the native buffer.
 
-Throws: `H3Error` if a point is not a finite `[latitude, longitude]` pair, the resolution is out of range, or the result would exceed a cell ceiling set with `configure`.
+Throws: `H3Error` if a point is not a `[latitude, longitude]` pair of finite numbers inside `[-90, 90]` latitude and `[-180, 180]` longitude, the resolution is out of range, or the result would exceed a cell ceiling set with `configure`.
 
 ### polygonToCellsExperimentalAsync
 
@@ -1133,7 +1136,9 @@ Finds the cells covering a polygon as `polygonToCellsExperimental` does, off the
 thread.
 
 The mode is resolved on the JS thread, by the helper the synchronous call uses, so the two take
-the same arguments and answer alike.
+the same arguments and answer alike. This binds the same experimental H3 API as
+`polygonToCellsExperimental`, so its results may change in a minor version of the
+underlying C library.
 
 - `rings`: The outer ring first, then holes, as `[latitude, longitude]` degrees.
 - `res`: The resolution, `0` to `15`.
@@ -1199,7 +1204,10 @@ Holds the settings `configure` accepts. Every field is optional.
 
 ```ts
 class H3Error extends Error {
-  /** Holds the H3 error code, or `undefined` when the failure is this package's own. */
+  /**
+   * Holds H3's numeric error code, or `undefined` when this package refused the input before H3 saw
+   * it. Branch on this rather than on the message text.
+   */
   readonly code: number | undefined
   constructor(message: string, code?: number)
 }
@@ -1207,9 +1215,9 @@ class H3Error extends Error {
 
 Represents a failure raised by any function in this package.
 
-It carries a message and, for a failure H3 itself reported, the numeric error code, exactly as
-h3-js does. The wording comes from H3's own `describeH3Error`, so it matches upstream
-documentation.
+`H3Error.code` is the stable half of the contract and the message is informational: the
+wording comes from H3's own `describeH3Error` and may change when the vendored H3 version
+changes.
 
 ## Types
 

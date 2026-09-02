@@ -1,0 +1,78 @@
+name: Nitro latest
+
+on:
+  schedule:
+    # Tuesday 06:00 UTC, a day after Dependabot opens its nitro group pull requests.
+    - cron: '0 6 * * 2'
+  workflow_dispatch:
+
+# Scheduled only, so it can never turn a pull request red for a version this repository does not
+# control. A break shows as a red scheduled run rather than as a neutral one, which is why this job
+# carries no `continue-on-error`.
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nitro-latest
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build Android against Nitro latest
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14  # <-- pinned: `latest` turns an upstream release into a red build
+
+      - run: bun install --frozen-lockfile
+
+      # `bun add` rewrites package.json and the lockfile; nothing is committed from this job.
+      - name: Install the latest Nitro
+        run: |
+          bun add --cwd packages/react-native-nitro-h3 --dev \
+            nitrogen@latest react-native-nitro-modules@latest
+          bun add --cwd apps/example react-native-nitro-modules@latest
+
+      - name: Report the resolved versions
+        run: |
+          nitro="$(jq -r .version packages/react-native-nitro-h3/node_modules/react-native-nitro-modules/package.json)"
+          nitrogen="$(jq -r .version packages/react-native-nitro-h3/node_modules/nitrogen/package.json)"
+          echo "Built against \`react-native-nitro-modules\` $nitro and \`nitrogen\` $nitrogen." \
+            >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Regenerate the Nitro bindings
+        run: bun run specs
+
+      - name: Report what the regeneration changed
+        run: |
+          {
+            echo '<details><summary>Generated code diff</summary>'
+            echo
+            echo '```diff'
+            git --no-pager diff --stat -- packages/react-native-nitro-h3/nitrogen
+            echo '```'
+            echo
+            echo '```'
+            git status --porcelain -- packages/react-native-nitro-h3/nitrogen
+            echo '```'
+            echo
+            echo '</details>'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: zulu
+          java-version: '17'
+
+      # One ABI: this job proves the generated code still compiles, not that the tarball ships
+      # every architecture, which `build-android.yml` already covers.
+      - name: Build the app
+        working-directory: apps/example/android
+        run: |
+          ./gradlew :app:assembleDebug --no-daemon --build-cache \
+            -PreactNativeArchitectures=arm64-v8a
