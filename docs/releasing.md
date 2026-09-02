@@ -312,7 +312,7 @@ pull request, because the `Publish` job pushes the version bump commit straight 
 
 `.github/workflows/pages.yml` builds `website/` on every pull request that touches the docs and
 deploys to `https://vgorte.github.io/react-native-nitro-h3/` on every push to `main`. The
-repository's Pages source was switched to GitHub Actions once, on 2026-09-01, with:
+repository's Pages source was switched to GitHub Actions once, on 2026-09-02, with:
 
 ```sh
 gh api -X POST repos/vgorte/react-native-nitro-h3/pages -f build_type=workflow
