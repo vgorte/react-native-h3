@@ -320,7 +320,7 @@ For package users:
 
 * 🔬 **[API Documentation](packages/react-native-nitro-h3/docs/api.md):** API reference and TypeScript signatures
 * 🔄 **[h3-js Divergences](docs/h3-js-divergences.md):** compatibility differences and the tests that prove them
-* 🧮 **[Performance Guide](docs/performance.md):** where the speed comes from, when a batch call pays, and the cell ceiling
+* 🧮 **[Performance Guide](docs/performance.md):** batch reference, the cell ceiling, and threading in depth
 * 📱 **[Example App](apps/example):** example application and benchmark screen
 
 Evidence and reference:
