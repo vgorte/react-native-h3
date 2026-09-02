@@ -15,20 +15,9 @@
 
 The result is a native H3 binding designed for performance-sensitive React Native workloads.
 
+> 📚 **[Read the documentation](https://vgorte.github.io/react-native-nitro-h3/)** for the guides, the API reference and the migration from `h3-js`.
+
 > **Native mobile only.** For web applications, use [`h3-js`](https://github.com/uber/h3-js).
-
----
-
-## ✨ Highlights
-
-* 🚀 **Native execution**: H3 runs as compiled C/C++ on iOS and Android.
-* ⚡ **High performance**: avoids hexadecimal string conversion on the JS/native boundary, repeated bridge crossings, and per-element copies.
-* 🔢 **`bigint` cell indexes**: H3's 64-bit indexes stay numeric instead of being converted to hexadecimal strings.
-* 📦 **Typed-array results**: cell sets use `BigUint64Array`; coordinate batches use `Float64Array`. A result crosses as one `ArrayBuffer` and is viewed in place.
-* 🔄 **Batch APIs**: process complete coordinate or cell arrays in a single native call.
-* 🧵 **Async variants**: move expensive operations to a background thread when appropriate.
-* 🛡️ **Optional cell ceiling**: reject unexpectedly large result sets before allocation.
-* ✅ **`h3-js` API parity**: 64 functions under the same names, with a short list of documented divergences.
 
 ---
 
@@ -46,19 +35,11 @@ for `compactCells` on a `k=20` disk containing 1,261 cells.
 
 All measured results were verified against `h3-js` 4.5.0 for equivalence.
 
-| Operation | `react-native-nitro-h3` | `h3-js` | Factor |
-| --------- | ----------------------: | ------: | -----: |
-| `compactCells` (`k=20` disk) | 0.085 ms | 72.9 ms | 862× |
-| `polygonToCells` (San Francisco, res 12) | 220.7 ms | 75,309.8 ms | 341× |
-| `latLngsToCells` (100k pairs, batch) | 53.9 ms | 2,514.7 ms | 47× |
-| `cellsToLatLngs` (100k cells, batch) | 23.3 ms | 1,315.3 ms | 56× |
-| `latLngToCell` (100k calls) | 91.5 ms | 2,156.9 ms | 24× |
-
 **Benchmark:** iPhone XS · Apple A12 · iOS 18.7.9 · Release build · React Native 0.87.0 · Hermes · 20-run median · 2026-09-01.
 
 > ⚠️ Benchmark numbers are workload- and device-dependent. They are representative measurements, not guaranteed speedups.
 
-👉 **[Full benchmark results & methodology](docs/benchmark.md)**
+👉 **[Full benchmark results & methodology](https://vgorte.github.io/react-native-nitro-h3/benchmark/)**
 
 ---
 
@@ -112,226 +93,7 @@ console.log(neighbours.length) // 7
 console.log(cellToString(cell)) // "89283082803ffff"
 ```
 
----
-
-## 🔢 BigInt & Typed Arrays
-
-H3 indexes are represented as JavaScript `bigint` values:
-
-```ts
-const cell = latLngToCell(37.7749, -122.4194, 9)
-
-console.log(cell)
-// 0x89283082803ffffn
-```
-
-Cell collections use `BigUint64Array`:
-
-```ts
-const cells = gridDisk(cell, 10)
-
-console.log(cells instanceof BigUint64Array) // true
-```
-
-This avoids converting every H3 index to and from a hexadecimal string on the hot path.
-
-When a string representation is required, for example when communicating with a backend, convert only at the application boundary:
-
-```ts
-const hex = cellToString(cell)
-const restored = cellFromString(hex)
-```
-
-> 💡 `JSON.stringify` does not support `bigint` directly.
-
----
-
-## 📦 Batch API
-
-Two additional APIs process complete typed arrays in a single native call:
-
-```ts
-import {
-  latLngsToCells,
-  cellsToLatLngs,
-} from 'react-native-nitro-h3'
-
-const coords = new Float64Array([
-  37.7749, -122.4194,
-  37.8044, -122.2712,
-])
-
-const cells = latLngsToCells(coords, 9)
-// BigUint64Array
-
-const centres = cellsToLatLngs(cells)
-// Float64Array: [lat0, lng0, lat1, lng1, ...]
-```
-
-Coordinates use interleaved `[latitude, longitude]` pairs.
-
-These APIs are additive and are not part of the `h3-js` compatibility surface. They are intended for workloads where repeatedly crossing the JS/native boundary would otherwise dominate execution time.
-
-![One batch call against the loop it replaces, 100,000 elements](https://raw.githubusercontent.com/vgorte/react-native-nitro-h3/main/img/benchmark-batch.svg)
-
-The saving is the bridge crossings that no longer happen. Same conditions as the Performance section above, full data in [docs/benchmark.md](docs/benchmark.md).
-
----
-
-## 🧵 Async Variants
-
-Most H3 operations are intentionally synchronous.
-
-For small native calls, the cost of moving work to another thread can exceed the cost of the H3 operation itself.
-
-Four expensive operations provide async variants:
-
-```ts
-import { polygonToCellsAsync, type Ring } from 'react-native-nitro-h3'
-
-const sanFrancisco: Ring[] = [
-  [
-    [37.8133, -122.409],
-    [37.7198, -122.3545],
-    [37.7076, -122.5123],
-  ],
-]
-
-const cells = await polygonToCellsAsync(sanFrancisco, 12)
-```
-
-Available async functions:
-
-* `polygonToCellsAsync`
-* `cellsToMultiPolygonAsync`
-* `polygonToCellsExperimentalAsync`
-* `uncompactCellsAsync`
-
-Async operations preserve the behavior and error semantics of their synchronous counterparts.
-
----
-
-## 🛡️ Memory Safety
-
-Cell-producing H3 operations can return very large result sets.
-
-For applications where unexpectedly large allocations should be rejected, configure an optional cell limit:
-
-```ts
-import { configure } from 'react-native-nitro-h3'
-
-configure({
-  maxCellCount: 4_000_000,
-})
-```
-
-A request exceeding the configured limit throws a catchable `H3Error` before the result is allocated.
-
-The limit is disabled by default to preserve `h3-js` behavior.
-
-To remove a previously configured limit:
-
-```ts
-configure({
-  maxCellCount: Infinity,
-})
-```
-
----
-
-## ❌ Error Handling
-
-All package-level errors are represented by `H3Error`.
-
-```ts
-import {
-  H3Error,
-  latLngToCell,
-} from 'react-native-nitro-h3'
-
-try {
-  latLngToCell(37.7749, -122.4194, 99)
-} catch (error) {
-  if (error instanceof H3Error) {
-    console.log(error.message)
-    console.log(error.code)
-  }
-}
-```
-
-Errors originating from H3 preserve the numeric H3 error code. Validation performed by the binding itself uses the same `H3Error` type.
-
----
-
-## ✅ API Compatibility
-
-The package mirrors the **64-function `h3-js` 4.5.0 API** under the same names.
-
-There are a few intentional differences:
-
-| `h3-js`                                     | `react-native-nitro-h3`               |
-| ------------------------------------------- | ------------------------------------- |
-| Cell indexes are hexadecimal strings        | Cell indexes are `bigint`             |
-| Cell collections are `string[]`             | Cell collections are `BigUint64Array` |
-| `cellArea(cell, 'km2')`                     | `cellAreaKm2(cell)`                   |
-| `h3IndexToSplitLong` / `splitLongToH3Index` | Not provided                          |
-| Loose JavaScript argument coercion          | Strict native validation              |
-| No cell allocation limit                    | Optional `maxCellCount`               |
-
-👉 **[Full compatibility & divergence guide](docs/h3-js-divergences.md)**
-
----
-
-## 🔄 Migrating from `h3-js`
-
-Most migrations are straightforward because the function names remain the same.
-
-The main change is that H3 indexes are numeric `bigint` values rather than strings:
-
-```ts
-// h3-js
-const cell = latLngToCell(37.7749, -122.4194, 9)
-// "89283082803ffff"
-
-// react-native-nitro-h3
-const cell = latLngToCell(37.7749, -122.4194, 9)
-// 0x89283082803ffffn
-```
-
-Convert to strings only where required:
-
-```ts
-const stringCell = cellToString(cell)
-const cellAgain = cellFromString(stringCell)
-```
-
-Likewise, APIs returning cell collections now return `BigUint64Array` instead of `string[]`.
-
-👉 **[Compatibility and divergence guide](docs/h3-js-divergences.md)**
-
----
-
-## 📚 Documentation
-
-The links below point into the repository. On npm, browse them at
-[github.com/vgorte/react-native-nitro-h3](https://github.com/vgorte/react-native-nitro-h3).
-
-For package users:
-
-* 🔬 **[API Documentation](packages/react-native-nitro-h3/docs/api.md):** API reference and TypeScript signatures
-* 🔄 **[h3-js Divergences](docs/h3-js-divergences.md):** compatibility differences and the tests that prove them
-* 🧮 **[Performance Guide](docs/performance.md):** batch reference, the cell ceiling, and threading in depth
-* 📱 **[Example App](apps/example):** example application and benchmark screen
-
-Evidence and reference:
-
-* 📊 **[Benchmark Report](docs/benchmark.md):** methodology, devices, measurements and complete results
-* 🔍 **[H3 Function Reference](docs/h3-function-table.md):** every parity export mapped to its H3 C counterpart
-
-For contributors and maintainers:
-
-* 🤝 **[Contributing](CONTRIBUTING.md):** development and contribution guide
-* 📦 **[Releasing](docs/releasing.md):** release procedure
+Coming from `h3-js`? Read the **[migration guide](https://vgorte.github.io/react-native-nitro-h3/migrating-from-h3-js/)**: same function names, cells as `bigint`, cell sets as `BigUint64Array`.
 
 ---
 
@@ -347,24 +109,46 @@ For contributors and maintainers:
 | Android       | **minSdk 24**                  |
 | Android SDK   | **compileSdk 36**              |
 | Android NDK   | **27.1.12297006**              |
+| H3 C library  | **4.5.0**, vendored            |
 
 The package requires the New Architecture, the default since React Native 0.76. The iOS and Android build workflows compile the example app against React Native 0.87.0.
 
+`react-native-nitro-h3` versions independently from H3. The exact vendored version is recorded in `third_party/h3/H3_VERSION`, which also ships in the published npm tarball.
+
 ---
 
-## 🧬 H3 Versioning
+## 📚 Documentation
 
-`react-native-nitro-h3` versions independently from the upstream H3 C library.
+Full documentation lives at **[vgorte.github.io/react-native-nitro-h3](https://vgorte.github.io/react-native-nitro-h3/)**.
 
-The current release vendors **H3 4.5.0** directly in the repository rather than using a git submodule.
+**Start here**
 
-The exact bundled H3 version can be verified in:
+* 🚀 **[Getting started](https://vgorte.github.io/react-native-nitro-h3/getting-started/)**: install, first call, requirements.
+* 🔄 **[Migrating from h3-js](https://vgorte.github.io/react-native-nitro-h3/migrating-from-h3-js/)**: every change at the call site, before and after.
 
-```text
-packages/react-native-nitro-h3/third_party/h3/H3_VERSION
-```
+**Core concepts**
 
-That file also ships in the published npm tarball, as `third_party/h3/H3_VERSION`.
+* 🔢 **[Cell indexes and bigint](https://vgorte.github.io/react-native-nitro-h3/concepts/cells-and-bigint/)**: why a cell is a `bigint` and how the surface matches `h3-js`.
+* 📦 **[Typed arrays and batch calls](https://vgorte.github.io/react-native-nitro-h3/concepts/typed-arrays-and-batch/)**: `BigUint64Array` results and the two batch calls.
+* 🧵 **[Sync and async](https://vgorte.github.io/react-native-nitro-h3/concepts/sync-and-async/)**: the four async variants and what the hop costs.
+* 🛡️ **[Errors and memory safety](https://vgorte.github.io/react-native-nitro-h3/concepts/errors-and-memory-safety/)**: `H3Error` and the optional cell ceiling.
+
+**Performance**
+
+* 🧮 **[Performance guide](https://vgorte.github.io/react-native-nitro-h3/performance/)**: where the speed comes from, when a batch call pays, and the cell ceiling.
+* 📊 **[Benchmark report](https://vgorte.github.io/react-native-nitro-h3/benchmark/)**: methodology, devices, measurements and complete results.
+
+**Reference**
+
+* 📖 **[API reference](https://vgorte.github.io/react-native-nitro-h3/api/)**: every exported function by category.
+* ⚙️ **[H3 function table](https://vgorte.github.io/react-native-nitro-h3/h3-function-table/)**: every parity export mapped to its H3 C counterpart.
+* 📖 **[h3-js divergences](https://vgorte.github.io/react-native-nitro-h3/h3-js-divergences/)**: compatibility differences and the tests that prove them.
+
+**Repository**
+
+* 📱 **[Example app](https://github.com/vgorte/react-native-nitro-h3/tree/main/apps/example)**: the benchmark and harness app.
+* 🤝 **[Contributing](https://github.com/vgorte/react-native-nitro-h3/blob/main/CONTRIBUTING.md)**: build, test and add an operation.
+* 🚀 **[Releasing](https://github.com/vgorte/react-native-nitro-h3/blob/main/docs/releasing.md)**: the maintainer runbook.
 
 ---
 
@@ -372,7 +156,7 @@ That file also ships in the published npm tarball, as `third_party/h3/H3_VERSION
 
 Contributions are welcome!
 
-See [`CONTRIBUTING.md`](CONTRIBUTING.md) for:
+See [`CONTRIBUTING.md`](https://github.com/vgorte/react-native-nitro-h3/blob/main/CONTRIBUTING.md) for:
 
 * development setup
 * test commands
