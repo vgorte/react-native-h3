@@ -55,7 +55,7 @@ export type RingsAreTuples = Expect<
   IsNotAssignable<number[][][], Parameters<typeof api.polygonToCells>[0]>
 >
 export type ASingleLoopIsRejected = Expect<
-  IsNotAssignable<number[][], Parameters<typeof api.polygonToCells>[0]>
+  IsNotAssignable<Ring, Parameters<typeof api.polygonToCells>[0]>
 >
 export type GridDiskDistancesIsTypedArrays = Expect<
   IsExactly<ReturnType<typeof api.gridDiskDistances>, BigUint64Array[]>
@@ -78,6 +78,26 @@ export type ExperimentalTakesNoFlag = Expect<
   IsExactly<
     Parameters<typeof api.polygonToCellsExperimental>,
     [Ring[], number, ContainmentModeValue | ContainmentModeName]
+  >
+>
+// h3-js exports both constants; the ops list cannot prove their absence, because it holds functions
+export type NoUnitConstants = Expect<
+  IsExactly<Extract<keyof typeof api, 'UNITS' | 'POLYGON_TO_CELLS_FLAGS'>, never>
+>
+export type AsyncVariantsPromiseTheSameResults = Expect<
+  IsExactly<
+    [
+      ReturnType<typeof api.polygonToCellsAsync>,
+      ReturnType<typeof api.polygonToCellsExperimentalAsync>,
+      ReturnType<typeof api.cellsToMultiPolygonAsync>,
+      ReturnType<typeof api.uncompactCellsAsync>,
+    ],
+    [
+      Promise<ReturnType<typeof api.polygonToCells>>,
+      Promise<ReturnType<typeof api.polygonToCellsExperimental>>,
+      Promise<ReturnType<typeof api.cellsToMultiPolygon>>,
+      Promise<ReturnType<typeof api.uncompactCells>>,
+    ]
   >
 >
 
@@ -644,6 +664,18 @@ describe.skipIf(skipWithoutProbe)('divergence: the shape of the public surface',
     }
   })
 
+  test('the four Async variants exist here and nowhere in h3-js', () => {
+    // that each answers a `Promise` of its sibling's result is proved by `tsc` above
+    for (const name of [
+      'polygonToCellsAsync',
+      'polygonToCellsExperimentalAsync',
+      'cellsToMultiPolygonAsync',
+      'uncompactCellsAsync',
+    ]) {
+      expect(Object.keys(h3), name).not.toContain(name)
+    }
+  })
+
   test('the two batch calls exist here and nowhere in h3-js', () => {
     // they run a scalar operation over a whole typed array, which h3-js has no counterpart for
     const ops = answer('__ops') as string[]
@@ -728,7 +760,7 @@ describe.skipIf(skipWithoutProbe)('divergence: the shape of the public surface',
   })
 
   test('UNITS and POLYGON_TO_CELLS_FLAGS exist in h3-js, ContainmentMode only here', () => {
-    const ops = answer('__ops') as string[]
+    // the absence of both constants from this package is proved by `tsc` in the assertions above
     expect(Object.keys(h3.UNITS)).toEqual(['m', 'm2', 'km', 'km2', 'rads', 'rads2'])
     expect(Object.keys(h3.POLYGON_TO_CELLS_FLAGS)).toEqual([
       'containmentCenter',
@@ -736,9 +768,6 @@ describe.skipIf(skipWithoutProbe)('divergence: the shape of the public surface',
       'containmentOverlapping',
       'containmentOverlappingBbox',
     ])
-    for (const name of ['UNITS', 'POLYGON_TO_CELLS_FLAGS']) {
-      expect(ops, name).not.toContain(name)
-    }
     expect(Object.keys(h3)).not.toContain('ContainmentMode')
     expect(ContainmentMode).toEqual({
       center: 0,
@@ -756,7 +785,7 @@ describe.skipIf(skipWithoutProbe)('divergence: the shape of the public surface',
     expect(h3.getResolution(CELL)).toBe(9)
   })
 
-  test('an h3-js failure is a plain Error whose code is always a number', () => {
+  test('an h3-js H3 failure is a plain Error with a numeric code', () => {
     // this package throws an `H3Error` class whose `code` is `undefined` for its own refusals,
     // which `__tests__/H3Error.test.ts` asserts
     let thrown: unknown

@@ -114,9 +114,10 @@ the ones a call site meets on the first day.
 | `UNITS`, `POLYGON_TO_CELLS_FLAGS` | no counterpart: the unit is in the function name and a containment mode is a number | two frozen objects of strings |
 | `ContainmentMode` | a frozen object of H3's four `ContainmentMode` numbers | no counterpart |
 | `polygonToCellsExperimental` flags | a `ContainmentMode` number, or the h3-js name | the name only |
-| `H3Error` | a class, so `instanceof` identifies it, whose `code` is `undefined` for an input this package refused itself | a plain `Error` with a numeric `code` property, typed as `{ message, code }` |
+| `H3Error` | a class, so `instanceof` identifies it, whose `code` is `undefined` for an input this package refused itself | a plain `Error` with a numeric `code` property for an H3 failure, typed as `{ message, code }` |
 | `constructCell` | `(baseCellNumber, digits, res)`, h3-js's order rather than the C library's | `(baseCellNumber, digits, res)` |
 | `cellToString`, `cellFromString` | convert between `bigint` and hexadecimal | no counterpart: h3-js cells already are strings |
+| The four `Async` variants | `polygonToCellsAsync`, `polygonToCellsExperimentalAsync`, `cellsToMultiPolygonAsync` and `uncompactCellsAsync` run the operation on a background thread and answer a `Promise` of what the synchronous call answers | no counterpart |
 | `h3IndexToSplitLong`, `splitLongToH3Index` | no counterpart | work around the lack of 64-bit integers in an emscripten build |
 
 The containment mode number and the h3-js name are proved to cover the same cells. The name form
