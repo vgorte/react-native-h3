@@ -399,6 +399,9 @@ The script validates the JSON (and refuses a `Debug` payload), renders both char
 `HEADLINE` line. `bun run benchmark:device` refuses to write `apps/example/benchmark.json` unless
 `--publish` is passed, so an unreviewed run cannot overwrite the published payload by accident.
 
+Then run `bun run og` in `website/` and commit the two PNGs it writes under `website/public/`; the
+social preview of the site's landing page is a raster copy of `img/benchmark.svg`.
+
 ### 4. Publish
 
 Put that factor in the README's Performance section, beside the device and the date, and update the

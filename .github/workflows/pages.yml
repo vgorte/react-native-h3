@@ -1,0 +1,63 @@
+name: Pages
+
+on:
+  pull_request:
+    paths:
+      - docs/**
+      - packages/react-native-nitro-h3/docs/api.md
+      - img/**
+      - website/**
+      - .github/workflows/pages.yml
+  push:
+    branches: [main]
+    paths:
+      - docs/**
+      - packages/react-native-nitro-h3/docs/api.md
+      - img/**
+      - website/**
+      - .github/workflows/pages.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One deploy at a time, and never cancel a running one: an interrupted deploy leaves the site half updated.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: website
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0  # the sync script reads each page's last commit date from git history
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14  # <-- pinned: `latest` turns an upstream release into a red build
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24  # `astro` runs under Node; Bun only runs the sync script
+      - run: bun install --frozen-lockfile
+      - run: bun run build
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: website/dist
+
+  deploy:
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write  # the OIDC token GitHub Pages exchanges for a deployment
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5
