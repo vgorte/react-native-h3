@@ -3,12 +3,14 @@ import { EXCLUDED, PAGES, type Page } from '../pages'
 import {
   frontmatter,
   hasSteps,
+  hasTabs,
   mdxGuard,
   rewriteLinks,
   splitTitle,
   stepsToMdx,
   stripHeadingEmoji,
   stripLeadingEmoji,
+  tabsToMdx,
   transform,
   unmapped,
 } from './sync-docs'
@@ -172,6 +174,12 @@ describe('stepsToMdx', () => {
     const text = '<!-- steps -->\n1. First step.\n<!-- steps -->\n<!-- /steps -->\n'
     expect(() => stepsToMdx(text)).toThrow(/line 3/)
   })
+
+  test('throws on a tabs block inside an open steps block', () => {
+    const text =
+      '<!-- steps -->\n1. First step.\n<TabItem label="bun">\n</TabItem>\n<!-- /steps -->\n'
+    expect(() => stepsToMdx(text)).toThrow(/line 3/)
+  })
 })
 
 describe('hasSteps', () => {
@@ -185,6 +193,82 @@ describe('hasSteps', () => {
 
   test('is true for a marker outside fenced blocks', () => {
     expect(hasSteps(stepsBody)).toBe(true)
+  })
+})
+
+const tabsBody = [
+  '<!-- tabs -->',
+  '<!-- tab: bun -->',
+  '',
+  'Add the package with bun.',
+  '',
+  '<!-- tab: npm -->',
+  '',
+  'Add the package with npm.',
+  '',
+  '<!-- /tabs -->',
+  '',
+].join('\n')
+
+describe('tabsToMdx', () => {
+  test('opens the block, closes every tab and keeps the content', () => {
+    expect(tabsToMdx(tabsBody)).toBe(
+      [
+        '<Tabs syncKey="package-manager">',
+        '<TabItem label="bun">',
+        '',
+        'Add the package with bun.',
+        '',
+        '</TabItem>',
+        '<TabItem label="npm">',
+        '',
+        'Add the package with npm.',
+        '',
+        '</TabItem>',
+        '</Tabs>',
+        '',
+      ].join('\n'),
+    )
+  })
+
+  test('leaves a marker inside a fenced block untouched', () => {
+    const text = '```md\n<!-- tabs -->\n<!-- tab: bun -->\n<!-- /tabs -->\n```\n'
+    expect(tabsToMdx(text)).toBe(text)
+  })
+
+  test('throws on a tab marker outside a block', () => {
+    expect(() => tabsToMdx('<!-- tab: bun -->\n')).toThrow(/line 1/)
+  })
+
+  test('throws on a nested open marker', () => {
+    const text = '<!-- tabs -->\n<!-- tab: bun -->\n<!-- tabs -->\n<!-- /tabs -->\n'
+    expect(() => tabsToMdx(text)).toThrow(/line 3/)
+  })
+
+  test('throws on a close without an open marker', () => {
+    expect(() => tabsToMdx('text\n<!-- /tabs -->\n')).toThrow(/line 2/)
+  })
+
+  test('throws on a block without a tab', () => {
+    expect(() => tabsToMdx('<!-- tabs -->\ntext\n<!-- /tabs -->\n')).toThrow(/line 1/)
+  })
+
+  test('throws on an unclosed marker', () => {
+    expect(() => tabsToMdx('<!-- tabs -->\n<!-- tab: bun -->\n')).toThrow(/line 1: unclosed/)
+  })
+})
+
+describe('hasTabs', () => {
+  test('is false on a page without markers', () => {
+    expect(hasTabs('## Installation\n\n1. First step.\n')).toBe(false)
+  })
+
+  test('is false for a marker inside a fenced block', () => {
+    expect(hasTabs('```md\n<!-- tabs -->\n```\n')).toBe(false)
+  })
+
+  test('is true for a marker outside fenced blocks', () => {
+    expect(hasTabs(tabsBody)).toBe(true)
   })
 })
 
@@ -205,6 +289,12 @@ describe('mdxGuard', () => {
 
   test('passes on the Steps lines', () => {
     expect(() => mdxGuard('<Steps>\n1. First step.\n</Steps>\n', 'docs/x.md')).not.toThrow()
+  })
+
+  test('passes on the Tabs and TabItem lines', () => {
+    const text =
+      '<Tabs syncKey="package-manager">\n<TabItem label="bun">\ntext\n</TabItem>\n</Tabs>\n'
+    expect(() => mdxGuard(text, 'docs/x.md')).not.toThrow()
   })
 })
 
@@ -264,6 +354,25 @@ describe('transform', () => {
       "---\n\nimport { Steps } from '@astrojs/starlight/components'\n\n<Steps>\n",
     )
     expect(out.content).toContain('\n</Steps>\n')
+  })
+
+  test('a page with tabs only imports Tabs and TabItem', () => {
+    const out = transform(`# 🧮 Performance Guide\n\n${tabsBody}`, perf, base, null)
+    expect(out.extension).toBe('mdx')
+    expect(out.content).toContain(
+      '---\n\nimport { TabItem, Tabs } from \'@astrojs/starlight/components\'\n\n<Tabs syncKey="package-manager">\n',
+    )
+    expect(out.content).toContain('\n</TabItem>\n</Tabs>\n')
+  })
+
+  test('a page with tabs and steps imports all three components', () => {
+    const body = `<!-- tabs -->\n<!-- tab: bun -->\n\n${stepsBody}\n<!-- /tabs -->\n`
+    const out = transform(`# 🧮 Performance Guide\n\n${body}`, perf, base, null)
+    expect(out.extension).toBe('mdx')
+    expect(out.content).toContain(
+      "import { Steps, TabItem, Tabs } from '@astrojs/starlight/components'",
+    )
+    expect(out.content).toContain('<TabItem label="bun">\n\n<Steps>\n')
   })
 })
 

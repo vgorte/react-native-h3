@@ -11,7 +11,12 @@ const CONTENT = join(WEBSITE, 'src', 'content', 'docs')
 const FENCE = /^\s*(```|~~~)/
 const STEPS_OPEN = '<!-- steps -->'
 const STEPS_CLOSE = '<!-- /steps -->'
-const STEPS_IMPORT = "import { Steps } from '@astrojs/starlight/components'"
+const TABS_OPEN = '<!-- tabs -->'
+const TABS_CLOSE = '<!-- /tabs -->'
+const TAB = /^<!-- tab:(.*)-->$/
+// The tag lines this script emits; every other `<` outside code is a JSX error in MDX.
+const EMITTED_TAG =
+  /^(?:<\/?Steps>|<Tabs syncKey="package-manager">|<\/Tabs>|<TabItem label="[^"]*">|<\/TabItem>)$/
 
 /** Returns the H1 text and the body without it. Exactly one H1 outside fenced blocks is required. */
 export function splitTitle(markdown: string): { title: string; body: string } {
@@ -96,7 +101,8 @@ export function stepsToMdx(body: string): string {
   const lines = body.split('\n').map((line, index) => {
     if (FENCE.test(line)) inFence = !inFence
     if (inFence) return line
-    if (line.trim() === STEPS_OPEN) {
+    const trimmed = line.trim()
+    if (trimmed === STEPS_OPEN) {
       if (openedAt !== 0)
         throw new Error(
           `line ${index + 1}: ${STEPS_OPEN} inside the block opened on line ${openedAt}`,
@@ -104,11 +110,16 @@ export function stepsToMdx(body: string): string {
       openedAt = index + 1
       return '<Steps>'
     }
-    if (line.trim() === STEPS_CLOSE) {
+    if (trimmed === STEPS_CLOSE) {
       if (openedAt === 0) throw new Error(`line ${index + 1}: ${STEPS_CLOSE} without ${STEPS_OPEN}`)
       openedAt = 0
       return '</Steps>'
     }
+    // A tab boundary inside a step list would split the list across two components.
+    if (openedAt !== 0 && (trimmed.startsWith('<Tabs') || trimmed.startsWith('<TabItem')))
+      throw new Error(
+        `line ${index + 1}: a tabs block inside the ${STEPS_OPEN} block opened on line ${openedAt}`,
+      )
     return line
   })
   if (openedAt !== 0) throw new Error(`line ${openedAt}: unclosed ${STEPS_OPEN}`)
@@ -125,15 +136,69 @@ export function hasSteps(body: string): boolean {
 }
 
 /**
+ * Replaces the tabs markers with a `<Tabs>` block whose tabs sync on `package-manager`.
+ * A block opens with `<!-- tabs -->`, every `<!-- tab: LABEL -->` opens a tab and closes the
+ * previous one, and `<!-- /tabs -->` closes the last tab and the block; GitHub hides all three.
+ */
+export function tabsToMdx(body: string): string {
+  let inFence = false
+  let openedAt = 0
+  let tabOpen = false
+  const lines: string[] = []
+  for (const [index, line] of body.split('\n').entries()) {
+    if (FENCE.test(line)) inFence = !inFence
+    const trimmed = inFence ? '' : line.trim()
+    if (trimmed === TABS_OPEN) {
+      if (openedAt !== 0)
+        throw new Error(
+          `line ${index + 1}: ${TABS_OPEN} inside the block opened on line ${openedAt}`,
+        )
+      openedAt = index + 1
+      lines.push('<Tabs syncKey="package-manager">')
+      continue
+    }
+    if (trimmed === TABS_CLOSE) {
+      if (openedAt === 0) throw new Error(`line ${index + 1}: ${TABS_CLOSE} without ${TABS_OPEN}`)
+      if (!tabOpen) throw new Error(`line ${openedAt}: ${TABS_OPEN} block without a tab`)
+      openedAt = 0
+      tabOpen = false
+      lines.push('</TabItem>', '</Tabs>')
+      continue
+    }
+    const tab = TAB.exec(trimmed)
+    if (tab) {
+      if (openedAt === 0)
+        throw new Error(`line ${index + 1}: ${trimmed} outside a ${TABS_OPEN} block`)
+      if (tabOpen) lines.push('</TabItem>')
+      tabOpen = true
+      lines.push(`<TabItem label="${tab[1]?.trim() ?? ''}">`)
+      continue
+    }
+    lines.push(line)
+  }
+  if (openedAt !== 0) throw new Error(`line ${openedAt}: unclosed ${TABS_OPEN}`)
+  return lines.join('\n')
+}
+
+/** Returns whether an opening `<!-- tabs -->` marker appears outside every fenced block. */
+export function hasTabs(body: string): boolean {
+  let inFence = false
+  return body.split('\n').some((line) => {
+    if (FENCE.test(line)) inFence = !inFence
+    return !inFence && line.trim() === TABS_OPEN
+  })
+}
+
+/**
  * Throws when a page that becomes MDX carries a `{`, `}` or `<` that MDX would read as JSX.
- * Fenced blocks, inline code spans and the emitted `<Steps>` lines are exempt.
+ * Fenced blocks, inline code spans and the tag lines this script emits are exempt.
  */
 export function mdxGuard(body: string, source: string): void {
   let inFence = false
   for (const [index, line] of body.split('\n').entries()) {
     if (FENCE.test(line)) inFence = !inFence
     if (inFence) continue
-    if (line.trim() === '<Steps>' || line.trim() === '</Steps>') continue
+    if (EMITTED_TAG.test(line.trim())) continue
     const jsx = line.replace(/(`+)[^`]*?\1/g, '').match(/[{}<]/)
     if (jsx) throw new Error(`${source}:${index + 1}: "${jsx[0]}" outside code is JSX in MDX`)
   }
@@ -158,8 +223,8 @@ export function frontmatter(page: Page, title: string, lastUpdated: string | nul
 
 /**
  * Returns the frontmatter followed by the rewritten body, and the extension the page needs.
- * A page with steps markers turns into MDX, which needs the `<Steps>` import and rules out
- * stray JSX characters in the prose.
+ * A page with steps or tabs markers turns into MDX, which needs the Starlight import and rules
+ * out stray JSX characters in the prose.
  */
 export function transform(
   markdown: string,
@@ -172,10 +237,15 @@ export function transform(
   const { title, body } = splitTitle(markdown)
   const rewritten = stripHeadingEmoji(rewriteLinks(body, page, base))
   const head = frontmatter(page, stripLeadingEmoji(title), lastUpdated)
-  if (!hasSteps(rewritten)) return { content: `${head}\n${rewritten}`, extension: 'md' }
-  const stepped = stepsToMdx(rewritten)
-  mdxGuard(stepped, page.source)
-  return { content: `${head}\n${STEPS_IMPORT}\n\n${stepped}`, extension: 'mdx' }
+  const steps = hasSteps(rewritten)
+  const tabs = hasTabs(rewritten)
+  if (!steps && !tabs) return { content: `${head}\n${rewritten}`, extension: 'md' }
+  // Tabs run first so the steps pass sees the emitted tag lines and can reject a nested block.
+  const converted = stepsToMdx(tabsToMdx(rewritten))
+  mdxGuard(converted, page.source)
+  const used = [...(steps ? ['Steps'] : []), ...(tabs ? ['TabItem', 'Tabs'] : [])]
+  const line = `import { ${used.join(', ')} } from '@astrojs/starlight/components'`
+  return { content: `${head}\n${line}\n\n${converted}`, extension: 'mdx' }
 }
 
 function lastCommitDate(source: string): string | null {
