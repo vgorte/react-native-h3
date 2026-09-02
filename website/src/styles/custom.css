@@ -1,0 +1,40 @@
+/* Starlight sizes the hero image inside `@layer starlight.core`, so these unlayered rules win. */
+.hero > img {
+  width: min(60%, 12rem);
+}
+
+@media (min-width: 50rem) {
+  .hero > img {
+    width: min(100%, 16rem);
+  }
+
+  /* The panel below the hero already pads by `1.5rem`, which is the whole gap the badge row needs. */
+  .hero {
+    padding-block-end: 0;
+  }
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0;
+}
+
+/* Accent palette in the hue of the logo centre `#219FC9`, with Starlight's own lightness steps. */
+:root {
+  --sl-color-accent-low: hsl(195, 54%, 20%);
+  --sl-color-accent: #219fc9;
+  --sl-color-accent-high: hsl(195, 85%, 80%);
+}
+
+:root[data-theme="light"] {
+  --sl-color-accent-low: hsl(195, 88%, 90%);
+  --sl-color-accent: #219fc9;
+  --sl-color-accent-high: hsl(195, 80%, 28%);
+}
+
+/* The header title reads as a wordmark, not a link, so it takes the text colour instead of the accent. */
+.site-title {
+  color: var(--sl-color-white);
+}

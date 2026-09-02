@@ -279,8 +279,8 @@ them runs per dispatch, selected by the `dry_run` input (which defaults to check
 
 ## After going public
 
-The repository has been public since 2026-08-30. Two of the three tasks that switch brings are done;
-the third is still open.
+The repository has been public since 2026-08-30. Three of the four tasks that switch brings are done;
+one is still open.
 
 ### 1. Verify assets and badges (done)
 
@@ -307,3 +307,17 @@ can no longer reach a release unnoticed. The iOS harness workflow, covering the 
 
 `main` carries a ruleset that refuses deletion and force pushes. It deliberately does not require a
 pull request, because the `Publish` job pushes the version bump commit straight to `main`.
+
+### 4. GitHub Pages for the documentation site (done)
+
+`.github/workflows/pages.yml` builds `website/` on every pull request that touches the docs and
+deploys to `https://vgorte.github.io/react-native-nitro-h3/` on every push to `main`. The
+repository's Pages source was switched to GitHub Actions once, on 2026-09-02, with:
+
+```sh
+gh api -X POST repos/vgorte/react-native-nitro-h3/pages -f build_type=workflow
+```
+
+The `github-pages` environment the deploy job uses is created by the first deployment. The
+repository's "About" homepage and the package's `homepage` field both point at the site; npm shows
+the new link with the next publish, because it reads the field from the published manifest.

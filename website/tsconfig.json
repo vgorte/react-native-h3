@@ -1,0 +1,8 @@
+{
+  "extends": "../config/tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["bun"],
+    "noEmit": true
+  },
+  "include": ["pages.ts", "scripts/sync-docs.ts", "scripts/sync-docs.test.ts"]
+}
