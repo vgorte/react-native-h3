@@ -292,6 +292,13 @@ describe.skipIf(skipWithoutProbe)('divergence: an argument that is not an intege
     }
   })
 
+  test('a fractional local IJ coordinate is refused where h3-js truncates it', () => {
+    const message = refusal(`localIjToCell ${CELL} 1.5 0`)
+    expect(message).toBe('Local IJ coordinates must be integers')
+    expect(codeOf(message)).toBeUndefined()
+    expect(h3.localIjToCell(CELL, { i: 1.5, j: 0 })).toBe(h3.localIjToCell(CELL, { i: 1, j: 0 }))
+  })
+
   test('a fractional resolution is refused in our wording where h3-js reports E_RES_DOMAIN', () => {
     const cases: [string, () => unknown][] = [
       ['getHexagonAreaAvgKm2 1.5', () => h3.getHexagonAreaAvg(1.5, 'km2')],
@@ -757,6 +764,13 @@ describe.skipIf(skipWithoutProbe)('divergence: the shape of the public surface',
     // the `[bigint, number, number]` parameters this package takes are proved by `tsc` above
     const ij = h3.cellToLocalIj(CELL, CELL)
     expect(h3.localIjToCell(CELL, ij)).toBe(CELL)
+    // h3-js refuses the scalar form this package takes
+    const scalarForm = h3.localIjToCell as unknown as (
+      origin: string,
+      i: number,
+      j: number,
+    ) => string
+    expect(() => scalarForm(CELL, 0, 0)).toThrow('Coordinates must be provided as an {i, j} object')
   })
 
   test('gridDiskDistances answers arrays of strings in h3-js', () => {
