@@ -7,6 +7,11 @@
   .hero > img {
     width: min(100%, 16rem);
   }
+
+  /* The panel below the hero already pads by `1.5rem`, which is the whole gap the badge row needs. */
+  .hero {
+    padding-block-end: 0;
+  }
 }
 
 .badges {

@@ -16,6 +16,7 @@
       "!**/lib",
       "!**/node_modules",
       "!**/build",
+      "!**/*.astro",
       "!**/website/dist",
       "!**/website/.astro",
       "!**/.cxx",
