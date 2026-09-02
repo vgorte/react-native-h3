@@ -93,7 +93,7 @@ console.log(neighbours.length) // 7
 console.log(cellToString(cell)) // "89283082803ffff"
 ```
 
-Coming from `h3-js`? Read the **[migration guide](https://vgorte.github.io/react-native-nitro-h3/migrating-from-h3-js/)**: same function names, cells as `bigint`, cell sets as `BigUint64Array`.
+Coming from `h3-js`? Read the **[migration guide](https://vgorte.github.io/react-native-nitro-h3/migrating-from-h3-js/)**: the `h3-js` names with unit suffixes instead of a unit argument, cells as `bigint`, cell sets as `BigUint64Array`.
 
 ---
 
@@ -142,7 +142,7 @@ Full documentation lives at **[vgorte.github.io/react-native-nitro-h3](https://v
 
 * 📖 **[API reference](https://vgorte.github.io/react-native-nitro-h3/api/)**: every exported function by category.
 * ⚙️ **[H3 function table](https://vgorte.github.io/react-native-nitro-h3/h3-function-table/)**: every parity export mapped to its H3 C counterpart.
-* 📖 **[h3-js divergences](https://vgorte.github.io/react-native-nitro-h3/h3-js-divergences/)**: compatibility differences and the tests that prove them.
+* 📖 **[h3-js divergences](https://vgorte.github.io/react-native-nitro-h3/h3-js-divergences/)**: compatibility differences, with the test or the vendored source that proves each one.
 
 **Repository**
 

@@ -53,8 +53,8 @@ equivalence.
     H3 4.5.0 runs as compiled C++ on iOS and Android, called directly through Nitro Modules.
   </Card>
   <Card title="<code>bigint</code> cell indexes" icon="puzzle">
-    H3's 64-bit indexes stay numeric. No hexadecimal strings cross the JavaScript boundary, and the
-    function names match `h3-js`.
+    H3's 64-bit indexes stay numeric. No hexadecimal strings cross the JavaScript boundary, and
+    functions keep the `h3-js` names, with unit suffixes instead of a unit argument.
   </Card>
   <Card title="Typed-array results" icon="database">
     A cell set arrives as one `BigUint64Array` over the buffer C++ produced, viewed in place instead
@@ -151,8 +151,8 @@ Built on the H3 C library 4.5.0 by Uber, vendored in the package and recorded in
 
 ## Familiar API, native results
 
-The function names match `h3-js`. Cells are `bigint`, cell sets are a `BigUint64Array` over native
-memory, and nothing is parsed on the JavaScript side.
+Functions keep the `h3-js` names, with unit suffixes instead of a unit argument. Cells are `bigint`,
+cell sets are a `BigUint64Array` over native memory, and nothing is parsed on the JavaScript side.
 
 ```ts
 import { gridDisk, latLngToCell } from 'react-native-nitro-h3'

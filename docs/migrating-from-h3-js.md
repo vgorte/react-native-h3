@@ -63,6 +63,9 @@ all five. Polygon input keeps the `[latitude, longitude]` pair on both sides.
 
 There is no `formatAsGeoJson` and no `isGeoJson` flag, so no call switches to `[lng, lat]` order.
 
+A polygon with a single loop still passes it as `Ring[]`, where `h3-js` also accepts the loop
+unwrapped as `number[][]`; `Ring` is a tuple type that `tsc` rejects a bare `number[][]` against.
+
 ## Unit suffixes replace unit arguments
 
 ```ts
@@ -93,6 +96,10 @@ A polygon vertex outside `[-90, 90]` latitude or `[-180, 180]` longitude is refu
 normalises the vertex and answers. Rejecting rather than wrapping keeps a ring across the
 antimeridian where it was drawn.
 
+`cellToLocalIj` and `localIjToCell` follow upstream H3 rather than this package's own compatibility
+promise, so their local IJ coordinates are not a serialisation format; see
+[Functions that follow upstream H3](./h3-js-divergences.md#functions-that-follow-upstream-h3).
+
 ## What has no `h3-js` counterpart
 
 - `latLngsToCells` and `cellsToLatLngs` index or read a whole typed array in one native call, see
@@ -101,9 +108,8 @@ antimeridian where it was drawn.
   [Errors and memory safety](./concepts/errors-and-memory-safety.md).
 - `h3IndexToSplitLong` and `splitLongToH3Index` are not provided: a `bigint` already carries all 64
   bits.
-- `UNITS` and `POLYGON_TO_CELLS_FLAGS` are not provided: the unit is in the function name, and a
-  containment mode comes from the `ContainmentMode` object, which takes H3's number or the `h3-js`
-  name.
+- `UNITS` and `POLYGON_TO_CELLS_FLAGS` are not provided: the unit is in the function name, and
+  `polygonToCellsExperimental` takes a `ContainmentMode` number or the matching `h3-js` name.
 
 ## Every other difference
 
