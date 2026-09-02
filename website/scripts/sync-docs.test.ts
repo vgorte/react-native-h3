@@ -2,8 +2,11 @@ import { describe, expect, test } from 'bun:test'
 import { EXCLUDED, PAGES, type Page } from '../pages'
 import {
   frontmatter,
+  hasSteps,
+  mdxGuard,
   rewriteLinks,
   splitTitle,
+  stepsToMdx,
   stripHeadingEmoji,
   stripLeadingEmoji,
   transform,
@@ -67,6 +70,11 @@ describe('stripHeadingEmoji', () => {
     expect(stripHeadingEmoji(text)).toBe(text)
   })
 
+  test('does not touch a heading-shaped line inside an indented fence', () => {
+    const text = '1. Step.\n\n   ```sh\n# 📦 install the package\n   ```\n'
+    expect(stripHeadingEmoji(text)).toBe(text)
+  })
+
   test('leaves an emoji outside a heading alone', () => {
     const text = '| ✅ supported | yes |\n\n> 💡 A tip.\n'
     expect(stripHeadingEmoji(text)).toBe(text)
@@ -126,6 +134,80 @@ describe('rewriteLinks', () => {
   })
 })
 
+const stepsBody = [
+  '<!-- steps -->',
+  '1. First step.',
+  '',
+  '   ```bash',
+  '   command',
+  '   ```',
+  '',
+  '2. Second step.',
+  '<!-- /steps -->',
+  '',
+].join('\n')
+
+describe('stepsToMdx', () => {
+  test('replaces both markers and leaves the list untouched', () => {
+    const out = stepsToMdx(stepsBody)
+    expect(out).toBe(
+      stepsBody.replace('<!-- steps -->', '<Steps>').replace('<!-- /steps -->', '</Steps>'),
+    )
+  })
+
+  test('leaves a marker inside a fenced block untouched', () => {
+    const text = '```md\n<!-- steps -->\n1. First step.\n<!-- /steps -->\n```\n'
+    expect(stepsToMdx(text)).toBe(text)
+  })
+
+  test('throws on an unclosed marker', () => {
+    expect(() => stepsToMdx('<!-- steps -->\n1. First step.\n')).toThrow(/line 1: unclosed/)
+  })
+
+  test('throws on a close without an open marker', () => {
+    expect(() => stepsToMdx('1. First step.\n<!-- /steps -->\n')).toThrow(/line 2/)
+  })
+
+  test('throws on a nested open marker', () => {
+    const text = '<!-- steps -->\n1. First step.\n<!-- steps -->\n<!-- /steps -->\n'
+    expect(() => stepsToMdx(text)).toThrow(/line 3/)
+  })
+})
+
+describe('hasSteps', () => {
+  test('is false on a page without markers', () => {
+    expect(hasSteps('## Installation\n\n1. First step.\n')).toBe(false)
+  })
+
+  test('is false for a marker inside a fenced block', () => {
+    expect(hasSteps('```md\n<!-- steps -->\n```\n')).toBe(false)
+  })
+
+  test('is true for a marker outside fenced blocks', () => {
+    expect(hasSteps(stepsBody)).toBe(true)
+  })
+})
+
+describe('mdxGuard', () => {
+  test('throws on a brace in prose', () => {
+    expect(() => mdxGuard('The options are {a, b}.\n', 'docs/x.md')).toThrow(
+      'docs/x.md:1: "{" outside code is JSX in MDX',
+    )
+  })
+
+  test('passes on a brace inside an inline code span', () => {
+    expect(() => mdxGuard('Call `latLngToCell({ lat })` first.\n', 'docs/x.md')).not.toThrow()
+  })
+
+  test('passes on a brace inside a fenced block', () => {
+    expect(() => mdxGuard('```ts\nimport { Steps } from "x"\n```\n', 'docs/x.md')).not.toThrow()
+  })
+
+  test('passes on the Steps lines', () => {
+    expect(() => mdxGuard('<Steps>\n1. First step.\n</Steps>\n', 'docs/x.md')).not.toThrow()
+  })
+})
+
 describe('frontmatter', () => {
   test('writes title, description, editUrl and lastUpdated', () => {
     const out = frontmatter(perf, 'Performance Guide', '2026-09-01T10:00:00+02:00')
@@ -156,17 +238,32 @@ describe('frontmatter', () => {
 describe('transform', () => {
   test('produces frontmatter followed by the body without the H1', () => {
     const out = transform('# 🧮 Performance Guide\n\nSee [b](benchmark.md).\n', perf, base, null)
-    expect(out.startsWith('---\ntitle: "Performance Guide"\n')).toBe(true)
-    expect(out.endsWith('---\n\nSee [b](/react-native-nitro-h3/benchmark/).\n')).toBe(true)
+    expect(out.content.startsWith('---\ntitle: "Performance Guide"\n')).toBe(true)
+    expect(out.content.endsWith('---\n\nSee [b](/react-native-nitro-h3/benchmark/).\n')).toBe(true)
   })
 
   test('strips the emoji from the body headings too', () => {
     const out = transform('# 🧮 Performance Guide\n\n## 📦 Installation\n', perf, base, null)
-    expect(out.endsWith('---\n\n## Installation\n')).toBe(true)
+    expect(out.content.endsWith('---\n\n## Installation\n')).toBe(true)
   })
 
   test('refuses GitHub alert syntax', () => {
     expect(() => transform('# T\n\n> [!NOTE]\n> x\n', perf, base, null)).toThrow(/\[!NOTE\]/)
+  })
+
+  test('a page without markers stays Markdown and gets no import', () => {
+    const out = transform('# 🧮 Performance Guide\n\n1. First step.\n', perf, base, null)
+    expect(out.extension).toBe('md')
+    expect(out.content).not.toContain('import { Steps }')
+  })
+
+  test('a page with markers becomes MDX with the import first in the body', () => {
+    const out = transform(`# 🧮 Performance Guide\n\n${stepsBody}`, perf, base, null)
+    expect(out.extension).toBe('mdx')
+    expect(out.content).toContain(
+      "---\n\nimport { Steps } from '@astrojs/starlight/components'\n\n<Steps>\n",
+    )
+    expect(out.content).toContain('\n</Steps>\n')
   })
 })
 

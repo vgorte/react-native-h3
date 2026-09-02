@@ -6,32 +6,45 @@
 
 ## 📦 Installation
 
-Install the package together with Nitro Modules:
+<!-- steps -->
+1. Add the package together with Nitro Modules.
 
-```bash
-bun add react-native-nitro-h3 react-native-nitro-modules
-```
+   ```bash
+   bun add react-native-nitro-h3 react-native-nitro-modules
+   ```
 
-Or:
+   Or with npm:
 
-```bash
-npm install react-native-nitro-h3 react-native-nitro-modules
-```
+   ```bash
+   npm install react-native-nitro-h3 react-native-nitro-modules
+   ```
 
-For iOS:
+2. Install the iOS pods.
 
-```bash
-cd ios && pod install
-```
+   ```bash
+   cd ios && pod install
+   ```
+
+3. Rebuild the app so the native module is linked, with `npx react-native run-ios` or `npx react-native run-android`.
+<!-- /steps -->
 
 ### Expo
 
-```bash
-npx expo install react-native-nitro-h3 react-native-nitro-modules
-npx expo prebuild
-```
+<!-- steps -->
+1. Add the package with the Expo CLI.
 
-Expo Go cannot load native modules. Use a development build with `npx expo run:ios` or `npx expo run:android`.
+   ```bash
+   npx expo install react-native-nitro-h3 react-native-nitro-modules
+   ```
+
+2. Generate the native projects.
+
+   ```bash
+   npx expo prebuild
+   ```
+
+   Expo Go cannot load native modules. Use a development build with `npx expo run:ios` or `npx expo run:android`.
+<!-- /steps -->
 
 ## 👇 First call
 
