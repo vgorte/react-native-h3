@@ -372,6 +372,9 @@ function localIjToCell(origin: bigint, i: number, j: number): bigint
 Finds the cell at local IJ coordinates relative to an origin, inverting
 `cellToLocalIj`.
 
+The coordinates come from `cellToLocalIj`, whose output H3 does not guarantee across its
+own versions, so do not read them from storage written by a different H3 version.
+
 - `origin`: The anchoring cell.
 - `i`: The `i` coordinate, which must be an integer.
 - `j`: The `j` coordinate, which must be an integer.
@@ -1133,7 +1136,9 @@ Finds the cells covering a polygon as `polygonToCellsExperimental` does, off the
 thread.
 
 The mode is resolved on the JS thread, by the helper the synchronous call uses, so the two take
-the same arguments and answer alike.
+the same arguments and answer alike. This binds the same experimental H3 API as
+`polygonToCellsExperimental`, so its results may change in a minor version of the
+underlying C library.
 
 - `rings`: The outer ring first, then holes, as `[latitude, longitude]` degrees.
 - `res`: The resolution, `0` to `15`.

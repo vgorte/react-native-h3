@@ -141,6 +141,9 @@ export function cellToLocalIj(origin: bigint, cell: bigint): CoordIJ {
  * Finds the cell at local IJ coordinates relative to an origin, inverting
  * {@linkcode cellToLocalIj}.
  *
+ * The coordinates come from {@linkcode cellToLocalIj}, whose output H3 does not guarantee across its
+ * own versions, so do not read them from storage written by a different H3 version.
+ *
  * @param origin The anchoring cell.
  * @param i The `i` coordinate, which must be an integer.
  * @param j The `j` coordinate, which must be an integer.

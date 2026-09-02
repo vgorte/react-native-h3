@@ -50,6 +50,23 @@ with no `code`, where h3-js allocates all 4,005,541 cells and has no such contro
 cell-producing call sizes its result before allocating anything, which is what makes the refusal
 possible at all.
 
+## Functions that follow upstream H3
+
+Four exports track the H3 C library rather than this package's own compatibility promise. Their
+names, argument order and return types are covered like every other export. The cells and
+coordinates they answer are upstream's to change, and may change when the vendored H3 version
+changes.
+
+| Function | What upstream says |
+| --- | --- |
+| `polygonToCellsExperimental` | "This is an experimental-only API and is subject to change in minor versions" (`h3api.h:325`) |
+| `polygonToCellsExperimentalAsync` | binds the same C function, so the same sentence applies |
+| `cellToLocalIj` | "This function's output is not guaranteed to be compatible across different versions of H3" (`localij.c:523`) |
+| `localIjToCell` | reads the coordinates `cellToLocalIj` produces, so the same sentence applies |
+
+Local IJ coordinates are not a serialisation format. Do not store them, and do not send them between
+systems that may run different H3 versions.
+
 ## The additive batch calls
 
 `latLngsToCells` and `cellsToLatLngs` run a scalar operation over a whole typed array in one native

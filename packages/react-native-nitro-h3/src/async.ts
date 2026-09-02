@@ -32,7 +32,9 @@ export async function polygonToCellsAsync(rings: Ring[], res: number): Promise<B
  * thread.
  *
  * The mode is resolved on the JS thread, by the helper the synchronous call uses, so the two take
- * the same arguments and answer alike.
+ * the same arguments and answer alike. This binds the same experimental H3 API as
+ * {@linkcode polygonToCellsExperimental}, so its results may change in a minor version of the
+ * underlying C library.
  *
  * @param rings The outer ring first, then holes, as `[latitude, longitude]` degrees.
  * @param res The resolution, `0` to `15`.
