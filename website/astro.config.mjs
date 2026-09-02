@@ -12,8 +12,11 @@ export default defineConfig({
       description: 'Fast H3 geospatial indexing for React Native, powered by Nitro Modules.',
       logo: { src: './src/assets/logo.svg' },
       social: [{ icon: 'github', label: 'GitHub', href: REPO }],
-      editLink: { baseUrl: `${REPO}/edit/main/website/` },
       lastUpdated: true,
+      head: [
+        { tag: 'meta', attrs: { property: 'og:image', content: `${SITE}${BASE}/og-logo.png` } },
+        { tag: 'meta', attrs: { property: 'og:image:alt', content: 'react-native-nitro-h3 logo' } },
+      ],
       sidebar: sidebar(),
       plugins: [starlightLinksValidator()],
     }),

@@ -117,8 +117,8 @@ async function main() {
     throw new Error(`not mapped in website/pages.ts and not excluded: ${unmapped.join(', ')}`)
   }
 
-  // The landing page is written by hand and lives in the same tree, so only generated pages go.
   await mkdir(CONTENT, { recursive: true })
+  // The landing page is written by hand and lives in the same tree, so only generated pages go.
   for (const entry of await readdir(CONTENT)) {
     if (entry !== 'index.mdx') await rm(join(CONTENT, entry), { recursive: true, force: true })
   }
