@@ -7,7 +7,11 @@ import { BASE, EXCLUDED, PAGES, type Page, REPO } from '../pages'
 const WEBSITE = dirname(dirname(fileURLToPath(import.meta.url)))
 const ROOT = dirname(WEBSITE)
 const CONTENT = join(WEBSITE, 'src', 'content', 'docs')
-const FENCE = /^(```|~~~)/
+// Leading whitespace is allowed so a fence indented inside a list item toggles the state as well.
+const FENCE = /^\s*(```|~~~)/
+const STEPS_OPEN = '<!-- steps -->'
+const STEPS_CLOSE = '<!-- /steps -->'
+const STEPS_IMPORT = "import { Steps } from '@astrojs/starlight/components'"
 
 /** Returns the H1 text and the body without it. Exactly one H1 outside fenced blocks is required. */
 export function splitTitle(markdown: string): { title: string; body: string } {
@@ -81,6 +85,60 @@ export function rewriteLinks(body: string, page: Page, base: string): string {
     .join('\n')
 }
 
+/**
+ * Replaces the `<!-- steps -->` and `<!-- /steps -->` markers with `<Steps>` and `</Steps>`.
+ * Both markers sit on their own line around a single ordered list, carry no attributes and never
+ * nest; GitHub hides them, so the same list stays a plain list there.
+ */
+export function stepsToMdx(body: string): string {
+  let inFence = false
+  let openedAt = 0
+  const lines = body.split('\n').map((line, index) => {
+    if (FENCE.test(line)) inFence = !inFence
+    if (inFence) return line
+    if (line.trim() === STEPS_OPEN) {
+      if (openedAt !== 0)
+        throw new Error(
+          `line ${index + 1}: ${STEPS_OPEN} inside the block opened on line ${openedAt}`,
+        )
+      openedAt = index + 1
+      return '<Steps>'
+    }
+    if (line.trim() === STEPS_CLOSE) {
+      if (openedAt === 0) throw new Error(`line ${index + 1}: ${STEPS_CLOSE} without ${STEPS_OPEN}`)
+      openedAt = 0
+      return '</Steps>'
+    }
+    return line
+  })
+  if (openedAt !== 0) throw new Error(`line ${openedAt}: unclosed ${STEPS_OPEN}`)
+  return lines.join('\n')
+}
+
+/** Returns whether an opening `<!-- steps -->` marker appears outside every fenced block. */
+export function hasSteps(body: string): boolean {
+  let inFence = false
+  return body.split('\n').some((line) => {
+    if (FENCE.test(line)) inFence = !inFence
+    return !inFence && line.trim() === STEPS_OPEN
+  })
+}
+
+/**
+ * Throws when a page that becomes MDX carries a `{`, `}` or `<` that MDX would read as JSX.
+ * Fenced blocks, inline code spans and the emitted `<Steps>` lines are exempt.
+ */
+export function mdxGuard(body: string, source: string): void {
+  let inFence = false
+  for (const [index, line] of body.split('\n').entries()) {
+    if (FENCE.test(line)) inFence = !inFence
+    if (inFence) continue
+    if (line.trim() === '<Steps>' || line.trim() === '</Steps>') continue
+    const jsx = line.replace(/(`+)[^`]*?\1/g, '').match(/[{}<]/)
+    if (jsx) throw new Error(`${source}:${index + 1}: "${jsx[0]}" outside code is JSX in MDX`)
+  }
+}
+
 /** Writes the YAML block Starlight needs. Values go through `JSON.stringify`, which is valid YAML. */
 export function frontmatter(page: Page, title: string, lastUpdated: string | null): string {
   const lines = [
@@ -98,18 +156,26 @@ export function frontmatter(page: Page, title: string, lastUpdated: string | nul
   return lines.join('\n')
 }
 
-/** Returns the frontmatter followed by the rewritten body. */
+/**
+ * Returns the frontmatter followed by the rewritten body, and the extension the page needs.
+ * A page with steps markers turns into MDX, which needs the `<Steps>` import and rules out
+ * stray JSX characters in the prose.
+ */
 export function transform(
   markdown: string,
   page: Page,
   base: string,
   lastUpdated: string | null,
-): string {
+): { content: string; extension: 'md' | 'mdx' } {
   const alert = markdown.match(/^> \[!\w+\]/m)
   if (alert) throw new Error(`${page.source} uses ${alert[0]}, which Starlight renders literally`)
   const { title, body } = splitTitle(markdown)
   const rewritten = stripHeadingEmoji(rewriteLinks(body, page, base))
-  return `${frontmatter(page, stripLeadingEmoji(title), lastUpdated)}\n${rewritten}`
+  const head = frontmatter(page, stripLeadingEmoji(title), lastUpdated)
+  if (!hasSteps(rewritten)) return { content: `${head}\n${rewritten}`, extension: 'md' }
+  const stepped = stepsToMdx(rewritten)
+  mdxGuard(stepped, page.source)
+  return { content: `${head}\n${STEPS_IMPORT}\n\n${stepped}`, extension: 'mdx' }
 }
 
 function lastCommitDate(source: string): string | null {
@@ -151,9 +217,10 @@ async function main() {
     const sourcePath = join(ROOT, page.source)
     if (!existsSync(sourcePath)) throw new Error(`${page.source} does not exist`)
     const markdown = await readFile(sourcePath, 'utf8')
-    const out = join(CONTENT, `${page.route.replace(/^\/|\/$/g, '')}.md`)
+    const { content, extension } = transform(markdown, page, BASE, lastCommitDate(page.source))
+    const out = join(CONTENT, `${page.route.replace(/^\/|\/$/g, '')}.${extension}`)
     await mkdir(dirname(out), { recursive: true })
-    await writeFile(out, transform(markdown, page, BASE, lastCommitDate(page.source)))
+    await writeFile(out, content)
   }
 
   await mkdir(join(WEBSITE, 'public', 'img'), { recursive: true })
