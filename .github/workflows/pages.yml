@@ -21,10 +21,10 @@ on:
 permissions:
   contents: read
 
-# One deploy at a time, and never cancel a running one: an interrupted deploy leaves the site half updated.
+# Deploys serialise and never cancel; a pull request's builds cancel each other on a new push.
 concurrency:
-  group: pages
-  cancel-in-progress: false
+  group: pages-${{ github.event_name == 'pull_request' && github.head_ref || 'deploy' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build:
@@ -43,6 +43,7 @@ jobs:
         with:
           node-version: 24  # `astro` runs under Node; Bun only runs the sync script
       - run: bun install --frozen-lockfile
+      - run: bun test scripts/sync-docs.test.ts
       - run: bun run build
       - uses: actions/upload-pages-artifact@v5
         with:

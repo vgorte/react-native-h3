@@ -7,7 +7,6 @@ import { BASE, EXCLUDED, PAGES, type Page, REPO } from '../pages'
 const WEBSITE = dirname(dirname(fileURLToPath(import.meta.url)))
 const ROOT = dirname(WEBSITE)
 const CONTENT = join(WEBSITE, 'src', 'content', 'docs')
-const IMAGES = ['logo.svg', 'architecture.svg', 'benchmark.svg', 'benchmark-batch.svg']
 const FENCE = /^(```|~~~)/
 
 /** Returns the H1 text and the body without it. Exactly one H1 outside fenced blocks is required. */
@@ -100,21 +99,28 @@ function lastCommitDate(source: string): string | null {
   return date === '' ? null : date
 }
 
-function isExcluded(repoPath: string): boolean {
-  return EXCLUDED.some((entry) =>
-    entry.endsWith('/') ? repoPath.startsWith(entry) : repoPath === entry,
-  )
+/**
+ * Returns the files that are neither a mapped `source` nor excluded. A trailing-slash entry in
+ * `excluded` matches by prefix, every other entry by equality.
+ */
+export function unmapped(
+  files: readonly string[],
+  pages: readonly Page[],
+  excluded: readonly string[],
+): string[] {
+  const mapped = new Set(pages.map((page) => page.source))
+  const isExcluded = (file: string): boolean =>
+    excluded.some((entry) => (entry.endsWith('/') ? file.startsWith(entry) : file === entry))
+  return files.filter((file) => !mapped.has(file) && !isExcluded(file))
 }
 
 async function main() {
   // The gate runs first so a docs file nobody mapped leaves the generated tree as it was.
-  const mapped = new Set(PAGES.map((page) => page.source))
-  const unmapped: string[] = []
-  for await (const file of new Bun.Glob('docs/**/*.md').scan({ cwd: ROOT })) {
-    if (!mapped.has(file) && !isExcluded(file)) unmapped.push(file)
-  }
-  if (unmapped.length > 0) {
-    throw new Error(`not mapped in website/pages.ts and not excluded: ${unmapped.join(', ')}`)
+  const files: string[] = []
+  for await (const file of new Bun.Glob('docs/**/*.md').scan({ cwd: ROOT })) files.push(file)
+  const missing = unmapped(files, PAGES, EXCLUDED)
+  if (missing.length > 0) {
+    throw new Error(`not mapped in website/pages.ts and not excluded: ${missing.join(', ')}`)
   }
 
   await mkdir(CONTENT, { recursive: true })
@@ -133,8 +139,10 @@ async function main() {
 
   await mkdir(join(WEBSITE, 'public', 'img'), { recursive: true })
   await mkdir(join(WEBSITE, 'src', 'assets'), { recursive: true })
-  for (const name of IMAGES) {
-    await copyFile(join(ROOT, 'img', name), join(WEBSITE, 'public', 'img', name))
+  // Everything under `img/` ships, so a page that references a new chart needs no change here.
+  for (const entry of await readdir(join(ROOT, 'img'), { withFileTypes: true })) {
+    if (!entry.isFile()) continue
+    await copyFile(join(ROOT, 'img', entry.name), join(WEBSITE, 'public', 'img', entry.name))
   }
   await copyFile(join(ROOT, 'img', 'logo.svg'), join(WEBSITE, 'src', 'assets', 'logo.svg'))
   await copyFile(join(ROOT, 'img', 'logo.svg'), join(WEBSITE, 'public', 'favicon.svg'))

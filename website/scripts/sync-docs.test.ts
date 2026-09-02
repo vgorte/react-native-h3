@@ -1,6 +1,13 @@
 import { describe, expect, test } from 'bun:test'
-import { PAGES, type Page } from '../pages'
-import { frontmatter, rewriteLinks, splitTitle, stripLeadingEmoji, transform } from './sync-docs'
+import { EXCLUDED, PAGES, type Page } from '../pages'
+import {
+  frontmatter,
+  rewriteLinks,
+  splitTitle,
+  stripLeadingEmoji,
+  transform,
+  unmapped,
+} from './sync-docs'
 
 const base = '/react-native-nitro-h3'
 const pageFor = (route: string): Page => {
@@ -133,5 +140,19 @@ describe('transform', () => {
 
   test('refuses GitHub alert syntax', () => {
     expect(() => transform('# T\n\n> [!NOTE]\n> x\n', perf, base, null)).toThrow(/\[!NOTE\]/)
+  })
+})
+
+describe('unmapped', () => {
+  test('does not return a mapped source', () => {
+    expect(unmapped(['docs/performance.md'], PAGES, EXCLUDED)).toEqual([])
+  })
+
+  test('does not return a file excluded by name or by directory prefix', () => {
+    expect(unmapped(['docs/releasing.md', 'docs/superpowers/plan.md'], PAGES, EXCLUDED)).toEqual([])
+  })
+
+  test('returns a docs file that is neither mapped nor excluded', () => {
+    expect(unmapped(['docs/stray.md'], PAGES, EXCLUDED)).toEqual(['docs/stray.md'])
   })
 })
