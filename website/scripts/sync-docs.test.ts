@@ -4,6 +4,7 @@ import {
   frontmatter,
   rewriteLinks,
   splitTitle,
+  stripHeadingEmoji,
   stripLeadingEmoji,
   transform,
   unmapped,
@@ -48,6 +49,27 @@ describe('stripLeadingEmoji', () => {
 
   test('leaves a plain title alone', () => {
     expect(stripLeadingEmoji('API reference')).toBe('API reference')
+  })
+})
+
+describe('stripHeadingEmoji', () => {
+  test('strips the emoji from a heading of any level', () => {
+    expect(stripHeadingEmoji('## 📦 Installation')).toBe('## Installation')
+    expect(stripHeadingEmoji('### 🔬 Methodology')).toBe('### Methodology')
+  })
+
+  test('leaves a heading without an emoji alone', () => {
+    expect(stripHeadingEmoji('## Next steps')).toBe('## Next steps')
+  })
+
+  test('does not touch a heading-shaped line inside a fenced block', () => {
+    const text = '```sh\n# 📦 install the package\n```\n'
+    expect(stripHeadingEmoji(text)).toBe(text)
+  })
+
+  test('leaves an emoji outside a heading alone', () => {
+    const text = '| ✅ supported | yes |\n\n> 💡 A tip.\n'
+    expect(stripHeadingEmoji(text)).toBe(text)
   })
 })
 
@@ -136,6 +158,11 @@ describe('transform', () => {
     const out = transform('# 🧮 Performance Guide\n\nSee [b](benchmark.md).\n', perf, base, null)
     expect(out.startsWith('---\ntitle: "Performance Guide"\n')).toBe(true)
     expect(out.endsWith('---\n\nSee [b](/react-native-nitro-h3/benchmark/).\n')).toBe(true)
+  })
+
+  test('strips the emoji from the body headings too', () => {
+    const out = transform('# 🧮 Performance Guide\n\n## 📦 Installation\n', perf, base, null)
+    expect(out.endsWith('---\n\n## Installation\n')).toBe(true)
   })
 
   test('refuses GitHub alert syntax', () => {

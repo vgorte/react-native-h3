@@ -35,6 +35,24 @@ export function stripLeadingEmoji(title: string): string {
 }
 
 /**
+ * Drops the leading emoji from every Markdown heading outside fenced blocks. The GitHub copies keep
+ * theirs; on the site the heading, its anchor and the table of contents read without one.
+ */
+export function stripHeadingEmoji(body: string): string {
+  let inFence = false
+  return body
+    .split('\n')
+    .map((line) => {
+      if (FENCE.test(line)) inFence = !inFence
+      if (inFence) return line
+      return line.replace(/^(#{1,6} )(.*)$/, (_, hashes: string, text: string) => {
+        return `${hashes}${stripLeadingEmoji(text)}`
+      })
+    })
+    .join('\n')
+}
+
+/**
  * Rewrites every relative link and image to a base-prefixed route or public path. Astro emits
  * Markdown links verbatim, so a `./x.md` link would 404 on the site.
  */
@@ -90,7 +108,8 @@ export function transform(
   const alert = markdown.match(/^> \[!\w+\]/m)
   if (alert) throw new Error(`${page.source} uses ${alert[0]}, which Starlight renders literally`)
   const { title, body } = splitTitle(markdown)
-  return `${frontmatter(page, stripLeadingEmoji(title), lastUpdated)}\n${rewriteLinks(body, page, base)}`
+  const rewritten = stripHeadingEmoji(rewriteLinks(body, page, base))
+  return `${frontmatter(page, stripLeadingEmoji(title), lastUpdated)}\n${rewritten}`
 }
 
 function lastCommitDate(source: string): string | null {
