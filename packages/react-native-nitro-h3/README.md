@@ -102,7 +102,7 @@ Coming from `h3-js`? Read the **[migration guide](https://vgorte.github.io/react
 | Platform      | Requirement                    |
 | ------------- | ------------------------------ |
 | React Native  | **0.76+**                      |
-| Nitro Modules | **0.37+**                      |
+| Nitro Modules | **0.37.0 or newer**            |
 | C++           | C++20-compatible toolchain     |
 | iOS           | React Native deployment target |
 | Xcode         | recent stable release          |
