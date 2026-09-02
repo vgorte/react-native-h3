@@ -15,9 +15,9 @@ import type { ContainmentModeName, ContainmentModeValue, LatLng, Ring } from './
  * @param rings The outer ring first, then holes, as `[latitude, longitude]` degrees.
  * @param res The resolution, `0` to `15`.
  * @returns The cells covering the polygon, as a view onto the native buffer.
- * @throws {@linkcode H3Error} if a point is not a finite `[latitude, longitude]` pair, the
- * resolution is out of range, or the result would exceed a cell ceiling set with
- * {@linkcode configure}.
+ * @throws {@linkcode H3Error} if a point is not a `[latitude, longitude]` pair of finite numbers
+ * inside `[-90, 90]` latitude and `[-180, 180]` longitude, the resolution is out of range, or the
+ * result would exceed a cell ceiling set with {@linkcode configure}.
  */
 export async function polygonToCellsAsync(rings: Ring[], res: number): Promise<BigUint64Array> {
   try {

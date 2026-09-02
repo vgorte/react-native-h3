@@ -277,6 +277,28 @@ describe.skipIf(skipWithoutProbe)('divergence: a malformed polygon', () => {
     )
     expect(theirs).toBe('The operation failed but a more specific error is not available (code: 1)')
   })
+
+  test('a coordinate off the globe is refused, where h3-js normalises it', () => {
+    expect(refusal('polygonToCells 91,0;0,0;1,1 3')).toBe(
+      'Polygon coordinates must be within [-90, 90] latitude and [-180, 180] longitude',
+    )
+    expect(refusal('polygonToCellsExperimental 91,0;0,0;1,1 3 0')).toBe(
+      'Polygon coordinates must be within [-90, 90] latitude and [-180, 180] longitude',
+    )
+    // h3-js hands the vertex to H3, which normalises it into a seed cell and fills from there
+    expect(
+      h3.polygonToCells(
+        [
+          [
+            [91, 0],
+            [0, 0],
+            [1, 1],
+          ],
+        ],
+        3,
+      ),
+    ).toHaveLength(41)
+  })
 })
 
 describe.skipIf(skipWithoutProbe)('parity: error codes and wording', () => {

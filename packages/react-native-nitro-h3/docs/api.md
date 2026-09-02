@@ -552,7 +552,7 @@ reverses; a ring is not closed, so its first point is not repeated at the end.
 
 Returns: The cells covering the polygon, as a view onto the native buffer.
 
-Throws: `H3Error` if a point is not a finite `[latitude, longitude]` pair, the resolution is out of range, or the result would exceed a cell ceiling set with `configure`.
+Throws: `H3Error` if a point is not a `[latitude, longitude]` pair of finite numbers inside `[-90, 90]` latitude and `[-180, 180]` longitude, the resolution is out of range, or the result would exceed a cell ceiling set with `configure`.
 
 ### polygonToCellsExperimental
 
@@ -1117,7 +1117,7 @@ synchronous call is cheaper, because it has no hop at all.
 
 Returns: The cells covering the polygon, as a view onto the native buffer.
 
-Throws: `H3Error` if a point is not a finite `[latitude, longitude]` pair, the resolution is out of range, or the result would exceed a cell ceiling set with `configure`.
+Throws: `H3Error` if a point is not a `[latitude, longitude]` pair of finite numbers inside `[-90, 90]` latitude and `[-180, 180]` longitude, the resolution is out of range, or the result would exceed a cell ceiling set with `configure`.
 
 ### polygonToCellsExperimentalAsync
 
