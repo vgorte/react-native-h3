@@ -8,8 +8,8 @@
 ## Why native
 
 `react-native-nitro-h3` vendors the H3 C library (v4.5.0) and calls it from C++ through Nitro
-Modules. `h3-js` runs the same C library compiled to WebAssembly inside the JavaScript engine, and
-every cell that crosses into it is a hexadecimal string.
+Modules. `h3-js` runs the same C library compiled to JavaScript with Emscripten, and every cell that
+crosses into `h3-js` is a hexadecimal string.
 
 ![The data path from JavaScript through Nitro Modules and the h3ops C++ layer to the vendored H3 C core](../img/architecture.svg)
 
@@ -36,6 +36,8 @@ typed-array allocation is a larger share of the total, and that crossover is unm
 the input `Float64Array` is not timed on either side either, so a caller who assembles one from
 JavaScript objects pays for that on top. The measured rows are `W11` and `W12` in
 [benchmark.md](benchmark.md).
+
+The contract of both calls is in [Typed arrays and batch calls](concepts/typed-arrays-and-batch.md).
 
 ## The Cell Ceiling in Detail
 
@@ -69,6 +71,10 @@ moment it is set.
 
 ### How It Compares to h3-js
 
-`h3-js` offers no equivalent setting; it only bounds its WebAssembly allocation at a massive 2 GB. A
-heavy call there will just execute: `gridDisk(cell, 1155)` allocates all 4,005,541 cells,
+`h3-js` offers no equivalent setting; it only bounds its Emscripten heap at a massive 2 GB. A heavy
+call there will just execute: `gridDisk(cell, 1155)` allocates all 4,005,541 cells,
 [measured on a desktop machine in benchmark.md](benchmark.md#the-cost-of-unbounded-requests-what-the-cell-ceiling-guards).
+
+The four async variants and what a thread hop costs are in
+[Sync and async](concepts/sync-and-async.md); the `H3Error` contract and the ceiling from the
+caller's side are in [Errors and memory safety](concepts/errors-and-memory-safety.md).

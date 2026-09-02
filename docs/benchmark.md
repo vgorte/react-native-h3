@@ -312,8 +312,8 @@ four; an app with no other Nitro module also carries `libNitroModules.so` from
 
 ## The Cost of Unbounded Requests (What the Cell Ceiling Guards)
 
-Neither library caps a request by default. `h3-js` bounds only its own WebAssembly allocation at
-2 GB, building JavaScript arrays of hexadecimal strings on top of it without a bound, and it offers
+Neither library caps a request by default. `h3-js` bounds only its own Emscripten heap at 2 GB,
+building JavaScript arrays of hexadecimal strings on top of it without a bound, and it offers
 no setting to change that. `react-native-nitro-h3` allocates whatever is asked for too, until
 `configure({ maxCellCount })` sets a Cell Ceiling; from then on an oversized request is refused
 before anything is allocated.
@@ -399,8 +399,9 @@ The script validates the JSON (and refuses a `Debug` payload), renders both char
 `HEADLINE` line. `bun run benchmark:device` refuses to write `apps/example/benchmark.json` unless
 `--publish` is passed, so an unreviewed run cannot overwrite the published payload by accident.
 
-Then run `bun run og` in `website/` and commit the two PNGs it writes under `website/public/`; the
-social preview of the site's landing page is a raster copy of `img/benchmark.svg`.
+Then run `bun install` and `bun run og` in `website/` and commit the two PNGs it writes under
+`website/public/`; the social preview of the site's landing page is a raster copy of
+`img/benchmark.svg`.
 
 ### 4. Publish
 
