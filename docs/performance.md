@@ -23,9 +23,9 @@ Three things are cheap on this path and expensive on the other:
   applies the cell ceiling, then makes plain C calls into the vendored core.
 
 The difference is largest where `h3-js`'s string handling dominates the work the call does:
-`compactCells` on a `k=20` disk of 1,261 cells is 807× faster on the iPhone XS (iOS 18.7.9, React
-Native 0.87.0, Hermes, 20-run median, 2026-08-31). Where a call does little work per element, the
-factor is smaller: `latLngToCell` over 100,000 calls is 25×. Both rows are in
+`compactCells` on a `k=20` disk of 1,261 cells is 862× faster on the iPhone XS (iOS 18.7.9, React
+Native 0.87.0, Hermes, 20-run median, 2026-09-01). Where a call does little work per element, the
+factor is smaller: `latLngToCell` over 100,000 calls is 24×. Both rows are in
 [Benchmark report](benchmark.md).
 
 ## When a Batch Call Pays

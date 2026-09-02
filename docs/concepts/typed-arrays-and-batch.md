@@ -87,7 +87,7 @@ flat coordinate buffer circle layers and heatmaps consume.
 
 ![One batch call against the loop it replaces, 100,000 elements](../../img/benchmark-batch.svg)
 
-The saving is the bridge crossings that no longer happen. Same conditions as the headline benchmark: iPhone XS, iOS 18.7.9, React Native 0.87.0, Hermes, 20-run median, 2026-08-31. Full data in [Benchmark report](../benchmark.md).
+The saving is the bridge crossings that no longer happen. Same conditions as the headline benchmark: iPhone XS, iOS 18.7.9, React Native 0.87.0, Hermes, 20-run median, 2026-09-01. Full data in [Benchmark report](../benchmark.md).
 
 Whether a batch call pays for a given input size is covered in
 [Performance guide](../performance.md#when-a-batch-call-pays), and the measured rows are `W11` and
