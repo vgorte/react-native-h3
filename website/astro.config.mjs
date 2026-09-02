@@ -21,6 +21,13 @@ export default defineConfig({
       head: [
         { tag: 'meta', attrs: { property: 'og:image', content: `${SITE}${BASE}/og-logo.png` } },
         { tag: 'meta', attrs: { property: 'og:image:alt', content: 'react-native-nitro-h3 logo' } },
+        {
+          tag: 'meta',
+          attrs: {
+            name: 'google-site-verification',
+            content: 'XVycqMl57U3jc9VVgiBkSQ17AGIoC5eP5OztmujEw34',
+          },
+        },
       ],
       sidebar: sidebar(),
       plugins: [starlightLinksValidator()],
