@@ -63,6 +63,9 @@ export type GridDiskDistancesIsTypedArrays = Expect<
 export type GreatCircleDistanceTakesFourScalars = Expect<
   IsExactly<Parameters<typeof api.greatCircleDistanceKm>, [number, number, number, number]>
 >
+export type LocalIjToCellTakesScalars = Expect<
+  IsExactly<Parameters<typeof api.localIjToCell>, [bigint, number, number]>
+>
 // the four functions h3-js gives a GeoJSON flag take no such argument here
 export type BoundaryTakesNoFlag = Expect<IsExactly<Parameters<typeof api.cellToBoundary>, [bigint]>>
 export type EdgeBoundaryTakesNoFlag = Expect<
@@ -734,10 +737,10 @@ describe.skipIf(skipWithoutProbe)('divergence: the shape of the public surface',
   test('h3-js takes a single loop unwrapped, where Ring[] is required here', () => {
     expect(h3.polygonToCells(SAN_FRANCISCO, 7)).toHaveLength(7)
     expect(h3.polygonToCells([SAN_FRANCISCO], 7)).toHaveLength(7)
-    // the probe takes rings only, and answers the same seven cells for the wrapped form
+    // the probe takes rings only, and matches the wrapped form's cells
     expect(
       answer(`polygonToCells ${SAN_FRANCISCO.map(([lat, lng]) => `${lat},${lng}`).join(';')} 7`),
-    ).toHaveLength(7)
+    ).toEqual(h3.polygonToCells([SAN_FRANCISCO], 7))
   })
 
   test('greatCircleDistance is two arrays and a unit string in h3-js', () => {
@@ -748,6 +751,12 @@ describe.skipIf(skipWithoutProbe)('divergence: the shape of the public surface',
     expect(Object.keys(h3)).not.toContain('greatCircleDistanceKm')
     const ours = answer('greatCircleDistanceKm 0 0 1 1') as number
     expect(ours).toBeCloseTo(h3.greatCircleDistance([0, 0], [1, 1], 'km'), 10)
+  })
+
+  test('localIjToCell takes a CoordIJ object in h3-js, where this package takes two scalars', () => {
+    // the `[bigint, number, number]` parameters this package takes are proved by `tsc` above
+    const ij = h3.cellToLocalIj(CELL, CELL)
+    expect(h3.localIjToCell(CELL, ij)).toBe(CELL)
   })
 
   test('gridDiskDistances answers arrays of strings in h3-js', () => {

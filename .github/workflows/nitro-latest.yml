@@ -57,6 +57,10 @@ jobs:
             git --no-pager diff --stat -- packages/react-native-nitro-h3/nitrogen
             echo '```'
             echo
+            echo '```'
+            git status --porcelain -- packages/react-native-nitro-h3/nitrogen
+            echo '```'
+            echo
             echo '</details>'
           } >> "$GITHUB_STEP_SUMMARY"
 

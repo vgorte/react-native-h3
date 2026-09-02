@@ -10,8 +10,11 @@ h3-js 4.5.0 bundles exactly the H3 C library this package vendors, so it is an o
 approximation, and `parity/` compares the two over all 122 resolution 0 cells, all sixteen
 resolutions, all 192 pentagons with their neighbourhoods, the poles, the antimeridian and seeded
 random coordinates. Every row and section below is proved by a test in
-`parity/divergences.test.ts`, which asserts both sides; the type-surface rows are proved there
-for h3-js at run time and for this package by `tsc`, because the probe the suite drives speaks JSON.
+`parity/divergences.test.ts`, except the error contract's package half, proved in
+`__tests__/H3Error.test.ts`, and the section on functions that follow upstream H3, which quotes the
+vendored sources instead of asserting against a test. Where `parity/divergences.test.ts` does the
+proving, it asserts both sides; the type-surface rows are proved there for h3-js at run time and for
+this package by `tsc`, because the probe the suite drives speaks JSON.
 The additive batch section leans on `parity/batches.test.ts` as well, which is where the two calls are
 compared with h3-js element for element.
 This package covers the `h3-js` 4.5.0 operation set under the same names and answers typed results.
@@ -141,6 +144,7 @@ the ones a call site meets on the first day.
 | A polygon | `Ring[]`, so a single loop is still wrapped in an array, and `Ring` is a tuple type that a bare `number[][]` fails `tsc` against | `number[][] \| number[][][]`, so a single loop may be passed unwrapped and a ring is a plain `number[][]` |
 | Units | separate functions (`cellAreaKm2`) | a string argument (`cellArea(cell, 'km2')`), and an `E_UNKNOWN_UNIT` this package cannot raise |
 | `greatCircleDistance` | four scalars with the unit in the name: `greatCircleDistanceKm(lat1, lng1, lat2, lng2)` | two arrays and a unit string: `greatCircleDistance([lat1, lng1], [lat2, lng2], 'km')` |
+| `localIjToCell` | an origin and two coordinate scalars: `localIjToCell(origin, i, j)` | an origin and a `CoordIJ` object: `localIjToCell(origin, coords)` |
 | `gridDiskDistances` | one `BigUint64Array` per ring, so `BigUint64Array[]` | one `H3Index[]` per ring, so `string[][]` |
 | `UNITS`, `POLYGON_TO_CELLS_FLAGS` | no counterpart: the unit is in the function name and a containment mode is a number | two frozen objects of strings |
 | `ContainmentMode` | a frozen object of H3's four `ContainmentMode` numbers | no counterpart |
