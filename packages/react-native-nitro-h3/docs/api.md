@@ -1216,7 +1216,8 @@ class H3Error extends Error {
 Represents a failure raised by any function in this package.
 
 `H3Error.code` is the stable half of the contract and the message is informational: the
-wording comes from H3's own `describeH3Error` and may change when the vendored H3 version changes.
+wording comes from H3's own `describeH3Error` and may change when the vendored H3 version
+changes.
 
 ## Types
 

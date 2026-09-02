@@ -91,6 +91,7 @@ describe('H3Error', () => {
       'k must be an integer',
     ]
     for (const [message, code] of fromH3) {
+      expect(() => rethrowAsH3Error(new Error(message)), message).toThrow(H3Error)
       try {
         rethrowAsH3Error(new Error(message))
       } catch (error) {
@@ -98,6 +99,7 @@ describe('H3Error', () => {
       }
     }
     for (const message of ourOwn) {
+      expect(() => rethrowAsH3Error(new Error(message)), message).toThrow(H3Error)
       try {
         rethrowAsH3Error(new Error(message))
       } catch (error) {
