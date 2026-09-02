@@ -1,0 +1,22 @@
+/* Starlight sizes the hero image inside `@layer starlight.core`, so these unlayered rules win. */
+.hero > img {
+  width: min(60%, 12rem);
+}
+
+@media (min-width: 50rem) {
+  .hero > img {
+    width: min(100%, 16rem);
+  }
+
+  /* The panel below the hero already pads by `1.5rem`, which is the whole gap the badge row needs. */
+  .hero {
+    padding-block-end: 0;
+  }
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0;
+}
