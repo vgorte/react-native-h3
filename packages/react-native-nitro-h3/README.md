@@ -15,20 +15,9 @@
 
 The result is a native H3 binding designed for performance-sensitive React Native workloads.
 
+> 📚 **[Read the documentation](https://vgorte.github.io/react-native-nitro-h3/)** for the guides, the API reference and the migration from `h3-js`.
+
 > **Native mobile only.** For web applications, use [`h3-js`](https://github.com/uber/h3-js).
-
----
-
-## ✨ Highlights
-
-* 🚀 **Native execution**: H3 runs as compiled C/C++ on iOS and Android.
-* ⚡ **High performance**: avoids hexadecimal string conversion on the JS/native boundary, repeated bridge crossings, and per-element copies.
-* 🔢 **`bigint` cell indexes**: H3's 64-bit indexes stay numeric instead of being converted to hexadecimal strings.
-* 📦 **Typed-array results**: cell sets use `BigUint64Array`; coordinate batches use `Float64Array`. A result crosses as one `ArrayBuffer` and is viewed in place.
-* 🔄 **Batch APIs**: process complete coordinate or cell arrays in a single native call.
-* 🧵 **Async variants**: move expensive operations to a background thread when appropriate.
-* 🛡️ **Optional cell ceiling**: reject unexpectedly large result sets before allocation.
-* ✅ **`h3-js` API parity**: 64 functions under the same names, with a short list of documented divergences.
 
 ---
 
@@ -108,6 +97,26 @@ Coming from `h3-js`? Read the **[migration guide](https://vgorte.github.io/react
 
 ---
 
+## 📱 Requirements
+
+| Platform      | Requirement                    |
+| ------------- | ------------------------------ |
+| React Native  | **0.76+**                      |
+| Nitro Modules | **0.37+**                      |
+| C++           | C++20-compatible toolchain     |
+| iOS           | React Native deployment target |
+| Xcode         | recent stable release          |
+| Android       | **minSdk 24**                  |
+| Android SDK   | **compileSdk 36**              |
+| Android NDK   | **27.1.12297006**              |
+| H3 C library  | **4.5.0**, vendored            |
+
+The package requires the New Architecture, the default since React Native 0.76. The iOS and Android build workflows compile the example app against React Native 0.87.0.
+
+`react-native-nitro-h3` versions independently from H3. The exact vendored version is recorded in `third_party/h3/H3_VERSION`, which also ships in the published npm tarball.
+
+---
+
 ## 📚 Documentation
 
 Full documentation lives at **[vgorte.github.io/react-native-nitro-h3](https://vgorte.github.io/react-native-nitro-h3/)**.
@@ -140,39 +149,6 @@ Full documentation lives at **[vgorte.github.io/react-native-nitro-h3](https://v
 * 📱 **[Example app](https://github.com/vgorte/react-native-nitro-h3/tree/main/apps/example)**: the benchmark and harness app.
 * 🤝 **[Contributing](https://github.com/vgorte/react-native-nitro-h3/blob/main/CONTRIBUTING.md)**: build, test and add an operation.
 * 🚀 **[Releasing](https://github.com/vgorte/react-native-nitro-h3/blob/main/docs/releasing.md)**: the maintainer runbook.
-
----
-
-## 📱 Requirements
-
-| Platform      | Requirement                    |
-| ------------- | ------------------------------ |
-| React Native  | **0.76+**                      |
-| Nitro Modules | **0.37+**                      |
-| C++           | C++20-compatible toolchain     |
-| iOS           | React Native deployment target |
-| Xcode         | recent stable release          |
-| Android       | **minSdk 24**                  |
-| Android SDK   | **compileSdk 36**              |
-| Android NDK   | **27.1.12297006**              |
-
-The package requires the New Architecture, the default since React Native 0.76. The iOS and Android build workflows compile the example app against React Native 0.87.0.
-
----
-
-## 🧬 H3 Versioning
-
-`react-native-nitro-h3` versions independently from the upstream H3 C library.
-
-The current release vendors **H3 4.5.0** directly in the repository rather than using a git submodule.
-
-The exact bundled H3 version can be verified in:
-
-```text
-packages/react-native-nitro-h3/third_party/h3/H3_VERSION
-```
-
-That file also ships in the published npm tarball, as `third_party/h3/H3_VERSION`.
 
 ---
 
