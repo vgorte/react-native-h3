@@ -131,8 +131,9 @@ worst case measured over the corpus, and each is asserted at two to four times i
 
 ## Shape and surface
 
-These are the differences a migration notices first, and the list is complete. `README.md` explains
-the ones a call site meets on the first day.
+These are the differences a migration notices first, and the list is complete.
+[Cell indexes and bigint](./concepts/cells-and-bigint.md#api-compatibility-with-h3-js) explains the
+ones a call site meets on the first day.
 
 | Case | This package | h3-js |
 | --- | --- | --- |

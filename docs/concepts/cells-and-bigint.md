@@ -32,19 +32,26 @@ const restored = cellFromString(hex)
 
 ## API compatibility with `h3-js`
 
-The package mirrors the **64-function `h3-js` 4.5.0 API** under the same names.
+The package covers the **`h3-js` 4.5.0 operation set** under the same function names, and answers
+typed results instead of strings.
 
-There are a few intentional differences:
+These are the differences a call site meets:
 
-| `h3-js`                                     | `react-native-nitro-h3`               |
-| ------------------------------------------- | ------------------------------------- |
-| Cell indexes are hexadecimal strings        | Cell indexes are `bigint`             |
-| Cell collections are `string[]`             | Cell collections are `BigUint64Array` |
-| `cellArea(cell, 'km2')`                     | `cellAreaKm2(cell)`                   |
-| `h3IndexToSplitLong` / `splitLongToH3Index` | Not provided                          |
-| Loose JavaScript argument coercion          | Strict native validation              |
-| No cell allocation limit                    | Optional `maxCellCount`               |
+| `h3-js`                                                 | `react-native-nitro-h3`                         |
+| ------------------------------------------------------- | ----------------------------------------------- |
+| Cell indexes are hexadecimal strings                    | Cell indexes are `bigint`                       |
+| Cell collections are `string[]`                         | Cell collections are `BigUint64Array`           |
+| Coordinates are `[lat, lng]` arrays                     | Coordinates are `{ lat, lng }` objects          |
+| `cellArea(cell, 'km2')`                                 | `cellAreaKm2(cell)`                             |
+| `greatCircleDistance([lat1, lng1], [lat2, lng2], 'km')` | `greatCircleDistanceKm(lat1, lng1, lat2, lng2)` |
+| `formatAsGeoJson` and `isGeoJson` flags                 | Not provided                                    |
+| `UNITS` and `POLYGON_TO_CELLS_FLAGS`                    | Not provided; `ContainmentMode` names the modes |
+| `h3IndexToSplitLong` / `splitLongToH3Index`             | Not provided                                    |
+| Loose JavaScript argument coercion                      | Strict native validation                        |
+| No cell allocation limit                                | Optional `maxCellCount`                         |
 
-The full list, each row proved by a test, is
-[Divergences from h3-js 4.5.0](../h3-js-divergences.md). The call-site changes are walked through
-in [Migrating from h3-js](../migrating-from-h3-js.md).
+The table above is the subset a call site meets on the first day.
+[Divergences from h3-js 4.5.0](../h3-js-divergences.md) is the exhaustive list, and names what
+proves each one: most rows are proved by a test, and the functions that follow upstream H3 point to
+the vendored source instead. The call-site changes are walked through in
+[Migrating from h3-js](../migrating-from-h3-js.md).

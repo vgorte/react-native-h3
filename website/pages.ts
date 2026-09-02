@@ -43,7 +43,7 @@ export const PAGES: readonly Page[] = [
     label: 'Cell indexes and bigint',
     source: 'docs/concepts/cells-and-bigint.md',
     description:
-      'Why an H3 cell is a bigint in react-native-nitro-h3, how to convert at the boundary and how the 64-function surface matches h3-js 4.5.0.',
+      'Why an H3 cell is a bigint in react-native-nitro-h3, how to convert at the boundary and how the package covers the h3-js 4.5.0 operation set.',
     group: 'Core Concepts',
   },
   {
@@ -108,7 +108,7 @@ export const PAGES: readonly Page[] = [
     label: 'h3-js divergences',
     source: 'docs/h3-js-divergences.md',
     description:
-      'Every intentional difference between react-native-nitro-h3 and h3-js 4.5.0, each proved by a parity test.',
+      'Every intentional difference between react-native-nitro-h3 and h3-js 4.5.0, with the test or the vendored source that proves each one.',
     group: 'Reference',
   },
 ]
