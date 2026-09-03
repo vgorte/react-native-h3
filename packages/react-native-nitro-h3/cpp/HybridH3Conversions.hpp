@@ -70,15 +70,20 @@ inline CellSpan toCellSpan(const std::shared_ptr<ArrayBuffer>& buffer) {
   return CellSpan{reinterpret_cast<const uint64_t*>(data), static_cast<int64_t>(bytes / sizeof(uint64_t))};
 }
 
-/** Hands an interleaved coordinate vector to JS as an owning `ArrayBuffer`. */
-inline std::shared_ptr<ArrayBuffer> toArrayBuffer(std::vector<double>&& values) {
+/**
+ * Hands a vector to JS as an owning `ArrayBuffer` over its elements.
+ *
+ * `T` is the type the JS side views: `double` for interleaved coordinates and boundary vertices,
+ * `uint8_t` for the per-cell vertex counts of a boundary batch.
+ */
+template <typename T> std::shared_ptr<ArrayBuffer> toArrayBuffer(std::vector<T>&& values) {
   if (values.empty()) {
     // `wrap` rejects `nullptr`, which an empty vector's `data()` may be
     return ArrayBuffer::allocate(0);
   }
-  auto owned = std::make_unique<std::vector<double>>(std::move(values));
+  auto owned = std::make_unique<std::vector<T>>(std::move(values));
   uint8_t* data = reinterpret_cast<uint8_t*>(owned->data());
-  const size_t bytes = owned->size() * sizeof(double);
+  const size_t bytes = owned->size() * sizeof(T);
   // the deleter frees the vector that owns the block, never the `uint8_t*` wrapped below
   auto wrapped = ArrayBuffer::wrap(data, bytes, [buffer = owned.get()]() { delete buffer; });
   owned.release();

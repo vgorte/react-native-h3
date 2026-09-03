@@ -286,6 +286,13 @@ std::shared_ptr<ArrayBuffer> HybridH3::cellsToLatLngs(const std::shared_ptr<Arra
   return toArrayBuffer(h3ops::cellsToLatLngs(span.data, span.count));
 }
 
+CellBoundaryBuffers HybridH3::cellsToBoundaries(const std::shared_ptr<ArrayBuffer>& cells) {
+  const CellSpan span = toCellSpan(cells);
+  h3ops::BoundaryBuffers result = h3ops::cellsToBoundaries(span.data, span.count);
+  return CellBoundaryBuffers(static_cast<double>(h3ops::kBoundaryStride), toArrayBuffer(std::move(result.vertices)),
+                             toArrayBuffer(std::move(result.vertexCounts)));
+}
+
 double HybridH3::getHexagonAreaAvgKm2(double res) {
   return h3ops::getHexagonAreaAvgKm2(res);
 }
