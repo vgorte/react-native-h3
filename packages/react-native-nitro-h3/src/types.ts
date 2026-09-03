@@ -14,6 +14,21 @@ export interface CoordIJ {
 export type Ring = [lat: number, lng: number][]
 
 /**
+ * Holds the boundaries of a whole cell set, as {@linkcode cellsToBoundaries} answers them.
+ *
+ * Cell `i` occupies `stride` doubles of `vertices` from `i * stride`, of which the first
+ * `vertexCounts[i]` pairs are its vertices and the rest are `NaN`.
+ */
+export interface CellBoundaries {
+  /** Doubles per cell in `vertices`, always `20`, which is ten `[lat, lng]` pairs. */
+  stride: number
+  /** `stride` doubles per cell: `[lat, lng]` pairs in degrees, in `cellToBoundary` order. */
+  vertices: Float64Array
+  /** Vertices each cell uses, `5` to `10`. Slots past the count hold `NaN`. */
+  vertexCounts: Uint8Array
+}
+
+/**
  * Names the containment modes of `polygonToCellsExperimental`, matching H3's `ContainmentMode`
  * values.
  *

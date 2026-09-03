@@ -7,7 +7,8 @@ export interface H3Config {
    * Caps how many cells one call may allocate, once you set it.
    *
    * There is no cap until then, so a call returns whatever it is asked for; a cell costs 8 bytes,
-   * so `4_000_000` is a 32 MB `BigUint64Array`. `Infinity` removes a cap set earlier, and any
+   * so `4_000_000` is a 32 MB `BigUint64Array`. A batch call that answers coordinates weighs more
+   * per cell, `161` bytes under `cellsToBoundaries`. `Infinity` removes a cap set earlier, and any
    * other value must be an integer of `1` or more.
    */
   maxCellCount?: number

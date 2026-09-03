@@ -4,7 +4,7 @@ export {
   polygonToCellsExperimentalAsync,
   uncompactCellsAsync,
 } from './async'
-export { cellsToLatLngs, latLngsToCells } from './batches'
+export { cellsToBoundaries, cellsToLatLngs, latLngsToCells } from './batches'
 export type { H3Config } from './configure'
 export { configure } from './configure'
 export {
@@ -75,7 +75,14 @@ export {
   gridRingUnsafe,
   localIjToCell,
 } from './traversal'
-export type { ContainmentModeName, ContainmentModeValue, CoordIJ, LatLng, Ring } from './types'
+export type {
+  CellBoundaries,
+  ContainmentModeName,
+  ContainmentModeValue,
+  CoordIJ,
+  LatLng,
+  Ring,
+} from './types'
 export { ContainmentMode } from './types'
 export { degsToRads, radsToDegs } from './units'
 export { cellToVertex, cellToVertexes, vertexToLatLng } from './vertexes'
