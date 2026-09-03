@@ -14,6 +14,14 @@ export interface CoordIJ {
   j: number
 }
 
+// the three buffers of one boundary batch. Nitrogen generates a C++ struct of the same name whose
+// two `ArrayBuffer` members convert like a direct `ArrayBuffer` return, so neither is copied.
+export interface CellBoundaryBuffers {
+  stride: number
+  vertices: ArrayBuffer
+  vertexCounts: ArrayBuffer
+}
+
 // internal binding surface; the public API in `src/` wraps these methods.
 export interface H3 extends HybridObject<{ ios: 'c++'; android: 'c++' }> {
   // `bigint` without signedness is a nitrogen error, so cells are `UInt64`.
@@ -98,6 +106,9 @@ export interface H3 extends HybridObject<{ ios: 'c++'; android: 'c++' }> {
   // wrapper views the returned `ArrayBuffer` as a typed array without copying.
   latLngsToCells(coords: ArrayBuffer, res: number): ArrayBuffer
   cellsToLatLngs(cells: ArrayBuffer): ArrayBuffer
+  // one boundary batch answers three values, so a struct rides back rather than three calls. The
+  // stride is `MAX_CELL_BNDRY_VERTS * 2`, which C++ fills in so the number has a single source.
+  cellsToBoundaries(cells: ArrayBuffer): CellBoundaryBuffers
 
   getHexagonAreaAvgKm2(res: number): number
   getHexagonAreaAvgM2(res: number): number
