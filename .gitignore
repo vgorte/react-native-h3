@@ -68,6 +68,7 @@ apps/example/.harness/
 # Local planning record (design decisions, plans and research)
 # Kept outside the repo; upstream React Native packages use `docs/` for the user manual, not a design archive.
 docs/superpowers/
+.superpowers/
 docs/research/
 Pods/
 *.xcworkspace
