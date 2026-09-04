@@ -17,8 +17,10 @@
 #include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#include <limits>
 #include <new>
 #include <string>
 #include <vector>
@@ -217,6 +219,28 @@ int main() {
       centres.push_back(centre.lng);
     }
     return static_cast<int64_t>(centres.size());
+  }));
+
+  // the boundary batch beside the loop a caller would write instead; the batch skips the per-cell
+  // `Ring` the scalar path allocates, and pays a stride-20 buffer with a `NaN` fill in its place
+  results.push_back(measure("cellsToBoundaries over 100k cells", 10, [&]() -> int64_t {
+    return static_cast<int64_t>(h3ops::cellsToBoundaries(batchCells.data(), batchCells.count()).vertices.size());
+  }));
+
+  results.push_back(measure("cellToBoundary loop over 100k cells", 10, [&]() -> int64_t {
+    std::vector<double> vertices(static_cast<size_t>(batchCells.count()) * h3ops::kBoundaryStride,
+                                 std::numeric_limits<double>::quiet_NaN());
+    std::vector<uint8_t> counts(static_cast<size_t>(batchCells.count()));
+    for (int64_t i = 0; i < batchCells.count(); i++) {
+      const h3core::Ring ring = h3ops::cellToBoundary(batchCells.data()[i]);
+      const size_t base = static_cast<size_t>(i) * h3ops::kBoundaryStride;
+      counts[static_cast<size_t>(i)] = static_cast<uint8_t>(ring.size());
+      for (size_t v = 0; v < ring.size(); v++) {
+        vertices[base + 2 * v] = ring[v].lat;
+        vertices[base + 2 * v + 1] = ring[v].lng;
+      }
+    }
+    return static_cast<int64_t>(vertices.size());
   }));
 
   std::printf("### Host benchmark (informational, not a gate)\n\n");
