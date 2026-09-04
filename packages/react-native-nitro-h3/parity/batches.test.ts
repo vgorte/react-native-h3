@@ -48,4 +48,34 @@ describe.skipIf(skipWithoutProbe)('parity: batches', () => {
       'coords[0]: Resolution argument was outside of acceptable range (code: 4)',
     )
   })
+
+  test('cellsToBoundaries equals element-wise h3-js cellToBoundary over the corpus', () => {
+    const cells = [...RES0_CELLS, ...PENTAGON_NEIGHBOURHOODS]
+    const [answer] = callMany([`cellsToBoundaries ${cells.join(',')}`]) as [
+      { stride: number; cells: { count: number; vertices: number[] }[] },
+    ]
+    expect(answer.stride).toBe(20)
+    expect(answer.cells).toHaveLength(cells.length)
+    cells.forEach((cell, index) => {
+      const expected = h3.cellToBoundary(cell)
+      const actual = answer.cells[index] as { count: number; vertices: number[] }
+      expect(actual.count, cell).toBe(expected.length)
+      expect(actual.vertices, cell).toHaveLength(expected.length * 2)
+      expected.forEach((point, vertex) => {
+        expect(actual.vertices[2 * vertex], cell).toBeCloseTo(point[0] as number, 12)
+        expect(actual.vertices[2 * vertex + 1], cell).toBeCloseTo(point[1] as number, 12)
+      })
+    })
+  })
+
+  test('an empty boundary batch answers no cells and the stride anyway', () => {
+    const [answer] = callMany(['cellsToBoundaries -']) as [{ stride: number; cells: unknown[] }]
+    expect(answer.stride).toBe(20)
+    expect(answer.cells).toEqual([])
+  })
+
+  test('an invalid cell names its index in a boundary batch', () => {
+    const [answer] = callMany([`cellsToBoundaries ${RES0_CELLS[0]},1`])
+    expect((answer as Error).message).toBe('cells[1]: Cell argument was not valid (code: 5)')
+  })
 })

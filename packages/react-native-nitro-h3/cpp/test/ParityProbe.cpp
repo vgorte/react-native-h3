@@ -295,6 +295,27 @@ const std::map<std::string, Handler>& handlers() {
          }
          return jsonArray(items);
        }},
+      {"cellsToBoundaries",
+       [](const Args& a) {
+         const std::vector<uint64_t> cells = cellsArg(a, 0);
+         const h3ops::BoundaryBuffers boundaries =
+             h3ops::cellsToBoundaries(cells.data(), static_cast<int64_t>(cells.size()));
+         std::vector<std::string> items;
+         items.reserve(cells.size());
+         for (size_t i = 0; i < cells.size(); i++) {
+           const size_t count = boundaries.vertexCounts[i];
+           std::vector<std::string> coordinates;
+           coordinates.reserve(count * 2);
+           // the padding is `NaN`, which this protocol renders as `null`, so only counted slots travel
+           for (size_t slot = 0; slot < count * 2; slot++) {
+             coordinates.push_back(jsonNumber(boundaries.vertices[i * h3ops::kBoundaryStride + slot]));
+           }
+           items.push_back("{\"count\":" + jsonNumber(static_cast<double>(count)) +
+                           ",\"vertices\":" + jsonArray(coordinates) + "}");
+         }
+         return "{\"stride\":" + jsonNumber(static_cast<double>(h3ops::kBoundaryStride)) +
+                ",\"cells\":" + jsonArray(items) + "}";
+       }},
 
       // Inspection
       {"isValidCell", [](const Args& a) { return jsonBool(h3ops::isValidCell(cellArg(a, 0))); }},

@@ -686,10 +686,10 @@ describe.skipIf(skipWithoutProbe)('divergence: the shape of the public surface',
     }
   })
 
-  test('the two batch calls exist here and nowhere in h3-js', () => {
+  test('the three batch calls exist here and nowhere in h3-js', () => {
     // they run a scalar operation over a whole typed array, which h3-js has no counterpart for
     const ops = answer('__ops') as string[]
-    for (const name of ['latLngsToCells', 'cellsToLatLngs']) {
+    for (const name of ['latLngsToCells', 'cellsToLatLngs', 'cellsToBoundaries']) {
       expect(ops, name).toContain(name)
       expect(Object.keys(h3), name).not.toContain(name)
     }
