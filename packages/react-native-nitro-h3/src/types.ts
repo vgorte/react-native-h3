@@ -20,11 +20,11 @@ export type Ring = [lat: number, lng: number][]
  * `vertexCounts[i]` pairs are its vertices and the rest are `NaN`.
  */
 export interface CellBoundaries {
-  /** Doubles per cell in `vertices`, always `20`, which is ten `[lat, lng]` pairs. */
+  /** Counts the doubles each cell occupies in `vertices`, always `20`, which is ten `[lat, lng]` pairs. */
   stride: number
-  /** `stride` doubles per cell: `[lat, lng]` pairs in degrees, in `cellToBoundary` order. */
+  /** Holds `stride` doubles per cell: `[lat, lng]` pairs in degrees, in `cellToBoundary` order. */
   vertices: Float64Array
-  /** Vertices each cell uses, `5` to `10`. Slots past the count hold `NaN`. */
+  /** Counts the vertices each cell uses, `5` to `10`. Slots past the count hold `NaN`. */
   vertexCounts: Uint8Array
 }
 
