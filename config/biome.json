@@ -9,6 +9,7 @@
       "**",
       "!.claude",
       "!**/docs/research",
+      "!**/.superpowers",
       "!**/vendor",
       "!**/.mcp.json",
       "!**/nitrogen/generated",

@@ -131,7 +131,7 @@ describe.skipIf(skipWithoutProbe)('parity probe', () => {
         // `configure` sets the ceiling rather than naming an operation, so neither is a probe op
         .filter((name) => name !== 'configure' && !name.endsWith('Async'))
         .sort()
-      expect(exported).toHaveLength(66)
+      expect(exported).toHaveLength(67)
       expect(probe.ops().sort()).toEqual(exported)
     } finally {
       probe.close()

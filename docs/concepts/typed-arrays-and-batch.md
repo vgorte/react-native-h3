@@ -1,7 +1,7 @@
 # 📦 Typed arrays and batch calls
 
 > **Audience: package users working with many cells at once.** Cell sets cross the boundary as one
-> `BigUint64Array`, coordinate sets as one `Float64Array`, and two batch calls run a whole array in
+> `BigUint64Array`, coordinate sets as one `Float64Array`, and three batch calls run a whole array in
 > one native call. This page gives their exact contract.
 
 ## Cell sets are typed arrays
@@ -22,12 +22,13 @@ conversion.
 
 ## The batch calls
 
-Two additional APIs process complete typed arrays in a single native call:
+Three additional APIs process complete typed arrays in a single native call:
 
 ```ts
 import {
   latLngsToCells,
   cellsToLatLngs,
+  cellsToBoundaries,
 } from 'react-native-nitro-h3'
 
 const coords = new Float64Array([
@@ -46,9 +47,9 @@ Coordinates use interleaved `[latitude, longitude]` pairs.
 
 These APIs are additive and are not part of the `h3-js` compatibility surface, which [Divergences from h3-js 4.5.0](../h3-js-divergences.md#the-additive-batch-calls) records and a test asserts. They are intended for workloads where repeatedly crossing the JS/native boundary would otherwise dominate execution time.
 
-The saving is the crossing, not a faster inner loop. Host measurements put the native work of a
-batch call within about 2 % of the native work of the loop it replaces, so what disappears is the
-per-element boundary crossing.
+The saving is the crossing, not a faster inner loop. Host measurements put the native work of
+`latLngsToCells` and `cellsToLatLngs` within about 2 % of the native work of the loop each replaces,
+so what disappears is the per-element boundary crossing.
 
 ### `latLngsToCells`
 
@@ -82,6 +83,45 @@ flat coordinate buffer circle layers and heatmaps consume.
   `cells[1]: Cell argument was not valid (code: 5)`.
 - An empty `cells` returns an empty `Float64Array`, and no element is validated.
 - The [cell ceiling](../performance.md#the-cell-ceiling-in-detail) applies, counted in cells, and is checked before the first centre is read.
+
+### `cellsToBoundaries`
+
+```ts
+function cellsToBoundaries(cells: BigUint64Array): CellBoundaries
+
+interface CellBoundaries {
+  stride: number
+  vertices: Float64Array
+  vertexCounts: Uint8Array
+}
+```
+
+Reads the boundary of every cell in one native call, into a fixed-stride buffer a renderer can walk
+by index:
+
+```ts
+const { stride, vertices, vertexCounts } = cellsToBoundaries(cells)
+for (let i = 0; i < cells.length; i++) {
+  const base = i * stride
+  for (let j = 0; j < vertexCounts[i]; j++) {
+    path.lineTo(project(vertices[base + 2 * j], vertices[base + 2 * j + 1]))
+  }
+}
+```
+
+- `stride` is always `20`, ten `[lat, lng]` pairs, which is H3's `MAX_CELL_BNDRY_VERTS` doubled. Cell
+  `i` starts at `i * stride`, so any cell is reached without a scan.
+- `vertexCounts[i]` is how many of those pairs are real: `5` for a pentagon at an even resolution and
+  `10` at an odd one, `6` for a hexagon, `7` or `8` where a hexagon crosses an icosahedron edge.
+- Slots past the count hold `NaN`, never `0`, so a read past the count is visible instead of landing
+  off the coast of Africa.
+- Vertices are in the same order and the same degrees `cellToBoundary` answers, latitude first.
+- An invalid cell throws an `H3Error` whose message carries its index, such as
+  `cells[1]: Cell argument was not valid (code: 5)`.
+- An empty `cells` returns empty arrays, with `stride` still `20`.
+- The [cell ceiling](../performance.md#the-cell-ceiling-in-detail) applies, counted in cells, and is
+  checked before anything is allocated. One cell weighs 161 bytes here, 160 of vertices and 1 of
+  count, rather than the 8 bytes of a cell set.
 
 ## What a batch call saves
 

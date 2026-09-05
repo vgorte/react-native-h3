@@ -1,6 +1,7 @@
 import h3 from 'h3-js'
-import type { LatLng, Ring } from 'react-native-nitro-h3'
+import type { CellBoundaries, LatLng, Ring } from 'react-native-nitro-h3'
 import {
+  cellsToBoundaries,
   cellsToLatLngs,
   cellsToMultiPolygon,
   cellToBoundary,
@@ -87,6 +88,7 @@ const LABELS = {
   w10: `W10 gridPathCells, Berlin to Hamburg, res ${PATH_RES} x 1,000`,
   w11: 'W11 latLngsToCells x 100,000 pairs',
   w12: 'W12 cellsToLatLngs x 100,000 cells',
+  w13: 'W13 cellsToBoundaries x 100,000 cells',
 }
 
 function diskSeriesLabel(series: { id: string; k: number }): string {
@@ -115,6 +117,7 @@ function planOf(uncompactRes: number): string[] {
     LABELS.w10,
     LABELS.w11,
     LABELS.w12,
+    LABELS.w13,
   ]
 }
 
@@ -311,6 +314,28 @@ function sameLatLngPairs(subject: Float64Array, reference: number[][]): boolean 
   return reference.every((point, index) =>
     sameLatLng({ lat: subject[2 * index] as number, lng: subject[2 * index + 1] as number }, point),
   )
+}
+
+// a boundary batch pads each cell to `stride` doubles, so the check walks only the counted pairs
+function sameBoundaryBuffers(subject: CellBoundaries, reference: number[][][]): boolean {
+  if (subject.vertexCounts.length !== reference.length) {
+    return false
+  }
+  return reference.every((boundary, index) => {
+    if ((subject.vertexCounts[index] as number) !== boundary.length) {
+      return false
+    }
+    const base = index * subject.stride
+    return boundary.every((point, vertex) =>
+      sameLatLng(
+        {
+          lat: subject.vertices[base + 2 * vertex] as number,
+          lng: subject.vertices[base + 2 * vertex + 1] as number,
+        },
+        point,
+      ),
+    )
+  })
 }
 
 function sameBoundary(subject: LatLng[], reference: number[][]): boolean {
@@ -1068,6 +1093,40 @@ export async function runBenchmark(
       w12.stats,
       w12Reference.stats,
       sameBatchCells && sameLatLngPairs(w12.value, w12Reference.value),
+      `${CALLS} cells in one call, ${CALLS} h3-js calls`,
+    ),
+  )
+
+  if (await pause(signal)) {
+    return undefined
+  }
+
+  const w13 = await timeRuns(signal, RUNS, () => cellsToBoundaries(w11.value), track(OWN, RUNS))
+  if (w13 == null) {
+    return undefined
+  }
+  const w13Reference = await timeRuns(
+    signal,
+    RUNS,
+    () => {
+      const boundaries = new Array<number[][]>(CALLS)
+      for (let i = 0; i < CALLS; i++) {
+        boundaries[i] = h3.cellToBoundary(w11Reference.value[i] as string)
+      }
+      return boundaries
+    },
+    track(REFERENCE, RUNS),
+  )
+  if (w13Reference == null) {
+    return undefined
+  }
+  finish(
+    toRow(
+      LABELS.w13,
+      RUNS,
+      w13.stats,
+      w13Reference.stats,
+      sameBatchCells && sameBoundaryBuffers(w13.value, w13Reference.value),
       `${CALLS} cells in one call, ${CALLS} h3-js calls`,
     ),
   )

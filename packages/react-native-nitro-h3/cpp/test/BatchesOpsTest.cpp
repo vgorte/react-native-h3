@@ -7,6 +7,7 @@
 
 #include <gtest/gtest.h>
 
+#include <cmath>
 #include <cstdint>
 #include <stdexcept>
 #include <string>
@@ -25,6 +26,17 @@ constexpr uint64_t kSanFrancisco = 0x89283082803ffffULL;
 struct CeilingGuard {
   ~CeilingGuard() { h3shapes::setMaxCellCount(h3shapes::kNoCellLimit); }
 };
+
+// one cell of every vertex class: 6, 10, 7, 8 and 5 vertices, in this order
+std::vector<uint64_t> boundaryCells() {
+  return {0x8001fffffffffffULL, 0x81083ffffffffffULL, 0x81017ffffffffffULL, 0x81023ffffffffffULL, 0x820807fffffffffULL};
+}
+
+// pentagons carry 5 vertices at even resolutions and 10 at odd ones, hexagons 6, or 7 to 8 across an
+// icosahedron edge
+std::vector<uint8_t> boundaryVertexCounts() {
+  return {6, 10, 7, 8, 5};
+}
 
 TEST(BatchesOps, LatLngsToCellsMatchesTheScalar) {
   const std::vector<double> coords = {37.7749, -122.4194, 48.8566, 2.3522, -33.8688, 151.2093};
@@ -104,6 +116,67 @@ TEST(BatchesOps, CellsToLatLngsMeetsTheCeiling) {
   const std::vector<uint64_t> cells = {kSanFrancisco, kSanFrancisco, kSanFrancisco};
   try {
     h3ops::cellsToLatLngs(cells.data(), 3);
+    FAIL() << "expected an exception";
+  } catch (const std::runtime_error& error) {
+    EXPECT_NE(std::string(error.what()).find("exceeds the cell limit of 2"), std::string::npos);
+  }
+}
+
+TEST(BatchesOps, CellsToBoundariesMatchesTheScalar) {
+  const std::vector<uint64_t> cells = boundaryCells();
+  const std::vector<uint8_t> counts = boundaryVertexCounts();
+  const h3ops::BoundaryBuffers boundaries = h3ops::cellsToBoundaries(cells.data(), static_cast<int64_t>(cells.size()));
+  // the documented stride, which `Batches.cpp` also asserts against `MAX_CELL_BNDRY_VERTS`
+  EXPECT_EQ(h3ops::kBoundaryStride, 20u);
+  ASSERT_EQ(boundaries.vertexCounts.size(), cells.size());
+  ASSERT_EQ(boundaries.vertices.size(), cells.size() * h3ops::kBoundaryStride);
+  for (size_t i = 0; i < cells.size(); i++) {
+    const h3core::Ring ring = h3ops::cellToBoundary(cells[i]);
+    EXPECT_EQ(boundaries.vertexCounts[i], counts[i]);
+    ASSERT_EQ(ring.size(), static_cast<size_t>(counts[i]));
+    for (size_t v = 0; v < ring.size(); v++) {
+      // exact: both paths read the same `::CellBoundary` through `::radsToDegs`
+      EXPECT_EQ(boundaries.vertices[i * h3ops::kBoundaryStride + 2 * v], ring[v].lat);
+      EXPECT_EQ(boundaries.vertices[i * h3ops::kBoundaryStride + 2 * v + 1], ring[v].lng);
+    }
+  }
+}
+
+TEST(BatchesOps, CellsToBoundariesPadsUnusedSlotsWithNaN) {
+  const std::vector<uint64_t> cells = boundaryCells();
+  const std::vector<uint8_t> counts = boundaryVertexCounts();
+  const h3ops::BoundaryBuffers boundaries = h3ops::cellsToBoundaries(cells.data(), static_cast<int64_t>(cells.size()));
+  for (size_t i = 0; i < cells.size(); i++) {
+    for (size_t slot = static_cast<size_t>(2 * counts[i]); slot < h3ops::kBoundaryStride; slot++) {
+      // never `0`, so a read past the count is visible rather than a point in the Gulf of Guinea
+      EXPECT_TRUE(std::isnan(boundaries.vertices[i * h3ops::kBoundaryStride + slot]))
+          << "cell " << i << " slot " << slot;
+    }
+  }
+}
+
+TEST(BatchesOps, CellsToBoundariesPrefixesTheFailingCell) {
+  const std::vector<uint64_t> cells = {kSanFrancisco, 1};
+  try {
+    h3ops::cellsToBoundaries(cells.data(), 2);
+    FAIL() << "expected an exception";
+  } catch (const std::runtime_error& error) {
+    EXPECT_EQ(std::string(error.what()), "cells[1]: Cell argument was not valid (code: 5)");
+  }
+}
+
+TEST(BatchesOps, CellsToBoundariesAcceptsAnEmptySet) {
+  const h3ops::BoundaryBuffers boundaries = h3ops::cellsToBoundaries(nullptr, 0);
+  EXPECT_TRUE(boundaries.vertices.empty());
+  EXPECT_TRUE(boundaries.vertexCounts.empty());
+}
+
+TEST(BatchesOps, CellsToBoundariesMeetsTheCeiling) {
+  CeilingGuard guard;
+  h3shapes::setMaxCellCount(2);
+  const std::vector<uint64_t> cells = {kSanFrancisco, kSanFrancisco, kSanFrancisco};
+  try {
+    h3ops::cellsToBoundaries(cells.data(), 3);
     FAIL() << "expected an exception";
   } catch (const std::runtime_error& error) {
     EXPECT_NE(std::string(error.what()).find("exceeds the cell limit of 2"), std::string::npos);

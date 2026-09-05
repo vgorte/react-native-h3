@@ -580,7 +580,7 @@ behaviour in a minor version of the underlying C library.
 
 Returns: The cells covering the polygon, as a view onto the native buffer.
 
-Throws: `H3Error` if the polygon, the resolution or the mode is invalid, or the result would exceed a cell ceiling set with `configure`.
+Throws: `H3Error` if the polygon, the resolution or the mode is invalid, or the result would exceed a cell ceiling set with `configure`. With a ceiling set, an unaffordable polygon is refused before any work, priced by the bounding-box estimate of `polygonToCells` or, where that box has no area, by the length of the outline.
 
 ## Directed edges
 
@@ -1047,6 +1047,27 @@ Returns: The `122` base cells.
 
 ## Batch operations
 
+### cellsToBoundaries
+
+```ts
+function cellsToBoundaries(cells: BigUint64Array): CellBoundaries
+```
+
+Reads the boundaries of many cells at once, one native call for the whole set.
+
+Additive to the h3-js surface: this is `cellToBoundary` over a typed array, laid out
+for renderers that build meshes or paths from a flat buffer. Cell `i` starts at `i * stride` in
+`vertices` and uses `vertexCounts[i]` pairs: `5` for a pentagon at an even resolution and `10` at
+an odd one, `6` for a hexagon, `7` or `8` where one crosses an icosahedron edge. One cell weighs
+`161` bytes here rather than the `8` of a cell set. An empty input returns empty arrays, with
+`stride` still `20`.
+
+- `cells`: The cells.
+
+Returns: The stride, the `[lat, lng]` pairs in degrees padded to the stride with `NaN`, and the vertex count of each cell.
+
+Throws: `H3Error` if a cell is not valid (the message names its index, as in `cells[1]: ...`), or the input would exceed a cell ceiling set with `configure`.
+
 ### cellsToLatLngs
 
 ```ts
@@ -1189,7 +1210,8 @@ interface H3Config {
    * Caps how many cells one call may allocate, once you set it.
    *
    * There is no cap until then, so a call returns whatever it is asked for; a cell costs 8 bytes,
-   * so `4_000_000` is a 32 MB `BigUint64Array`. `Infinity` removes a cap set earlier, and any
+   * so `4_000_000` is a 32 MB `BigUint64Array`. A batch call that answers coordinates weighs more
+   * per cell: `161` bytes under `cellsToBoundaries`. `Infinity` removes a cap set earlier, and any
    * other value must be an integer of `1` or more.
    */
   maxCellCount?: number
@@ -1220,6 +1242,24 @@ wording comes from H3's own `describeH3Error` and may change when the vendored H
 changes.
 
 ## Types
+
+### CellBoundaries
+
+```ts
+interface CellBoundaries {
+  /** Counts the doubles each cell occupies in `vertices`, always `20`, which is ten `[lat, lng]` pairs. */
+  stride: number
+  /** Holds `stride` doubles per cell: `[lat, lng]` pairs in degrees, in `cellToBoundary` order. */
+  vertices: Float64Array
+  /** Counts the vertices each cell uses, `5` to `10`. Slots past the count hold `NaN`. */
+  vertexCounts: Uint8Array
+}
+```
+
+Holds the boundaries of a whole cell set, as `cellsToBoundaries` answers them.
+
+Cell `i` occupies `stride` doubles of `vertices` from `i * stride`, of which the first
+`vertexCounts[i]` pairs are its vertices and the rest are `NaN`.
 
 ### ContainmentMode
 
@@ -1292,4 +1332,4 @@ type Ring = [lat: number, lng: number][]
 
 Represents a ring of `[latitude, longitude]` pairs in degrees, whose first point is not repeated at the end.
 
-<!-- 79 exported symbols -->
+<!-- 81 exported symbols -->

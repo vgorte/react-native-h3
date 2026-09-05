@@ -15,7 +15,7 @@ random coordinates. Every row and section below is proved by a test in
 vendored sources instead of asserting against a test. Where `parity/divergences.test.ts` does the
 proving, it asserts both sides; the type-surface rows are proved there for h3-js at run time and for
 this package by `tsc`, because the probe the suite drives speaks JSON.
-The additive batch section leans on `parity/batches.test.ts` as well, which is where the two calls are
+The additive batch section leans on `parity/batches.test.ts` as well, which is where the three calls are
 compared with h3-js element for element.
 This package covers the `h3-js` 4.5.0 operation set under the same names and answers typed results.
 The list below is exhaustive: everything not listed here is identical.
@@ -72,20 +72,22 @@ systems that may run different H3 versions.
 
 ## The additive batch calls
 
-`latLngsToCells` and `cellsToLatLngs` run a scalar operation over a whole typed array in one native
-call. h3-js exports neither, so they are additive rather than a difference in behaviour: element for
-element they answer what a `latLngToCell` or `cellToLatLng` loop answers, which `parity/batches.test.ts`
-proves over the corpus. `parity/divergences.test.ts` asserts that h3-js has neither export, so the day
-it grows one this section fails rather than ages.
+`latLngsToCells`, `cellsToLatLngs` and `cellsToBoundaries` run a scalar operation over a whole typed
+array in one native call. h3-js exports none of them, so they are additive rather than a difference in
+behaviour: element for element they answer what a `latLngToCell`, `cellToLatLng` or `cellToBoundary`
+loop answers, which `parity/batches.test.ts` proves over the corpus. `parity/divergences.test.ts`
+asserts that h3-js has none of the three exports, so the day it grows one this section fails rather
+than ages.
 
 | Case | This package | h3-js |
 | --- | --- | --- |
 | `latLngsToCells` | takes a `Float64Array` of interleaved `[lat, lng]` pairs and answers one `BigUint64Array`, one cell per pair | no counterpart |
 | `cellsToLatLngs` | takes a `BigUint64Array` of cells and answers one interleaved `Float64Array`, two doubles per cell | no counterpart |
+| `cellsToBoundaries` | takes a `BigUint64Array` of cells and answers `{ stride, vertices, vertexCounts }`: 20 doubles per cell of `[lat, lng]` pairs, padded with `NaN`, and the vertex count of each | no counterpart |
 
 An invalid element is refused the way every other input is, with the index in the message
-(`cells[1]: Cell argument was not valid (code: 5)`), and the optional cell ceiling applies to both,
-counted in cells.
+(`cells[1]: Cell argument was not valid (code: 5)`), and the optional cell ceiling applies to all
+three, counted in cells.
 
 ## The error contract
 

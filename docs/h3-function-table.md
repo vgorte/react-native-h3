@@ -33,11 +33,11 @@ Note on the "62": counting the 54 h3-js operations with the 5 unit-dispatch ones
 they count different things. This table has 64 rows.
 
 Note on the exported surface: the 64 above are the *parity* functions, the ones this table enumerates
-from upstream. The package also exports the 2 additive batch functions `latLngsToCells` and
-`cellsToLatLngs`, which h3-js does not have and which therefore have no row here, plus 4 `Async`
-variants of functions already listed and `configure`. `__tests__/exports.test.ts` asserts the whole
-surface of 71 names; `docs/h3-js-divergences.md` records the additive
-pair.
+from upstream. The package also exports the 3 additive batch functions `latLngsToCells`,
+`cellsToLatLngs` and `cellsToBoundaries`, which h3-js does not have and which therefore have no row
+here, plus 4 `Async` variants of functions already listed and `configure`. `__tests__/exports.test.ts`
+asserts the whole surface of 72 names; `docs/h3-js-divergences.md` records the additive
+functions.
 
 Notation used below:
 
@@ -125,7 +125,7 @@ Sorted by shape (S1..S14, then ONE-OFF), alphabetically within each shape.
 
 Public functions with async twins (not separate rows above):
 `polygonToCellsAsync`, `polygonToCellsExperimentalAsync`, `cellsToMultiPolygonAsync`, `uncompactCellsAsync`.
-Counting those, `configure` and the two additive batch functions, the package exports 71 functions; see Export surface.
+Counting those, `configure` and the three additive batch functions, the package exports 72 functions; see Export surface.
 
 ---
 
@@ -381,10 +381,10 @@ typedef struct {
 | **Public TS functions (rows in the main table)** | **64** |
 | Additional async variants | +4 |
 | `configure` | +1 |
-| The two additive batch functions (`latLngsToCells`, `cellsToLatLngs`) | +2 |
-| **Total exported functions** | **71** |
+| The three additive batch functions (`latLngsToCells`, `cellsToLatLngs`, `cellsToBoundaries`) | +3 |
+| **Total exported functions** | **72** |
 
-`__tests__/exports.test.ts` asserts exactly those 71 names, plus the `H3Error` class and the
+`__tests__/exports.test.ts` asserts exactly those 72 names, plus the `H3Error` class and the
 `ContainmentMode` constants.
 
 ### C functions

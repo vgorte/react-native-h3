@@ -42,6 +42,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   // not ceiling-guarded upstream, so its memory is bounded by `-max_len` alone
   h3fuzz::runOp([&] { (void)h3ops::cellsToMultiPolygon(cells.data(), cellCount); });
   h3fuzz::runOp([&] { (void)h3ops::cellsToLatLngs(cells.data(), cellCount); });
+  h3fuzz::runOp([&] { (void)h3ops::cellsToBoundaries(cells.data(), cellCount); });
   h3fuzz::runOp([&] { (void)h3ops::latLngsToCells(coords.data(), cellCount, res); });
   return 0;
 }

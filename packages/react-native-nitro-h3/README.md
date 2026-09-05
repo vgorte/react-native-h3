@@ -129,7 +129,7 @@ Full documentation lives at **[vgorte.github.io/react-native-nitro-h3](https://v
 **Core concepts**
 
 * 🔢 **[Cell indexes and bigint](https://vgorte.github.io/react-native-nitro-h3/concepts/cells-and-bigint/)**: why a cell is a `bigint` and how the surface matches `h3-js`.
-* 📦 **[Typed arrays and batch calls](https://vgorte.github.io/react-native-nitro-h3/concepts/typed-arrays-and-batch/)**: `BigUint64Array` results and the two batch calls.
+* 📦 **[Typed arrays and batch calls](https://vgorte.github.io/react-native-nitro-h3/concepts/typed-arrays-and-batch/)**: `BigUint64Array` results and the three batch calls.
 * 🧵 **[Sync and async](https://vgorte.github.io/react-native-nitro-h3/concepts/sync-and-async/)**: the four async variants and what the hop costs.
 * 🛡️ **[Errors and memory safety](https://vgorte.github.io/react-native-nitro-h3/concepts/errors-and-memory-safety/)**: `H3Error` and the optional cell ceiling.
 

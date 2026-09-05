@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <vector>
 
@@ -32,5 +33,25 @@ h3core::CellBuffer latLngsToCells(const double* coords, int64_t doubleCount, dou
  * ceiling counts the input cells.
  */
 std::vector<double> cellsToLatLngs(const uint64_t* cells, int64_t count);
+
+/**
+ * Doubles per cell in the `vertices` of a boundary batch: `MAX_CELL_BNDRY_VERTS` pairs, which is
+ * ten. `Batches.cpp` asserts the two agree, so a change upstream is a build failure rather than a
+ * silent stride change.
+ */
+inline constexpr size_t kBoundaryStride = 20;
+
+/** Holds the two parallel outputs of a boundary batch: padded vertices and the count per cell. */
+struct BoundaryBuffers {
+  std::vector<double> vertices;
+  std::vector<uint8_t> vertexCounts;
+};
+
+/**
+ * Returns the boundaries of the given cells as `kBoundaryStride` doubles per cell, `[lat, lng]`
+ * pairs in degrees, with the slots past a cell's vertex count set to `NaN`. The first invalid cell
+ * aborts the batch with its index prefixed to the message, and the cell ceiling counts the input.
+ */
+BoundaryBuffers cellsToBoundaries(const uint64_t* cells, int64_t count);
 
 } // namespace h3ops

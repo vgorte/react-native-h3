@@ -1,6 +1,7 @@
 import { expect, test } from 'react-native-harness'
 import {
   ContainmentMode,
+  cellsToBoundaries,
   cellsToLatLngs,
   cellsToMultiPolygon,
   cellToBoundary,
@@ -8,6 +9,7 @@ import {
   getResolution,
   gridDisk,
   H3Error,
+  type LatLng,
   latLngsToCells,
   latLngToCell,
   polygonToCellsExperimental,
@@ -15,6 +17,15 @@ import {
 
 const SAN_FRANCISCO_RES_9 = 0x89283082803ffffn
 const PENTAGON_RES_1 = 0x81083ffffffffffn
+// one cell of every vertex class: 6, 10, 7, 8 and 5 vertices, in this order
+const BOUNDARY_CELLS = [
+  0x8001fffffffffffn,
+  0x81083ffffffffffn,
+  0x81017ffffffffffn,
+  0x81023ffffffffffn,
+  0x820807fffffffffn,
+]
+const BOUNDARY_VERTEX_COUNTS = [6, 10, 7, 8, 5]
 const SAN_FRANCISCO_RECTANGLE: [lat: number, lng: number][] = [
   [37.85, -122.5],
   [37.85, -122.35],
@@ -193,4 +204,47 @@ test('a batch failure arrives as H3Error naming the element', () => {
 test('an empty batch answers empty in both directions', () => {
   expect(latLngsToCells(new Float64Array(0), 9).length).toBe(0)
   expect(cellsToLatLngs(new BigUint64Array(0)).length).toBe(0)
+})
+
+test('cellsToBoundaries equals element-wise cellToBoundary across the bridge', () => {
+  const cells = new BigUint64Array(BOUNDARY_CELLS)
+  const { stride, vertices, vertexCounts } = cellsToBoundaries(cells)
+  expect(stride).toBe(20)
+  expect(vertices).toBeInstanceOf(Float64Array)
+  expect(vertexCounts).toBeInstanceOf(Uint8Array)
+  expect(vertices.length).toBe(cells.length * 20)
+  expect(vertexCounts.length).toBe(cells.length)
+  for (let i = 0; i < cells.length; i++) {
+    const boundary = cellToBoundary(cells[i] as bigint)
+    expect(vertexCounts[i]).toBe(BOUNDARY_VERTEX_COUNTS[i] as number)
+    expect(boundary.length).toBe(BOUNDARY_VERTEX_COUNTS[i] as number)
+    for (let v = 0; v < boundary.length; v++) {
+      const point = boundary[v] as LatLng
+      // exact equality: the batch runs the same native conversion, so a lat/lng swap cannot pass
+      expect(vertices[i * stride + 2 * v]).toBe(point.lat)
+      expect(vertices[i * stride + 2 * v + 1]).toBe(point.lng)
+    }
+    for (let slot = 2 * boundary.length; slot < stride; slot++) {
+      expect(vertices[i * stride + slot]).toBeNaN()
+    }
+  }
+})
+
+test('an empty boundary batch answers empty arrays and the stride anyway', () => {
+  const { stride, vertices, vertexCounts } = cellsToBoundaries(new BigUint64Array(0))
+  expect(stride).toBe(20)
+  expect(vertices.length).toBe(0)
+  expect(vertexCounts.length).toBe(0)
+})
+
+test('a boundary batch failure arrives as H3Error naming the element', () => {
+  let thrown: unknown
+  try {
+    cellsToBoundaries(new BigUint64Array([SAN_FRANCISCO_RES_9, 1n]))
+  } catch (error) {
+    thrown = error
+  }
+  expect(thrown).toBeInstanceOf(H3Error)
+  expect((thrown as H3Error).code).toBe(5)
+  expect((thrown as H3Error).message).toBe('cells[1]: Cell argument was not valid (code: 5)')
 })

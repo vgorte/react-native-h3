@@ -102,8 +102,8 @@ promise, so their local IJ coordinates are not a serialisation format; see
 
 ## What has no `h3-js` counterpart
 
-- `latLngsToCells` and `cellsToLatLngs` index or read a whole typed array in one native call, see
-  [Typed arrays and batch calls](./concepts/typed-arrays-and-batch.md).
+- `latLngsToCells`, `cellsToLatLngs` and `cellsToBoundaries` index, read or trace a whole typed array
+  in one native call, see [Typed arrays and batch calls](./concepts/typed-arrays-and-batch.md).
 - `configure({ maxCellCount })` sets an optional cell ceiling, see
   [Errors and memory safety](./concepts/errors-and-memory-safety.md).
 - `h3IndexToSplitLong` and `splitLongToH3Index` are not provided: a `bigint` already carries all 64
