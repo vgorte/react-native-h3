@@ -7,6 +7,7 @@
 
 #include <gtest/gtest.h>
 
+#include <chrono>
 #include <cstdint>
 #include <limits>
 #include <stdexcept>
@@ -49,6 +50,16 @@ Rings archivedFuzzTimeout() {
            {37.8, -122.5},
            {37.8, -122.3},
            {37.7, 5.003070314163925e+147}}};
+}
+
+/**
+ * Returns the ring that timed the fuzz target out on 2026-09-05, decoded from
+ * `cpp/fuzz/corpus/fuzz_polygon_rings/slow-experimental-ring.bin`. Its bounding box is a sliver, so
+ * `maxPolygonToCellsSizeExperimental` finds no coarser resolution to count at (`polyfill.c:762`) and
+ * walks the requested one.
+ */
+Rings archivedSizeWalkTimeout() {
+  return {{{37.9, 1.2951436840082437e-319}, {0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}}};
 }
 
 // asserts the wording rather than any error, because an unguarded argument either answers a
@@ -284,6 +295,42 @@ TEST_F(RegionsOpsCeiling, PolygonToCellsRefusesAnUnaffordableRequest) {
   expectMessageEnding("the globe at resolution 15", breach, [&globe] { h3ops::polygonToCells(globe, 15); });
   expectMessageEnding("the globe at resolution 15, experimental", breach,
                       [&globe] { h3ops::polygonToCellsExperimental(globe, 15, 0); });
+}
+
+TEST_F(RegionsOpsCeiling, PolygonToCellsExperimentalRefusesBeforeItsSizeWalk) {
+  // the refusal itself is older than the pre-check, so the elapsed time is what this asserts: the
+  // archived ring keeps `maxPolygonToCellsSizeExperimental` busy for about nine seconds at
+  // resolution `14`.
+  h3shapes::setMaxCellCount(1000);
+  const std::string breach = " cells exceeds the cell limit of 1000 set with configure({ maxCellCount }). "
+                             "Raise or remove the limit to allow it.";
+  const auto start = std::chrono::steady_clock::now();
+  expectMessageEnding("the archived sliver at resolution 14", breach,
+                      [] { h3ops::polygonToCellsExperimental(archivedSizeWalkTimeout(), 14, 0); });
+  EXPECT_LT(std::chrono::steady_clock::now() - start, std::chrono::seconds(2));
+}
+
+TEST_F(RegionsOpsCeiling, PolygonToCellsExperimentalStillFillsWhatTheCeilingAllows) {
+  h3shapes::setMaxCellCount(1000);
+  // h3-js `polygonToCellsExperimental(triangle, 9, "containmentCenter").length` == 8
+  const Rings triangle = {{{0.0, 0.0}, {0.01, 0.0}, {0.0, 0.01}}};
+  EXPECT_EQ(h3ops::polygonToCellsExperimental(triangle, 9, 0).count(), 8);
+  // a ring of zero height is one H3 declines to estimate (`bbox.c:203`), and h3-js answers `[]`
+  const Rings flat = {{{0.0, 0.0}, {0.0, 10.0}, {0.0, 20.0}}};
+  EXPECT_EQ(h3ops::polygonToCellsExperimental(flat, 5, 0).count(), 0);
+}
+
+TEST_F(RegionsOpsCeiling, PolygonToCellsExperimentalIsUnchangedWithoutACeiling) {
+  h3shapes::setMaxCellCount(h3shapes::kNoCellLimit);
+  // h3-js `polygonToCellsExperimental(ring, 2, "containmentCenter").length` == 18
+  const Rings ring = {{{0.0, 0.0}, {10.0, 0.0}, {10.0, 10.0}, {0.0, 10.0}}};
+  EXPECT_EQ(h3ops::polygonToCellsExperimental(ring, 2, 0).count(), 18);
+}
+
+TEST_F(RegionsOpsCeiling, PolygonToCellsExperimentalStillAnswersNothingForAnEmptyPolygon) {
+  h3shapes::setMaxCellCount(1000);
+  EXPECT_EQ(h3ops::polygonToCellsExperimental({}, 7, 0).count(), 0);
+  EXPECT_EQ(h3ops::polygonToCellsExperimental({{}}, 7, 0).count(), 0);
 }
 
 } // namespace

@@ -58,7 +58,9 @@ export function polygonToCells(rings: Ring[], res: number): BigUint64Array {
  * the matching h3-js name such as `'containmentCenter'`.
  * @returns The cells covering the polygon, as a view onto the native buffer.
  * @throws {@linkcode H3Error} if the polygon, the resolution or the mode is invalid, or the result
- * would exceed a cell ceiling set with {@linkcode configure}.
+ * would exceed a cell ceiling set with {@linkcode configure}. With a ceiling set, the call is
+ * refused before any work whenever the bounding-box estimate of {@linkcode polygonToCells} already
+ * exceeds it.
  */
 export function polygonToCellsExperimental(
   rings: Ring[],

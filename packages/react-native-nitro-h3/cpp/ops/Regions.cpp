@@ -66,6 +66,18 @@ h3core::CellBuffer polygonToCellsExperimental(const std::vector<std::vector<std:
   const uint32_t mode = toContainmentMode(flags);
   const h3core::GeoPolygonBuilder builder(rings);
 
+  if (h3shapes::maxCellCount() != h3shapes::kNoCellLimit && builder.polygon()->geoloop.numVerts > 0) {
+    // `maxPolygonToCellsSizeExperimental` counts the polygon out cell by cell (`polyfill.c:774`),
+    // and a sliver bounding box leaves that walk at the requested resolution for minutes. The
+    // stable bound is a formula, so a ceiling refuses from it first.
+    int64_t stableSize = 0;
+    // an estimate H3 declines is not a refusal: it answers `E_FAILED` for a bounding box of zero
+    // width (`bbox.c:203`), which the experimental fill covers.
+    if (::maxPolygonToCellsSize(builder.polygon(), resolution, kCenterContainment, &stableSize) == E_SUCCESS) {
+      h3shapes::requireWithinCellLimit(stableSize);
+    }
+  }
+
   // the only H3 function that takes its own computed size back as an argument, which is why the
   // size is captured rather than only used to allocate.
   int64_t size = 0;

@@ -67,6 +67,9 @@ when the answer is over the ceiling:
 The requested result of 4005541 cells exceeds the cell limit of 4000000 set with configure({ maxCellCount }). Raise or remove the limit to allow it.
 ```
 
+With a ceiling in force, `polygonToCellsExperimental` is refused from the same bounding-box estimate
+`polygonToCells` uses, before its own size query walks the polygon.
+
 `configure({ maxCellCount: Infinity })` removes a ceiling set earlier. The value must be a positive
 integer or `Infinity`, and it applies to every sync and async cell-producing function from the
 moment it is set.

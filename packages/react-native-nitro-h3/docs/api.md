@@ -580,7 +580,7 @@ behaviour in a minor version of the underlying C library.
 
 Returns: The cells covering the polygon, as a view onto the native buffer.
 
-Throws: `H3Error` if the polygon, the resolution or the mode is invalid, or the result would exceed a cell ceiling set with `configure`.
+Throws: `H3Error` if the polygon, the resolution or the mode is invalid, or the result would exceed a cell ceiling set with `configure`. With a ceiling set, the call is refused before any work whenever the bounding-box estimate of `polygonToCells` already exceeds it.
 
 ## Directed edges
 
