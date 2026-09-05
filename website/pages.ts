@@ -51,7 +51,7 @@ export const PAGES: readonly Page[] = [
     label: 'Typed arrays and batch calls',
     source: 'docs/concepts/typed-arrays-and-batch.md',
     description:
-      'The contract of BigUint64Array cell sets, Float64Array coordinates and the batch calls latLngsToCells and cellsToLatLngs.',
+      'The contract of BigUint64Array cell sets, Float64Array coordinates and the batch calls latLngsToCells, cellsToLatLngs and cellsToBoundaries.',
     group: 'Core Concepts',
   },
   {

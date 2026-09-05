@@ -37,12 +37,14 @@ the input `Float64Array` is not timed on either side either, so a caller who ass
 JavaScript objects pays for that on top. The measured rows are `W11` and `W12` in
 [benchmark.md](benchmark.md).
 
-The contract of both calls is in [Typed arrays and batch calls](concepts/typed-arrays-and-batch.md).
+The contract of all three calls is in [Typed arrays and batch calls](concepts/typed-arrays-and-batch.md).
 
 ## The Cell Ceiling in Detail
 
 There is no cell limit until you set one: a call returns whatever you ask for, exactly as `h3-js`
-does. Sizes grow fast, and a cell costs 8 bytes in the returned `BigUint64Array`.
+does. Sizes grow fast, and a cell costs 8 bytes in the returned `BigUint64Array`. A batch call that
+answers coordinates weighs more per cell: `cellsToBoundaries` costs 161 bytes, so the same ceiling
+admits about twenty times the memory there.
 `gridDisk(cell, k)` returns `1 + 3k(k+1)` cells, so `k` of 1,155 is 4,005,541 cells or 32 MB, and
 `polygonToCells` over San Francisco at resolution 12 is 412,377.
 
