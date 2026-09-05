@@ -28,6 +28,7 @@ Three additional APIs process complete typed arrays in a single native call:
 import {
   latLngsToCells,
   cellsToLatLngs,
+  cellsToBoundaries,
 } from 'react-native-nitro-h3'
 
 const coords = new Float64Array([

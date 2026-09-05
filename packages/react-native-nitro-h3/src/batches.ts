@@ -51,15 +51,15 @@ export function cellsToLatLngs(cells: BigUint64Array): Float64Array {
  * Additive to the h3-js surface: this is {@linkcode cellToBoundary} over a typed array, laid out
  * for renderers that build meshes or paths from a flat buffer. Cell `i` starts at `i * stride` in
  * `vertices` and uses `vertexCounts[i]` pairs: `5` for a pentagon at an even resolution and `10` at
- * an odd one, `6` for a hexagon, `7` or `8` where one crosses an icosahedron edge.
+ * an odd one, `6` for a hexagon, `7` or `8` where one crosses an icosahedron edge. One cell weighs
+ * `161` bytes here rather than the `8` of a cell set. An empty input returns empty arrays, with
+ * `stride` still `20`.
  *
  * @param cells The cells.
  * @returns The stride, the `[lat, lng]` pairs in degrees padded to the stride with `NaN`, and the
  * vertex count of each cell.
  * @throws {@linkcode H3Error} if a cell is not valid (the message names its index, as in
- * `cells[1]: ...`), or the input would exceed a cell ceiling set with {@linkcode configure}. One
- * cell weighs 161 bytes here rather than the 8 of a cell set. An empty input returns empty arrays,
- * with `stride` still `20`.
+ * `cells[1]: ...`), or the input would exceed a cell ceiling set with {@linkcode configure}.
  */
 export function cellsToBoundaries(cells: BigUint64Array): CellBoundaries {
   try {

@@ -14,7 +14,7 @@ export interface CoordIJ {
   j: number
 }
 
-// the three buffers of one boundary batch. Nitrogen generates a C++ struct of the same name whose
+// the stride and the two buffers of one boundary batch. Nitrogen generates a C++ struct of the same name whose
 // two `ArrayBuffer` members convert like a direct `ArrayBuffer` return, so neither is copied.
 export interface CellBoundaryBuffers {
   stride: number

@@ -1058,13 +1058,15 @@ Reads the boundaries of many cells at once, one native call for the whole set.
 Additive to the h3-js surface: this is `cellToBoundary` over a typed array, laid out
 for renderers that build meshes or paths from a flat buffer. Cell `i` starts at `i * stride` in
 `vertices` and uses `vertexCounts[i]` pairs: `5` for a pentagon at an even resolution and `10` at
-an odd one, `6` for a hexagon, `7` or `8` where one crosses an icosahedron edge.
+an odd one, `6` for a hexagon, `7` or `8` where one crosses an icosahedron edge. One cell weighs
+`161` bytes here rather than the `8` of a cell set. An empty input returns empty arrays, with
+`stride` still `20`.
 
 - `cells`: The cells.
 
 Returns: The stride, the `[lat, lng]` pairs in degrees padded to the stride with `NaN`, and the vertex count of each cell.
 
-Throws: `H3Error` if a cell is not valid (the message names its index, as in `cells[1]: ...`), or the input would exceed a cell ceiling set with `configure`. One cell weighs 161 bytes here rather than the 8 of a cell set. An empty input returns empty arrays, with `stride` still `20`.
+Throws: `H3Error` if a cell is not valid (the message names its index, as in `cells[1]: ...`), or the input would exceed a cell ceiling set with `configure`.
 
 ### cellsToLatLngs
 
@@ -1209,7 +1211,7 @@ interface H3Config {
    *
    * There is no cap until then, so a call returns whatever it is asked for; a cell costs 8 bytes,
    * so `4_000_000` is a 32 MB `BigUint64Array`. A batch call that answers coordinates weighs more
-   * per cell, `161` bytes under `cellsToBoundaries`. `Infinity` removes a cap set earlier, and any
+   * per cell: `161` bytes under `cellsToBoundaries`. `Infinity` removes a cap set earlier, and any
    * other value must be an integer of `1` or more.
    */
   maxCellCount?: number
